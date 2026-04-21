@@ -59,11 +59,7 @@ venv/
 .env
 
 # Data and Results (Large files)
-DATA/
 RESULTS/
-*.fts
-*.fits
-*.gz
 
 # IDE
 .vscode/
