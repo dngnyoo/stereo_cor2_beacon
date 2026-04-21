@@ -48,7 +48,6 @@ Thumbs.db
 *.mov
 *.wmv
 
-DATA/
 venv/
 
 cat <<EOF > .gitignore
