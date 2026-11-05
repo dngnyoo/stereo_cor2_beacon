@@ -14,11 +14,18 @@ class TestAssociationAndGates(unittest.TestCase):
     def setUpClass(cls):
         cls.config = PipelineConfig.from_yaml("configs/baseline_rule_b.yaml")
         cls.pipeline = Pipeline(cls.config)
-        # Load from existing cached run
-        cls.track_out = cls.pipeline.context.cache.load_output("tracking")
-        cls.assoc_out = cls.pipeline.context.cache.load_output("association")
-        cls.birth_out = cls.pipeline.context.cache.load_output("birth_gate")
-        cls.size_out = cls.pipeline.context.cache.load_output("size_gate")
+        # Load from existing cached run or run pipeline once
+        try:
+            cls.track_out = cls.pipeline.context.cache.load_output("tracking")
+            cls.assoc_out = cls.pipeline.context.cache.load_output("association")
+            cls.birth_out = cls.pipeline.context.cache.load_output("birth_gate")
+            cls.size_out = cls.pipeline.context.cache.load_output("size_gate")
+        except KeyError:
+            cls.pipeline.run()
+            cls.track_out = cls.pipeline.context.cache.load_output("tracking")
+            cls.assoc_out = cls.pipeline.context.cache.load_output("association")
+            cls.birth_out = cls.pipeline.context.cache.load_output("birth_gate")
+            cls.size_out = cls.pipeline.context.cache.load_output("size_gate")
 
     def test_no_premature_anchor_filtering(self):
         # All 219 tracks must be present in association membership
