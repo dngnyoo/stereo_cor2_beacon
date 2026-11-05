@@ -1,0 +1,2 @@
+pair_id,method,latitude_raw,longitude_raw,MassA_raw,MassB_raw,latitude_unit,longitude_unit,mass_unit,source_filename,source_line,source_section,source_url,provenance
+MVCC_1508.6938_0Ac__1508.7250_0Bc,Balmaceda_et_al_deprojection,-2.40,277.64,33.38,126.73,not_explicit_in_section,not_explicit_in_section,not_explicit_in_section,20101212_053900.txt,267,Balmaceda et al. deprojection,,source_snapshot=raw_2010-12-12_Gottingen_MVCC/20101212_053900.txt;sha256=30FFE4C5C8F97B491686B4479440AB65200FE8D4BF06C1ED970D022C2E9151E0

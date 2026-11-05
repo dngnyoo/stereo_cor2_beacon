@@ -1,0 +1,26 @@
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.cache/
+
+# Environments
+venv/
+env/
+.env
+
+# Execution Runs & Temporary Outputs
+runs/
+output_runs/
+*.log
+
+# OS & IDE Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Keep Calibration FITS files tracked in Git
+!calibration/*.fts
+!calibration/*.fits
+

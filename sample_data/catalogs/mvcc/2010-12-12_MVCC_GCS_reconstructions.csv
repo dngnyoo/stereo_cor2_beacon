@@ -1,0 +1,2 @@
+pair_id,model,latitude_deg,longitude_deg,tilt_deg,AW_deg,kappa,height_Rsun,velocity_km_s,velocity_raw,fit_time_utc,fit_time_raw,source_filename,source_line,source_section,source_url,provenance
+MVCC_1508.6938_0Ac__1508.7250_0Bc,AFFECTSgcs,-14.0,60.9,11.2,24.9,0.404,20.5,,None,2010-12-12T09:24:00Z,20101212_092400,20101212_053900.txt,280,GCS parameters from individual reconstructions,,source_snapshot=raw_2010-12-12_Gottingen_MVCC/20101212_053900.txt;sha256=30FFE4C5C8F97B491686B4479440AB65200FE8D4BF06C1ED970D022C2E9151E0

@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "rows": {
+    "2010-12-12_Gottingen_BestOf.csv": 2,
+    "2010-12-12_MVCC_all_observations.csv": 10,
+    "2010-12-12_MVCC_COR2A_events.csv": 5,
+    "2010-12-12_MVCC_CORSET_projected_mass_COR2A.csv": 22,
+    "2010-12-12_MVCC_CORSET_morphology_COR2A.csv": 22,
+    "2010-12-12_MVCC_CORSET_mass_only_deprojection_COR2A.csv": 21,
+    "2010-12-12_MVCC_CORSET_mass_lat_height_deprojection_COR2A.csv": 21,
+    "2010-12-12_MVCC_GCS_mass_timeseries_COR2A.csv": 22,
+    "2010-12-12_MVCC_CORSET_projected_mass_COR2B.csv": 23,
+    "2010-12-12_MVCC_CORSET_morphology_COR2B.csv": 23,
+    "2010-12-12_MVCC_CORSET_mass_only_deprojection_COR2B.csv": 21,
+    "2010-12-12_MVCC_CORSET_mass_lat_height_deprojection_COR2B.csv": 21,
+    "2010-12-12_MVCC_GCS_mass_timeseries_COR2B.csv": 23,
+    "2010-12-12_MVCC_CORSET_profile_summaries.csv": 4,
+    "2010-12-12_MVCC_GCS_reconstructions.csv": 1,
+    "2010-12-12_MVCC_GCS_fit_mass_comparison.csv": 2,
+    "2010-12-12_MVCC_Balmaceda_deprojection.csv": 1,
+    "2010-12-12_MVCC_CORSET_height_time_COR2A.csv": 1552,
+    "2010-12-12_MVCC_CORSET_headers_COR2A.csv": 29,
+    "2010-12-12_MVCC_CORSET_fit_parameters_COR2A.csv": 3,
+    "2010-12-12_MVCC_CORSET_tracking_metadata_COR2A.csv": 28,
+    "2010-12-12_Gottingen_MVCC_source_manifest.csv": 12
+  },
+  "profile_counts": {
+    "CORSET_projected_mass_COR2A": 22,
+    "CORSET_morphology_COR2A": 22,
+    "CORSET_mass_only_deprojection_COR2A": 21,
+    "CORSET_mass_lat_height_deprojection_COR2A": 21,
+    "GCS_mass_timeseries_COR2A": 22,
+    "CORSET_projected_mass_COR2B": 23,
+    "CORSET_morphology_COR2B": 23,
+    "CORSET_mass_only_deprojection_COR2B": 21,
+    "CORSET_mass_lat_height_deprojection_COR2B": 21,
+    "GCS_mass_timeseries_COR2B": 23
+  },
+  "CORSET_height_angle_rows": 1552,
+  "CORSET_unique_A_frames": 22,
+  "originals_unchanged": true,
+  "pipeline_AGENTS_SEEDS_CACTus_unchanged": true,
+  "official_BestOf_vs_manual": "566a_all_17_fields_match;566b_15_asterisks_confirmed",
+  "official_MVCC_count": "5_A_plus_5_B;5_reciprocal_pairs",
+  "limitations": [
+    "CORSET B profile timestamp 05:39:00 vs catalog 05:39:51",
+    "HT header units absent;web acceleration label km/s^2 retained without conversion",
+    "B 08:54 deprojection projH=9.74 vs projected series 9.75",
+    "GCS B section preceded by repeated STA count label",
+    "different model-specific CORSET mass estimates not equated"
+  ],
+  "independent_verification": {
+    "status": "PASS",
+    "profile_rows_compared_token_by_token": 219,
+    "height_angle_rows_compared_to_source": 1552,
+    "all_MVCC_raw_fields_match_official_JSON": true,
+    "analysis_nulls_match_raw_sentinels": true,
+    "source_copy_hashes_verified": 12,
+    "earlier_SEEDS_CACTus_CSV_hashes_unchanged": true
+  }
+}

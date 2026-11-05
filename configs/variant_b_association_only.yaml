@@ -1,0 +1,48 @@
+run_name: variant_b_association_only
+date_str: 20101212
+repo_root: /home/aababc/stereo_cor2
+output_base_dir: runs
+cache_enabled: true
+force_rerun: false
+
+tracking:
+  method: e1
+  alpha: 0.0
+  patch_size: 4
+  min_track_duration_pairs: 1
+  max_cadence_gap_sec: 4500.0
+
+recovery:
+  method: signed_dynamic_pa
+  radial_window_px: 13.35
+  pa_margin_deg: 5.0
+  gaussian_sigma: 1.0
+
+association:
+  method: birth_anchored
+  do_threshold: 0.05
+  direction_threshold_deg: 45.0
+  enforce_anchor_separation: true
+  prevent_auto_merger: true
+
+birth_gate:
+  max_birth_radius_px: 30.0
+
+size_gate:
+  min_detected_patches: 5
+
+segmentation:
+  method: island_first
+  min_island_area_px: 16
+  max_hole_fill_px: 16
+  occulter_r_min_px: 22.0
+  fov_r_max_px: 122.5
+
+validation:
+  catalogs:
+    - SEEDS
+    - CACTus
+    - MVCC
+    - Göttingen
+  compare_baseline: true
+
