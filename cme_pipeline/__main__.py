@@ -1,0 +1,84 @@
+"""Command Line Interface for CME Pipeline.
+
+Usage:
+  python -m cme_pipeline run --config configs/baseline_rule_b.yaml
+  python -m cme_pipeline run --config configs/baseline_rule_b.yaml --from-stage association
+  python -m cme_pipeline status --config configs/baseline_rule_b.yaml
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+from cme_pipeline.core.config import PipelineConfig
+from cme_pipeline.core.pipeline import Pipeline
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="python -m cme_pipeline",
+        description="Modular, reproducible CME detection and tracking pipeline.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # 'run' subcommand
+    run_parser = subparsers.add_parser("run", help="Execute the pipeline or resume from a stage.")
+    run_parser.add_argument(
+        "--config",
+        "-c",
+        type=str,
+        required=True,
+        help="Path to YAML configuration file (e.g. configs/baseline_rule_b.yaml).",
+    )
+    run_parser.add_argument(
+        "--from-stage",
+        type=str,
+        default=None,
+        help="Re-execute pipeline starting from specified stage (e.g. association, size_gate).",
+    )
+    run_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-execution of all stages, ignoring cache.",
+    )
+
+    # 'status' subcommand
+    status_parser = subparsers.add_parser("status", help="Show pipeline stage cache status.")
+    status_parser.add_argument(
+        "--config",
+        "-c",
+        type=str,
+        required=True,
+        help="Path to YAML configuration file.",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    config_path = Path(args.config)
+    if not config_path.is_file():
+        print(f"Error: Config file not found: {config_path}", file=sys.stderr)
+        sys.exit(1)
+
+    config = PipelineConfig.from_yaml(config_path)
+
+    if args.command == "run":
+        if args.force:
+            config.force_rerun = True
+        pipeline = Pipeline(config)
+        result = pipeline.run(from_stage=args.from_stage)
+        if result["status"] != "SUCCESS":
+            sys.exit(1)
+
+    elif args.command == "status":
+        pipeline = Pipeline(config)
+        pipeline.status()
+
+
+if __name__ == "__main__":
+    main()
+
