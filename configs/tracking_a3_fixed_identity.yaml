@@ -1,0 +1,46 @@
+run_name: regression_a3_fixed_identity
+date_str: 20101212
+repo_root: /home/aababc/stereo_cor2
+output_base_dir: runs
+cache_enabled: true
+force_rerun: false
+
+tracking:
+  method: a3
+  parameters:
+    patch_size: 4
+    max_cadence_gap_sec: 4500.0
+    outward_gate_enabled: true
+    outward_gate_tolerance_px: 6.0
+    ema_alpha: 0.1
+
+recovery:
+  method: signed_dynamic_pa
+  radial_window_px: 13.35
+  pa_margin_deg: 5.0
+  gaussian_sigma: 1.0
+
+association:
+  method: identity
+
+birth_gate:
+  max_birth_radius_px: 30.0
+
+size_gate:
+  min_detected_patches: 5
+
+segmentation:
+  method: island_first
+  min_island_area_px: 16
+  max_hole_fill_px: 16
+  occulter_r_min_px: 22.0
+  fov_r_max_px: 122.5
+
+validation:
+  catalogs:
+    - SEEDS
+    - CACTus
+    - MVCC
+    - Göttingen
+  compare_baseline: true
+
