@@ -1,6 +1,6 @@
 run_name: regression_a5b_rule_b
 date_str: 20101212
-repo_root: /home/aababc/stereo_cor2
+repo_root: .
 output_base_dir: runs
 cache_enabled: true
 force_rerun: false
