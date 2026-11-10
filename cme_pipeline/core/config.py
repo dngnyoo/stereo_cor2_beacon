@@ -104,7 +104,7 @@ class ValidationConfig:
 class PipelineConfig:
     run_name: str = "baseline_rule_b"
     date_str: int = 20101212
-    repo_root: str = "/home/aababc/stereo_cor2"
+    repo_root: str = "."
     output_base_dir: str = "runs"
     cache_enabled: bool = True
     force_rerun: bool = False

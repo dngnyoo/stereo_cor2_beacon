@@ -28,3 +28,6 @@ one_month_preprocessing_detection_survey/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local research datasets
+/datasets/
