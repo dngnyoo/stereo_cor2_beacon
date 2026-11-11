@@ -78,6 +78,7 @@ class TestC3Kernel(unittest.TestCase):
         scores[8][:] = 2.0
         scores[4][:] = 2.0
         scores[4][0, 0] = 3.0
+        scores[4][0, 1] = 0.0  # below threshold so QC fraction < 1.0
         result = detect_c3_frame(
             scores, accepted, thresholds, max_active_fraction_pre=1.0
         )
