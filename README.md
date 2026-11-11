@@ -58,8 +58,8 @@ For the baseline configuration, outputs are written to `runs/baseline_rule_b/`.
 | `arrays/family_pixel_masks.npz` | Separate Boolean masks for admitted families; these may overlap |
 | `stages/segmentation/framewise_pixel_summary.csv` | Frame-level segmentation statistics |
 | `stages/segmentation/family_pixel_statistics.csv` | Family-level segmentation statistics |
-| `visualizations/segmentation_overlays/frame_*.png` | 32 RD-background and segmentation-mask overlays | 
-| `visualizations/family_tracking/*.png` | Peak-area mask snapshot for each positive family | 
+| `visualizations/segmentation_overlays/pair_XXX_YYYYMMDDTHHMMSSZ_families.png` | 32 fixed-scale RD overlays annotated with admitted family IDs (`F19`), actual Pair number, UTC time | 
+| `visualizations/family_tracking/FAM_..._pair_XXX_YYYYMMDDTHHMMSSZ_peak.png` | Peak-area snapshot of an admitted family, labeled `F...` | 
 | `visualizations/height_time/*.png` | Family front-radius time series and exploratory linear fit | 
 | `visualizations/cme_animation.gif` | Animated sequence of full-frame mask overlays | 
 | `report.md` | Pipeline run summary and external validation metrics |
