@@ -12,7 +12,7 @@ from scipy.ndimage import label
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.core.stage import PipelineStage, SegmentationOutput, ValidationOutput
+from cme_pipeline.core.stage import PipelineStage, SegmentationOutput, CMEProductsOutput, ValidationOutput
 from cme_pipeline.utils.geometry import (
     circular_diff_deg,
     circular_sector_overlap,
@@ -37,7 +37,9 @@ class ExternalValidationStage(PipelineStage):
             "stage": self.name,
             "version": self.version,
             "catalogs": config.validation.catalogs,
-            "upstream_segmented_pixels": inputs.total_segmented_pixels,
+            "upstream_segmented_pixels": (inputs.segmentation_output.total_segmented_pixels
+                                          if isinstance(inputs, CMEProductsOutput)
+                                          else inputs.total_segmented_pixels),
         }
         return compute_dict_hash(desc)
 
@@ -45,6 +47,8 @@ class ExternalValidationStage(PipelineStage):
         self, inputs: SegmentationOutput, config: PipelineConfig, context: PipelineContext
     ) -> ValidationOutput:
         context.info("Running ExternalValidationStage (Catalogue Recalculation)...")
+        if isinstance(inputs, CMEProductsOutput):
+            inputs = inputs.segmentation_output
 
         val_root = context.repo_root / "validation_20101212"
         exp04_dir = val_root / "experiments/04_d7_external_catalog_validation"
