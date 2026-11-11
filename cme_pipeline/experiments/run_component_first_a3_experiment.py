@@ -33,8 +33,8 @@ from matplotlib.colors import Normalize
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.adaptive_roi_tracking import BirthSeededAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.component_first_tracking import ComponentFirstAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v04_component_first import ComponentFirstAdaptiveROITrackingStage
 
 # Output directories
 out_dir = repo_root / "runs/pilot_adaptive_component_first_a3"

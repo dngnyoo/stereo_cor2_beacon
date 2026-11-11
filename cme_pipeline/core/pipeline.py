@@ -11,20 +11,21 @@ from typing import Any, Dict, List, Optional
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
 from cme_pipeline.core.stage import PipelineStage
-from cme_pipeline.stages.association.adaptive_roi_association import AdaptiveROIAssociationStage
-from cme_pipeline.stages.association.birth_anchored_association import BirthAnchoredAssociationStage
-from cme_pipeline.stages.association.identity_association import IdentityAssociationStage
-from cme_pipeline.stages.association.pure_do_association import PureDOFamilyAssociationStage
-from cme_pipeline.stages.gates.birth_radius_gate import FamilyBirthRadiusGateStage
-from cme_pipeline.stages.gates.size_gate import FamilySizeGateStage
-from cme_pipeline.stages.recovery.signed_pa_recovery import SignedPARecoveryStage
-from cme_pipeline.stages.segmentation.island_first_segmentation import IslandFirstSegmentationStage
+from cme_pipeline.stages.association.v03_adaptive_roi_association import AdaptiveROIAssociationStage
+from cme_pipeline.stages.association.v04_birth_anchored_association import BirthAnchoredAssociationStage
+from cme_pipeline.stages.association.v01_identity_association import IdentityAssociationStage
+from cme_pipeline.stages.association.v02_pure_do_rule_b import PureDOFamilyAssociationStage
+from cme_pipeline.stages.gates.v01_birth_radius_gate import FamilyBirthRadiusGateStage
+from cme_pipeline.stages.gates.v01_family_size_gate import FamilySizeGateStage
+from cme_pipeline.stages.recovery.v01_signed_pa_recovery import SignedPARecoveryStage
+from cme_pipeline.stages.segmentation.v01_island_first_segmentation import IslandFirstSegmentationStage
 from cme_pipeline.stages.tracking.registry import (
     get_tracking_stage,
     resolve_and_validate_tracking_parameters,
     resolve_tracking_method_name,
 )
-from cme_pipeline.stages.validation.external_validation import ExternalValidationStage
+from cme_pipeline.stages.validation.v01_external_catalog_validation import ExternalValidationStage
+from cme_pipeline.stages.registry import resolve_stage
 from cme_pipeline.utils.io import save_json
 
 
@@ -47,20 +48,9 @@ def _get_code_revision(repo_root: Path) -> Dict[str, Any]:
 
 
 def resolve_association_stage(method: str) -> PipelineStage:
-    """Resolves the configured Family Association stage."""
-    key = str(method).strip().lower()
-    if key in ("pure_do", "rule_b"):
-        return PureDOFamilyAssociationStage()
-    if key in ("identity", "1to1"):
-        return IdentityAssociationStage()
-    if key in ("birth_anchored", "directional"):
-        return BirthAnchoredAssociationStage()
-    if key in ("adaptive_roi", "adaptive_pa_roi"):
-        return AdaptiveROIAssociationStage()
-    raise ValueError(
-        f"Unknown association method '{method}'. Supported: "
-        "['pure_do', 'rule_b', 'identity', '1to1', 'birth_anchored', 'adaptive_roi']"
-    )
+    """Resolve association through the unified registry."""
+    from cme_pipeline.stages.association.registry import get_association_stage
+    return get_association_stage(method)
 
 
 def resolve_stages(config: PipelineConfig) -> List[PipelineStage]:
@@ -69,12 +59,12 @@ def resolve_stages(config: PipelineConfig) -> List[PipelineStage]:
     resolve_and_validate_tracking_parameters(config.tracking.method, config.tracking)
 
     track_stage = get_tracking_stage(config.tracking.method)
-    rec_stage = SignedPARecoveryStage()
+    rec_stage = resolve_stage("recovery", config.recovery.method)
     assoc_stage = resolve_association_stage(config.association.method)
-    birth_stage = FamilyBirthRadiusGateStage()
-    size_stage = FamilySizeGateStage()
-    seg_stage = IslandFirstSegmentationStage()
-    val_stage = ExternalValidationStage()
+    birth_stage = resolve_stage("birth_gate", "v01_birth_radius_gate")
+    size_stage = resolve_stage("size_gate", "v01_family_size_gate")
+    seg_stage = resolve_stage("segmentation", config.segmentation.method)
+    val_stage = resolve_stage("validation", "v01_external_catalog_validation")
 
     return [
         track_stage,

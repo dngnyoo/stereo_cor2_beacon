@@ -26,7 +26,7 @@ from scipy.ndimage import label
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
 from cme_pipeline.core.stage import GeometryContext, PipelineStage, TrackingOutput
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
 from cme_pipeline.utils.geometry import (
     circular_diff_deg,
     circular_mean_deg,

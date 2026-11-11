@@ -17,7 +17,7 @@ import pandas as pd
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
 from cme_pipeline.core.stage import AssociationOutput, GeometryContext, TrackingOutput
-from cme_pipeline.stages.recovery.signed_pa_recovery import run_dynamic_patch_recovery_for_tracks
+from cme_pipeline.stages.recovery.v01_signed_pa_recovery import run_dynamic_patch_recovery_for_tracks
 
 
 def run_adaptive_family_recovery(

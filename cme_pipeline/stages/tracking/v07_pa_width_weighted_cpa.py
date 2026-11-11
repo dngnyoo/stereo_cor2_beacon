@@ -1,7 +1,11 @@
-"""A5: PA-Width-Proportional Ownership Adaptive PA-ROI Tracking Stage.
+"""A5b: PA-Width-Normalized CPA Distance Adaptive PA-ROI Tracking Stage.
 
-Refines contested-component patch allocation using each track's previous observed
-PA width (Hamilton-Hare Largest Remainder Quota Allocation + Minimum CPA Distance Assignment).
+Refines contested-component patch ownership by normalizing the circular CPA distance
+by each track's previously observed PA width:
+    d_i^*(p) = d_circ(PA_p, CPA_i) / max(Delta PA_i, Delta PA_min)
+
+Eliminates global capacity quotas and forced remote patch assignment.
+Preserves all A4 multi-component, leading-front, adaptive ROI, and causal continuity rules.
 """
 
 from __future__ import annotations
@@ -14,18 +18,19 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 from scipy.ndimage import label, binary_dilation
-from scipy.optimize import linear_sum_assignment
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.core.stage import GeometryContext, PipelineStage, TrackingOutput
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
-from cme_pipeline.stages.tracking.adaptive_roi_tracking import (
+from cme_pipeline.core.stage import DetectionOutput, GeometryContext, PipelineStage, TrackingOutput
+from cme_pipeline.stages.detection.frozen_detection import load_frozen_detection_inputs
+from cme_pipeline.stages.tracking.adapter import adapt_tracking_output
+from cme_pipeline.stages.tracking.registry import resolve_and_validate_tracking_parameters
+from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import (
     AdaptiveTrack,
     HTMRecord,
     compute_radial_histogram,
 )
-from cme_pipeline.stages.tracking.multi_component_tracking import (
+from cme_pipeline.stages.tracking.v05_multi_component import (
     A4ComponentRecord,
     A4TrackHistory,
     MultiComponentDecisionRecord,
@@ -46,52 +51,40 @@ from cme_pipeline.utils.geometry import (
 from cme_pipeline.utils.io import compute_dict_hash
 
 
-@dataclass
-class ContestedAllocationRecord:
-    """Record of a contested component patch allocation event."""
-    pair_index: int
-    timestamp: str
-    comp_id: int
-    total_patches: int
-    track_id: int
-    prev_pa_width: float
-    quota_fraction: float
-    target_patches: int
-    allocated_patches: int
-    tracked_cpa: float
-
-
-class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
-    """A5 PA-Width-Proportional Adaptive PA-ROI Tracking Stage."""
+class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
+    """A5b PA-Width-Normalized CPA Distance Adaptive PA-ROI Tracking Stage."""
     name: str = "tracking"
-    version: str = "5.0.0"
+    version: str = "5.1.0"
 
     def compute_fingerprint(
         self, inputs: Any, config: PipelineConfig, context: PipelineContext
     ) -> str:
+        params = resolve_and_validate_tracking_parameters("a5b", config.tracking)
         desc = {
             "stage": self.name,
             "version": self.version,
-            "method": "pa_width_proportional",
-            "alpha": ALPHA_CPA_EMA,
+            "method": "pa_width_weighted_cpa",
             "date_str": config.date_str,
-            "min_pa_width_deg": getattr(config.tracking, "min_pa_width_deg", 8.0),
-            "outward_gate_enabled": getattr(config.tracking, "outward_gate_enabled", True),
-            "outward_gate_tolerance_px": getattr(config.tracking, "outward_gate_tolerance_px", 6.0),
+            "parameters": params,
         }
         return compute_dict_hash(desc)
 
     def run(self, inputs: Any, config: PipelineConfig, context: PipelineContext) -> TrackingOutput:
-        context.info("Running PAWidthProportionalAdaptiveROITrackingStage (A5 Tracking)...")
+        effective_params = resolve_and_validate_tracking_parameters("a5b", config.tracking)
+        context.info("Running PAWidthWeightedCPAAdaptiveROITrackingStage (A5b Tracking)...")
 
-        # 1. Base E1 Preprocessing (Frames, WCS, Geometry, Thresholds)
-        base_stage = E1TrackingStage()
-        base_out = base_stage.run(inputs, config, context)
-        geom = base_out.geometry
+        # 1. Shared Frozen Preprocessing & Hierarchical Detection Inputs
+        if isinstance(inputs, DetectionOutput):
+            det_out = inputs
+        else:
+            det_out = load_frozen_detection_inputs(config, context)
+
+        geom = det_out.geometry
         patch_pa = geom.patch_pa
         patch_rad = geom.patch_rad
-        man_df = base_out.manifest_df
-        grid4_all = base_out.patch_activation_grid4
+        man_df = det_out.manifest_df
+        grid4_all = det_out.patch_activation_grid4
+        raw_comp_labels = det_out.raw_component_labels
 
         n_pairs = len(man_df)
         radial_bins = np.linspace(15.0, 130.0, 47)  # 2.5 px bins from occulter to FOV
@@ -105,12 +98,19 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
         leading_front_rows: List[Dict[str, Any]] = []
         contested_allocation_rows: List[Dict[str, Any]] = []
 
-        patch_component_labels = np.zeros((n_pairs, 64, 64), dtype=np.int32)
+        # Track ownership strictly Track ID; patch_component_labels preserves raw spatial components
+        patch_component_labels = raw_comp_labels.copy()
         track_ownership_masks = np.zeros((n_pairs, 64, 64), dtype=np.int32)
 
-        outward_enabled = getattr(config.tracking, "outward_gate_enabled", True)
-        outward_tol = getattr(config.tracking, "outward_gate_tolerance_px", 6.0)
-        min_pa_width_deg = getattr(config.tracking, "min_pa_width_deg", 8.0)
+        outward_enabled = bool(effective_params["outward_gate_enabled"])
+        outward_tol = float(effective_params["outward_gate_tolerance_px"])
+        min_pa_width_deg = float(effective_params["min_pa_width_deg"])
+        ema_alpha = float(effective_params["ema_alpha"])
+        max_cadence_gap_sec = float(effective_params["max_cadence_gap_sec"])
+        birth_gate_px = float(effective_params["birth_gate_threshold_px"])
+        default_roi_half = float(effective_params["default_roi_half_width_deg"])
+        roi_padding = float(effective_params["roi_padding_deg"])
+        max_missed_frames = int(effective_params["max_missed_frames"])
 
         prev_time = None
 
@@ -122,7 +122,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
             # Cadence gap check
             if prev_time is not None:
                 dt_sec = (ts_curr - prev_time).total_seconds()
-                if dt_sec > MAX_CADENCE_GAP_SEC:
+                if dt_sec > max_cadence_gap_sec:
                     context.info(f"Large cadence gap detected before Pair {p_curr} ({dt_sec/60:.1f} min). Terminating active tracks.")
                     for t in tracks.values():
                         if not t.terminated:
@@ -213,7 +213,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                         comp_claims[c_id].append((t.track_id, cand_rec))
 
             # -------------------------------------------------------------
-            # Step 3: Shared / Contested Component Resolution (A5 PA-Width-Proportional)
+            # Step 3: Shared / Contested Component Resolution (A5b PA-Width-Normalized)
             # -------------------------------------------------------------
             for c_id, claim_list in comp_claims.items():
                 if len(claim_list) <= 1:
@@ -228,7 +228,6 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
 
                     c_mask = comp_info[c_id]["mask"]
                     c_rcs = list(zip(*np.nonzero(c_mask)))
-                    N_tot = len(c_rcs)
                     comp_tids = [cl[0] for cl in overlapping_claims]
 
                     # 1. Compute previous observed PA width for each participating track
@@ -248,60 +247,35 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                             w = min_pa_width_deg
                         track_widths[tid] = w
 
-                    # 2. Compute quotas and integer patch counts via Hamilton-Hare Largest Remainder
-                    W_tot = sum(track_widths.values())
-                    quotas = {tid: track_widths[tid] / W_tot for tid in comp_tids}
-                    ideal_counts = {tid: quotas[tid] * N_tot for tid in comp_tids}
-                    int_counts = {tid: int(np.floor(ideal_counts[tid])) for tid in comp_tids}
-                    remainders = {tid: ideal_counts[tid] - int_counts[tid] for tid in comp_tids}
-                    rem_to_dist = N_tot - sum(int_counts.values())
-
-                    sorted_by_rem = sorted(
-                        comp_tids,
-                        key=lambda tid: (remainders[tid], track_widths[tid], -tid),
-                        reverse=True
-                    )
-                    for i in range(rem_to_dist):
-                        int_counts[sorted_by_rem[i]] += 1
-
-                    assert sum(int_counts.values()) == N_tot, f"Quota sum mismatch at frame {p_curr}, comp {c_id}!"
-
-                    # 3. Assign patches using CPA distance proximity to satisfy exact counts
-                    slot_tids: List[int] = []
-                    for tid in comp_tids:
-                        slot_tids.extend([tid] * int_counts[tid])
-
+                    # 2. Partition patches among overlapping tracks based on PA-width-normalized circular CPA distance
+                    # d_i^*(p) = d_circ(PA_p, CPA_i) / max(Delta PA_i, Delta PA_min)
                     part_masks = {tid: np.zeros((64, 64), bool) for tid in comp_tids}
-                    if N_tot > 0 and len(slot_tids) == N_tot:
-                        cost_matrix = np.zeros((N_tot, N_tot), dtype=np.float64)
-                        for r_idx, (r, c) in enumerate(c_rcs):
-                            ppa = patch_pa[r, c]
-                            for c_idx, s_tid in enumerate(slot_tids):
-                                cost_matrix[r_idx, c_idx] = abs(circular_diff_deg(ppa, track_cpas[s_tid]))
+                    for r, c in c_rcs:
+                        ppa = patch_pa[r, c]
+                        best_tid = min(
+                            comp_tids,
+                            key=lambda tid: (
+                                abs(circular_diff_deg(ppa, track_cpas[tid])) / track_widths[tid],
+                                tid
+                            )
+                        )
+                        part_masks[best_tid][r, c] = True
 
-                        row_ind, col_ind = linear_sum_assignment(cost_matrix)
-                        for r_idx, c_idx in zip(row_ind, col_ind):
-                            assigned_tid = slot_tids[c_idx]
-                            r, c = c_rcs[r_idx]
-                            part_masks[assigned_tid][r, c] = True
-
-                    # 4. Log allocation records
+                    # 3. Log contested allocation event for auditing
                     for tid in comp_tids:
                         n_assigned = int(part_masks[tid].sum())
                         contested_allocation_rows.append({
                             "pair_index": p_curr,
                             "timestamp": ts_curr.isoformat(),
                             "comp_id": c_id,
-                            "total_patches": N_tot,
+                            "total_patches": len(c_rcs),
                             "track_id": tid,
                             "prev_pa_width": track_widths[tid],
-                            "quota_fraction": quotas[tid],
-                            "target_patches": int_counts[tid],
                             "allocated_patches": n_assigned,
                             "tracked_cpa": track_cpas[tid],
                         })
 
-                    # 5. Update candidate record for each partitioned track with its sub-component
+                    # 4. Update candidate record for each partitioned track with its sub-component
                     for tid, sub_m in part_masks.items():
                         if sub_m.sum() == 0:
                             track_cands[tid] = [cd for cd in track_cands[tid] if cd["comp_id"] != c_id]
@@ -472,7 +446,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                 # Track-level continuation handling
                 if not accepted_components:
                     t.missed += 1
-                    if t.missed >= MAX_MISSED_FRAMES:
+                    if t.missed >= max_missed_frames:
                         t.terminated = True
                     hist_rec = A4TrackHistory(
                         pair_index=p_curr, timestamp=ts_curr, state="PREDICTED_ONLY",
@@ -482,7 +456,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                     )
                     t.history.append(hist_rec)
                     track_state_rows.append({
-                        "experiment": "A5_PA_Width_Proportional",
+                        "experiment": "A5b_PA_Width_Weighted_CPA",
                         "track_id": t.track_id,
                         "pair_index": p_curr,
                         "timestamp": ts_curr.isoformat(),
@@ -534,14 +508,13 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                     lf_radius = last_front  # retain previous leading front radius
                     lf_comp_id = -1
 
-                new_roi_half = max(DEFAULT_ROI_HALF_WIDTH_DEG, obs_span / 2.0 + ROI_PADDING_DEG)
+                new_roi_half = max(default_roi_half, obs_span / 2.0 + roi_padding)
                 t.adaptive_active_roi = (obs_cpa, new_roi_half)
                 cpa_diff = circular_diff_deg(obs_cpa, t.tracked_cpa)
-                t.tracked_cpa = float((t.tracked_cpa + ALPHA_CPA_EMA * cpa_diff) % 360.0)
+                t.tracked_cpa = float((t.tracked_cpa + ema_alpha * cpa_diff) % 360.0)
                 t.observed_cpa = obs_cpa
 
                 track_ownership_masks[step_idx][union_mask] = t.track_id
-                patch_component_labels[step_idx][union_mask] = t.track_id
 
                 hist_rec = A4TrackHistory(
                     pair_index=p_curr, timestamp=ts_curr, state="OBSERVED",
@@ -571,7 +544,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                 t.htm_history.append(htm_rec)
 
                 track_state_rows.append({
-                    "experiment": "A5_PA_Width_Proportional",
+                    "experiment": "A5b_PA_Width_Weighted_CPA",
                     "track_id": t.track_id,
                     "pair_index": p_curr,
                     "timestamp": ts_curr.isoformat(),
@@ -628,13 +601,14 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                 c_pas = patch_pa[c_mask]
                 min_r = float(np.min(c_rads))
 
-                if min_r <= BIRTH_GATE_THRESHOLD_PX:
+                if min_r <= birth_gate_px:
                     tid = next_track_id
                     next_track_id += 1
+                    raw_birth_cid = int(lbl_img[c_mask][0])
                     orig_birth_cpa = float(circular_mean_deg(c_pas))
                     arc_birth = minimal_circular_enclosing_arc(c_pas)
                     init_extent = float(arc_birth["arc_span"])
-                    init_roi_half = max(DEFAULT_ROI_HALF_WIDTH_DEG, init_extent / 2.0 + ROI_PADDING_DEG)
+                    init_roi_half = max(default_roi_half, init_extent / 2.0 + roi_padding)
                     init_roi = (orig_birth_cpa, init_roi_half)
 
                     new_track = AdaptiveTrack(
@@ -656,7 +630,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                     c_rec = A4ComponentRecord(
                         pair_index=p_curr,
                         track_id=tid,
-                        component_id=c_id,
+                        component_id=raw_birth_cid,
                         num_patches=n_pts,
                         cpa=orig_birth_cpa,
                         r_front=obs_front,
@@ -678,17 +652,16 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                         total_patches=n_pts,
                         leading_front_radius=obs_front,
                         leading_front_state="OBSERVED",
-                        leading_front_comp_id=c_id,
+                        leading_front_comp_id=raw_birth_cid,
                         components=[c_rec],
                     )
                     new_track.history.append(h_rec)
                     tracks[tid] = new_track
 
                     track_ownership_masks[step_idx][c_mask] = tid
-                    patch_component_labels[step_idx][c_mask] = tid
 
                     track_state_rows.append({
-                        "experiment": "A5_PA_Width_Proportional",
+                        "experiment": "A5b_PA_Width_Weighted_CPA",
                         "track_id": tid,
                         "pair_index": p_curr,
                         "timestamp": ts_curr.isoformat(),
@@ -699,7 +672,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                         "roi_half_width": init_roi[1],
                         "front_radius": obs_front,
                         "leading_front_state": "OBSERVED",
-                        "leading_front_comp_id": c_id,
+                        "leading_front_comp_id": raw_birth_cid,
                         "num_patches": n_pts,
                         "num_components": 1,
                         "radial_displacement": 0.0,
@@ -711,7 +684,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                         "track_id": tid,
                         "leading_front_state": "OBSERVED",
                         "leading_front_radius": obs_front,
-                        "responsible_comp_id": c_id,
+                        "responsible_comp_id": raw_birth_cid,
                         "radial_displacement": 0.0,
                     })
 
@@ -719,7 +692,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                         "pair_index": p_curr,
                         "timestamp": ts_curr.isoformat(),
                         "track_id": tid,
-                        "component_id": c_id,
+                        "component_id": raw_birth_cid,
                         "num_patches": n_pts,
                         "cpa": orig_birth_cpa,
                         "r_min": min_r,
@@ -731,7 +704,7 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
                     })
 
         context.info(
-            f"A5 PA-Width-Proportional Tracking complete. Total tracks: {len(tracks)}, "
+            f"A5b PA-Width-Weighted CPA Tracking complete. Total tracks: {len(tracks)}, "
             f"Decisions logged: {len(all_decision_records)}, Contested allocations: {len(contested_allocation_rows)}."
         )
 
@@ -746,18 +719,22 @@ class PAWidthProportionalAdaptiveROITrackingStage(PipelineStage):
             track_states_df=df_track_states,
             patch_component_labels=patch_component_labels,
             patch_activation_grid4=grid4_all,
-            frame_cache=base_out.frame_cache,
+            frame_cache=det_out.frame_cache,
             geometry=geom,
             total_tracks=len(tracks),
             anchor_tracks=[t.track_id for t in tracks.values() if t.is_anchor],
-            birth_direction_references=base_out.birth_direction_references,
+            birth_direction_references={},
+            track_ownership_masks=track_ownership_masks,
+            component_states_df=df_comp_states,
+            leading_front_states_df=df_leading_front,
+            tracking_method="a5b",
+            tracking_parameters=effective_params,
+            dataset_metadata=det_out.dataset_metadata,
         )
-        setattr(out, "ownership_masks", track_ownership_masks)
         setattr(out, "adaptive_tracks", tracks)
         setattr(out, "decision_records", all_decision_records)
         setattr(out, "decisions_df", df_decisions)
-        setattr(out, "component_states_df", df_comp_states)
-        setattr(out, "leading_front_states_df", df_leading_front)
         setattr(out, "contested_allocation_df", df_contested)
 
-        return out
+        return adapt_tracking_output(out, max_birth_radius_px=birth_gate_px)
+

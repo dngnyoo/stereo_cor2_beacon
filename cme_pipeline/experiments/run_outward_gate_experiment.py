@@ -35,8 +35,8 @@ from matplotlib.colors import Normalize
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
-from cme_pipeline.stages.tracking.adaptive_roi_tracking import (
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import (
     BirthSeededAdaptiveROITrackingStage, circular_diff_deg, circular_mean_deg
 )
 

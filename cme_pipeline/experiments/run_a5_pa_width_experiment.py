@@ -19,8 +19,8 @@ import matplotlib.patches as mpatches
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.multi_component_tracking import MultiComponentAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.pa_width_proportional_tracking import PAWidthProportionalAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v06_pa_width_proportional import PAWidthProportionalAdaptiveROITrackingStage
 
 
 # Canonical track colors for consistency

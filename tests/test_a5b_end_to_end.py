@@ -7,8 +7,8 @@ import numpy as np
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
-from cme_pipeline.stages.tracking.pa_width_weighted_cpa_tracking import PAWidthWeightedCPAAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
 from cme_pipeline.stages.tracking.adapter import adapt_tracking_output
 from cme_pipeline.stages.tracking.a5b_pipeline_adapter import adapt_a5b_tracking_output
 

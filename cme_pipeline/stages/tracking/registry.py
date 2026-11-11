@@ -48,12 +48,12 @@ def _ensure_defaults_registered() -> None:
     if _DEFAULTS_INITIALIZED:
         return
 
-    from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
-    from cme_pipeline.stages.tracking.component_first_tracking import ComponentFirstAdaptiveROITrackingStage
-    from cme_pipeline.stages.tracking.multi_component_tracking import MultiComponentAdaptiveROITrackingStage
-    from cme_pipeline.stages.tracking.pa_width_weighted_cpa_tracking import PAWidthWeightedCPAAdaptiveROITrackingStage
-    from cme_pipeline.stages.tracking.adaptive_roi_tracking import BirthSeededAdaptiveROITrackingStage
-    from cme_pipeline.stages.tracking.pa_width_proportional_tracking import PAWidthProportionalAdaptiveROITrackingStage
+    from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
+    from cme_pipeline.stages.tracking.v04_component_first import ComponentFirstAdaptiveROITrackingStage
+    from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
+    from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
+    from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
+    from cme_pipeline.stages.tracking.v06_pa_width_proportional import PAWidthProportionalAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.birth_anchored_tracking import BirthAnchoredTrackingStage
 
     a3_a4_params = frozenset({
@@ -83,7 +83,7 @@ def _ensure_defaults_registered() -> None:
         TrackingMethodSpec(
             canonical_name="e1",
             stage_cls=E1TrackingStage,
-            aliases=("baseline",),
+            aliases=("baseline", "v01_baseline_tracking"),
             supported_parameters=frozenset({"patch_size", "max_cadence_gap_sec", "alpha"}),
             default_parameters={"patch_size": 4, "max_cadence_gap_sec": 4500.0, "alpha": 0.0},
             description="E1 1:1 Patch-First Baseline Tracking (219 tracks on 2010-12-12).",
@@ -93,7 +93,7 @@ def _ensure_defaults_registered() -> None:
         TrackingMethodSpec(
             canonical_name="a3",
             stage_cls=ComponentFirstAdaptiveROITrackingStage,
-            aliases=("component_first",),
+            aliases=("component_first", "v04_component_first"),
             supported_parameters=a3_a4_params,
             default_parameters=dict(a3_a4_defaults),
             description="A3 Component-First 1:1 Adaptive PA-ROI Tracking (50 tracks w/ outward_gate=True, 41 w/ False).",
@@ -103,7 +103,7 @@ def _ensure_defaults_registered() -> None:
         TrackingMethodSpec(
             canonical_name="a4",
             stage_cls=MultiComponentAdaptiveROITrackingStage,
-            aliases=("multi_component",),
+            aliases=("multi_component", "v05_multi_component"),
             supported_parameters=a3_a4_params,
             default_parameters=dict(a3_a4_defaults),
             description="A4 Multi-Component Adaptive PA-ROI Tracking (18 tracks on 2010-12-12).",
@@ -113,7 +113,7 @@ def _ensure_defaults_registered() -> None:
         TrackingMethodSpec(
             canonical_name="a5b",
             stage_cls=PAWidthWeightedCPAAdaptiveROITrackingStage,
-            aliases=("pa_width_weighted_cpa", "weighted_cpa"),
+            aliases=("pa_width_weighted_cpa", "weighted_cpa", "v07_pa_width_weighted_cpa"),
             supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
             default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
             description="A5b PA-Width-Normalized CPA Distance Multi-Component Tracking (20 tracks w/ outward_gate=True).",
@@ -123,7 +123,7 @@ def _ensure_defaults_registered() -> None:
         TrackingMethodSpec(
             canonical_name="a0",
             stage_cls=BirthSeededAdaptiveROITrackingStage,
-            aliases=("adaptive_roi", "adaptive_pa_roi", "a2"),
+            aliases=("adaptive_roi", "adaptive_pa_roi", "a2", "v02_adaptive_pa_roi"),
             supported_parameters=frozenset({
                 "patch_size", "max_cadence_gap_sec", "outward_gate_enabled",
                 "outward_gate_tolerance_px", "ema_alpha",
@@ -139,7 +139,7 @@ def _ensure_defaults_registered() -> None:
         TrackingMethodSpec(
             canonical_name="a5",
             stage_cls=PAWidthProportionalAdaptiveROITrackingStage,
-            aliases=("pa_width_proportional",),
+            aliases=("pa_width_proportional", "v06_pa_width_proportional"),
             supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
             default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
             description="Legacy A5 Global PA-Width Quota Pilot.",

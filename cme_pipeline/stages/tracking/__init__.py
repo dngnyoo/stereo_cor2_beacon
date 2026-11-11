@@ -1,12 +1,12 @@
 """Tracking stages, compatibility adapter, and algorithm registry for CME Pipeline."""
 
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
 from cme_pipeline.stages.tracking.birth_anchored_tracking import BirthAnchoredTrackingStage
-from cme_pipeline.stages.tracking.adaptive_roi_tracking import BirthSeededAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.component_first_tracking import ComponentFirstAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.multi_component_tracking import MultiComponentAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.pa_width_proportional_tracking import PAWidthProportionalAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.pa_width_weighted_cpa_tracking import PAWidthWeightedCPAAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v04_component_first import ComponentFirstAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v06_pa_width_proportional import PAWidthProportionalAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
 from cme_pipeline.stages.tracking.adapter import (
     adapt_tracking_output,
     get_track_observed_mask,

@@ -46,8 +46,8 @@ import imageio.v3 as iio
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
-from cme_pipeline.stages.tracking.adaptive_roi_tracking import (
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import (
     circular_diff_deg, circular_mean_deg, minimal_circular_enclosing_arc,
     STRUCT_8, compute_radial_histogram
 )

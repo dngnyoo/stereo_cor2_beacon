@@ -35,7 +35,7 @@ from scipy.ndimage import label, binary_dilation
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
 
 # Output directories
 out_dir = repo_root / "runs/pilot_adaptive_component_first_a3"

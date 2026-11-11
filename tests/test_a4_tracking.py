@@ -11,8 +11,8 @@ import pandas as pd
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.component_first_tracking import ComponentFirstAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.multi_component_tracking import MultiComponentAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v04_component_first import ComponentFirstAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
 
 
 class TestA4Tracking(unittest.TestCase):

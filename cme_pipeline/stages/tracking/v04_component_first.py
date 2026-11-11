@@ -30,7 +30,7 @@ from cme_pipeline.core.stage import DetectionOutput, GeometryContext, PipelineSt
 from cme_pipeline.stages.detection.frozen_detection import load_frozen_detection_inputs
 from cme_pipeline.stages.tracking.adapter import adapt_tracking_output
 from cme_pipeline.stages.tracking.registry import resolve_and_validate_tracking_parameters
-from cme_pipeline.stages.tracking.adaptive_roi_tracking import (
+from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import (
     AdaptiveTrack,
     HTMRecord,
     compute_radial_histogram,

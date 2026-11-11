@@ -34,10 +34,10 @@ import imageio.v2 as imageio
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
 from cme_pipeline.core.stage import TrackingOutput
-from cme_pipeline.stages.tracking.adaptive_roi_tracking import (
+from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import (
     BirthSeededAdaptiveROITrackingStage,
 )
-from cme_pipeline.stages.association.adaptive_roi_association import (
+from cme_pipeline.stages.association.v03_adaptive_roi_association import (
     AdaptiveROIAssociationStage,
 )
 from cme_pipeline.stages.recovery.adaptive_recovery_adapter import (

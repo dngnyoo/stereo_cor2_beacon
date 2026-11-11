@@ -31,10 +31,10 @@ sys.path.insert(0, str(repo_root))
 
 from cme_pipeline.core.config import PipelineConfig, TrackingConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
-from cme_pipeline.stages.tracking.adaptive_roi_tracking import BirthSeededAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.component_first_tracking import ComponentFirstAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.multi_component_tracking import MultiComponentAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v04_component_first import ComponentFirstAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
 
 # Directory Setup
 exp_dir = repo_root / "runs/pilot_adaptive_multicomponent_a4"

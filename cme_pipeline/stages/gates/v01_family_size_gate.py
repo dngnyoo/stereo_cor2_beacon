@@ -120,7 +120,7 @@ class FamilySizeGateStage(PipelineStage):
         if recovery_output is not None and recovery_output.recovery_func is not None:
             recovery_runner = recovery_output.recovery_func
         else:
-            from cme_pipeline.stages.recovery.signed_pa_recovery import run_dynamic_patch_recovery_for_tracks
+            from cme_pipeline.stages.recovery.v01_signed_pa_recovery import run_dynamic_patch_recovery_for_tracks
             own_masks = getattr(track_output, "track_ownership_masks", None)
             if own_masks is None:
                 own_masks = getattr(track_output, "ownership_masks", None)

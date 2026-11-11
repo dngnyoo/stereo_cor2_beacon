@@ -29,14 +29,14 @@ import pandas as pd
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
-from cme_pipeline.stages.tracking.pa_width_weighted_cpa_tracking import PAWidthWeightedCPAAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
 from cme_pipeline.stages.tracking.a5b_pipeline_adapter import adapt_a5b_tracking_output
-from cme_pipeline.stages.association.pure_do_association import PureDOFamilyAssociationStage
-from cme_pipeline.stages.gates.birth_radius_gate import FamilyBirthRadiusGateStage
-from cme_pipeline.stages.gates.size_gate import FamilySizeGateStage
-from cme_pipeline.stages.segmentation.island_first_segmentation import IslandFirstSegmentationStage
-from cme_pipeline.stages.validation.external_validation import ExternalValidationStage
+from cme_pipeline.stages.association.v02_pure_do_rule_b import PureDOFamilyAssociationStage
+from cme_pipeline.stages.gates.v01_birth_radius_gate import FamilyBirthRadiusGateStage
+from cme_pipeline.stages.gates.v01_family_size_gate import FamilySizeGateStage
+from cme_pipeline.stages.segmentation.v01_island_first_segmentation import IslandFirstSegmentationStage
+from cme_pipeline.stages.validation.v01_external_catalog_validation import ExternalValidationStage
 from cme_pipeline.utils.io import save_yaml
 
 

@@ -32,7 +32,7 @@ sys.path.insert(0, str(repo_root))
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.e1_tracking import E1TrackingStage
+from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
 
 # Output Directories
 base_out_dir = repo_root / "runs/pilot_adaptive_multicomponent_a4"

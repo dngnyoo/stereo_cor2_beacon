@@ -19,8 +19,8 @@ import imageio
 
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.stages.tracking.multi_component_tracking import MultiComponentAdaptiveROITrackingStage
-from cme_pipeline.stages.tracking.pa_width_weighted_cpa_tracking import PAWidthWeightedCPAAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
+from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
 from cme_pipeline.utils.io import save_yaml
 
 
