@@ -172,3 +172,34 @@ print("Recovery masks identical?:", diff["array_comparisons"]["recovered_patch_m
 print("Segmentation pixels identical?:", diff["array_comparisons"]["final_pixel_segmentation_union"]["is_equal"])
 ```
 
+
+
+---
+
+## 8. Independent CME Event Catalog (experimental)
+
+The Segmentation Stage automatically writes two CSV files, without reading external
+catalogs or using validation results:
+
+- `runs/<run_name>/tables/cme_event_catalog.csv`: one row per admitted family with
+  at least one segmented pixel. Includes first/last observed time, frame counts,
+  member tracks, CPA, angular width, maximum projected front height, and an
+  exploratory plane-of-sky linear speed estimate.
+- `runs/<run_name>/tables/cme_frame_measurements.csv`: per-family per-frame pixel
+  count, CPA, angular width, and front height.
+
+Event CPA and width come from the family mask at its **maximum-area frame**.
+Height is measured in projected solar radii. Speed is a simple linear regression
+on front heights (minimum 3 distinct timestamps), *not* deprojected 3D speed;
+low-confidence fits are explicitly flagged. A family without positive segmented
+pixels is not exported as an observed event.
+
+To regenerate the catalog after updating code, use the available frozen benchmark:
+
+```bash
+python -m cme_pipeline run --config configs/baseline_rule_b.yaml --from-stage segmentation
+```
+
+The standalone CSVs are produced at Segmentation, *before* External Validation.
+This is a first-pass research catalog of **pipeline candidates**, not a
+scientifically calibrated or independently validated solar CME event catalog.
