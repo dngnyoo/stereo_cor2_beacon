@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
 
 import pandas as pd
 
@@ -16,11 +17,16 @@ class CMEProductsStage(PipelineStage):
     version = "1.0.0"
 
     def compute_fingerprint(self, inputs, config, context):
+        mask_hash = hashlib.sha256()
+        mask_hash.update(inputs.final_pixel_segmentation_union.tobytes())
+        for fid in sorted(inputs.family_pixel_masks):
+            mask_hash.update(fid.encode("utf-8"))
+            mask_hash.update(inputs.family_pixel_masks[fid].tobytes())
         return compute_dict_hash({
             "stage": self.name,
             "version": self.version,
             "upstream_pixels": int(inputs.total_segmented_pixels),
-            "family_ids": sorted(inputs.family_pixel_masks),
+            "mask_sha256": mask_hash.hexdigest(),
             "products": config.products.__dict__,
         })
 
