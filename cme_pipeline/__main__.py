@@ -44,6 +44,21 @@ def parse_args() -> argparse.Namespace:
         help="Force re-execution of all stages, ignoring cache.",
     )
 
+    # 'prepare-data' subcommand: input acquisition and provenance inventory.
+    # Does NOT imply raw FITS have already been calibrated or detected.
+    prepare_parser = subparsers.add_parser(
+        "prepare-data",
+        help="Inventory local FITS or download one COR2 product for a selected date.",
+    )
+    prepare_parser.add_argument("--date", required=True, help="YYYYMMDD")
+    prepare_parser.add_argument("--source", choices=("local", "download"), required=True)
+    prepare_parser.add_argument(
+        "--product", default="science_raw",
+        choices=("science_raw", "science_seq", "beacon_raw", "beacon_seq"),
+    )
+    prepare_parser.add_argument("--input-dir", default=None)
+    prepare_parser.add_argument("--output-dir", default=None)
+
     # 'status' subcommand
     status_parser = subparsers.add_parser("status", help="Show pipeline stage cache status.")
     status_parser.add_argument(
@@ -59,6 +74,23 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.command == "prepare-data":
+        from cme_pipeline.data_preparation import prepare_source
+        from cme_pipeline.data_preparation import validate_date
+
+        date = validate_date(args.date)
+        target = args.output_dir or f"runs/data_prep_{date}_{args.product}"
+        manifest = prepare_source(
+            date=date,
+            source=args.source,
+            product=args.product,
+            input_dir=args.input_dir,
+            output_dir=target,
+        )
+        print(f"FITS input manifest: {manifest}")
+        print("Status: INVENTORIED_NOT_PREPROCESSED (RD and detector not yet integrated)")
+        return
+
     config_path = Path(args.config)
     if not config_path.is_file():
         print(f"Error: Config file not found: {config_path}", file=sys.stderr)
