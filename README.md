@@ -61,7 +61,7 @@ Frozen COR2 detection inputs
 
 ## Reproduced baseline results
 
-The following metrics were obtained in a fresh clone of the previous seven-stage `main` branch on **2026-11-11**, using an existing Python virtual environment, on the previous seven-stage baseline (expected unchanged by the new Products stage):
+The following metrics were obtained in a fresh clone of the original seven-stage baseline on **2026-11-11**, using an existing Python virtual environment. They are expected to remain unchanged by the new Products stage:
 
 | Quantity | Result |
 | --- | ---: |
@@ -104,8 +104,8 @@ For the 2010 benchmark, the scientific overlays use north-up COR2 coordinates, f
 
 ## Documentation and configuration
 
-- [QUICK_START.md](QUICK_START.md) — installation, both branches, complete output paths, verification and troubleshooting
-- [`cme_pipeline/README.md`](cme_pipeline/README.md) — modular seven-stage baseline architecture and extension guide on `main`
+- [QUICK_START.md](QUICK_START.md) — installation, complete output paths, verification and troubleshooting
+- [`cme_pipeline/README.md`](cme_pipeline/README.md) — modular eight-stage architecture and extension guide
 - [Tracking architecture](cme_pipeline/TRACKING_ARCHITECTURE.md) — tracking contracts and variants
 - [Baseline configuration](configs/baseline_rule_b.yaml)
 - [A5b + identity comparison configuration](configs/tracking_a5b_identity.yaml)
