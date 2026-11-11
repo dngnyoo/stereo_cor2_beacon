@@ -2,12 +2,9 @@
 
 This guide is written for researchers who want to reproduce the **2010-12-12 frozen benchmark** and inspect all available outputs. The repository includes selected precomputed inputs required for this benchmark.
 
-**Choose your branch before proceeding:**
+**Default branch: `main` — eight-stage CME Pipeline.** The repository now includes the independent CME Products Stage, which writes candidate-event catalogs and scientific PNG/GIF visualizations in addition to segmentation and external validation. No branch switch is needed.
 
-- `main` — established **7-stage** tracking → pixel segmentation → external validation baseline.
-- `feature/independent-cme-catalog` — experimental **8-stage** pipeline adding **CME Products** (independent candidate catalog CSVs, scientific PNG overlays, diagnostic plots, GIF).
-
-The feature branch is **not yet fully end-to-end verified**. Do not mistake its additional outputs for features already available on `main`.
+**Validation note:** the original seven-stage baseline was reproduced in a fresh GitHub clone; the newly merged eight-stage code still needs a complete regression run and fresh-environment installation check.
 
 ## 1. Requirements and environment
 
@@ -18,9 +15,6 @@ The seven-stage benchmark was successfully executed on 2026-11-11 from a fresh G
 ```bash
 git clone https://github.com/dngnyoo/stereo_cor2_beacon.git
 cd stereo_cor2_beacon
-
-# OPTIONAL: choose the experimental branch for independent catalog + PNG/GIF
-# git switch feature/independent-cme-catalog
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -45,7 +39,7 @@ python -m cme_pipeline run \
 - Without `--force`: reuse valid cached stages.
 - `--config`: select the run configuration and output directory.
 
-The baseline configuration uses **E1 tracking** and **Rule B family association**. Both branches write results under:
+The baseline configuration uses **E1 tracking** and **Rule B family association**. The eight-stage run writes results under:
 
 ```text
 runs/baseline_rule_b/
@@ -58,7 +52,7 @@ runs/baseline_rule_b/
   pipeline.log
 ```
 
-Note: on `main`, the `visualizations/` folder can be **empty**: the seven-stage baseline does not render diagnostic PNGs or GIFs automatically. This is not a segmentation failure.
+The `products` stage populates `visualizations/` with scientific PNG/GIF results. If it is empty, inspect `pipeline.log`, ensure `products.visualization: true`, and rerun with `--from-stage products`.
 
 ## 3. Verify benchmark results
 
@@ -89,7 +83,7 @@ ls -lh runs/baseline_rule_b/arrays/
 
 These validation metrics are **angular comparisons**, not universal pixel-mask IoU.
 
-## 4. Outputs on `main` (seven stages)
+## 4. Segmentation and benchmark outputs on `main`
 
 | Relative to `runs/baseline_rule_b/` | Purpose |
 | --- | --- |
@@ -121,23 +115,11 @@ PY
 
 Family mask pixel counts may overlap; adding counts across families is not equivalent to counting union-mask pixels.
 
-## 5. Additional outputs on the experimental CME Products branch
+## 5. CME Products outputs on `main`
 
-First select the branch:
+The **seventh stage**, `products`, automatically creates independent candidate catalog CSVs, labeled COR2 overlays, and a GIF. It runs after Segmentation and before External Validation.
 
-```bash
-git switch feature/independent-cme-catalog
-```
-
-If your existing worktree has uncommitted changes, commit or stash them before switching. The same full-run command now includes the additional **Products** stage:
-
-```bash
-python -m cme_pipeline run \
-  --config configs/baseline_rule_b.yaml \
-  --force
-```
-
-Expected output locations **if the experimental stage completes successfully**:
+Expected additional output locations **when the Products Stage completes successfully**:
 
 ```text
 runs/baseline_rule_b/
@@ -173,7 +155,7 @@ python -m cme_pipeline run \
 
 This re-executes Products and downstream Validation; upstream stages can be loaded from cache.
 
-Catalog and visualization switches (feature branch):
+Catalog and visualization switches (in the current `main` YAML configuration):
 
 ```yaml
 products:
@@ -191,13 +173,13 @@ ls -lh runs/baseline_rule_b/tables/cme_*.csv
 find runs/baseline_rule_b/visualizations -type f | sort
 ```
 
-Run feature tests:
+Run catalog and product-stage tests:
 
 ```bash
 python -m unittest discover -s tests -p 'test_independent_cme_catalog.py' -v
 ```
 
-The latest labeling and UTC-filename changes have been committed to the development branch but have **not yet been verified by an end-to-end execution in a fresh clone**.
+The latest family-label and Pair/UTC naming changes have been merged into `main`, but **their full regression run in a fresh clone is not yet confirmed**.
 
 ## 6. Alternate tracking configuration
 
@@ -211,8 +193,8 @@ This produces a separate run and is not expected to reproduce E1 baseline number
 
 ## 7. Troubleshooting and reproducibility notes
 
-- **Empty `visualizations/`**: expected on `main`; use the experimental feature branch for automatic PNG/GIF output.
-- **Missing CSVs or PNGs on the feature branch**: confirm the branch with `git branch --show-current`, then rerun with `--from-stage products`.
+- **Empty `visualizations/`**: confirm `products.visualization: true`, review `pipeline.log`, and rerun `--from-stage products`.
+- **Missing CSVs or PNGs**: confirm `git branch --show-current` is `main`; rerun with `--from-stage products`.
 - **Cache surprises**: `python -m cme_pipeline status --config configs/baseline_rule_b.yaml` shows cached stages. Use `--force` for a complete recomputation.
 - **Local virtual environment**: an external clone using an existing `.venv` does not prove a fresh requirements installation works.
 - **NumPy `All-NaN slice encountered` warnings**: these occurred during the successful reproduced seven-stage run; investigate invalid/missing data handling if they recur.
