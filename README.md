@@ -132,6 +132,12 @@ python -m cme_pipeline run \
   --from-stage association
 ```
 
+## Scientific visualization conventions
+
+Diagnostic RD images follow the established 2010-12-12 COR2 scientific visualization conventions: **north-up**, fixed `coolwarm` range **[-600, +600] DN** for every frame, invalid pixels black, WCS solar center / occulter / FOV circles, a 30-pixel birth-gate marker, and frame Pair ID, UTC timestamp and cadence annotation. When track ownership and state data are present, frame overlays distinguish observed track patches/IDs and predicted-only track locations. Union/family segmentation outlines are drawn on top of the fixed-scale RD background. The GIF uses 500 ms per frame.
+
+The May-2024 smoothed-RD survey uses a **different MSB scale** and is not the benchmark display standard. The height-time plots are diagnostic mask-based measurements, not independently validated leading-front kinematics.
+
 ## Interpreting the independent candidate catalog
 
 - **Event ID / family ID:** internal algorithm-generated identifier; one family does not necessarily equal one physically distinct CME.
