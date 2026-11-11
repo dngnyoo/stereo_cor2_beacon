@@ -78,6 +78,7 @@ class TestIndependentCMECatalog(unittest.TestCase):
         from types import SimpleNamespace
         from cme_pipeline.stages.segmentation.cme_products import CMEProductsStage
         from cme_pipeline.core.config import PipelineConfig
+        from cme_pipeline.core.stage import SegmentationOutput
 
         seg = example_segmentation()
         # The diagnostic renderer requires frame-cache RD and validity arrays.
@@ -86,8 +87,15 @@ class TestIndependentCMECatalog(unittest.TestCase):
             {"rd": np.zeros((3, 3)), "val": np.ones((3, 3), dtype=bool)}
             for _ in range(4)
         ]
-        seg.final_pixel_segmentation_union = seg.family_pixel_masks["FAM_001"].copy()
-        seg.total_segmented_pixels = int(seg.final_pixel_segmentation_union.sum())
+        union = seg.family_pixel_masks["FAM_001"].copy()
+        seg = SegmentationOutput(
+            size_gate_output=seg.size_gate_output,
+            final_pixel_segmentation_union=union,
+            family_pixel_masks=seg.family_pixel_masks,
+            framewise_pixel_summary_df=pd.DataFrame(),
+            family_pixel_statistics_df=pd.DataFrame(),
+            total_segmented_pixels=int(union.sum()),
+        )
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             context = SimpleNamespace(
