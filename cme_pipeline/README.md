@@ -55,7 +55,7 @@ cme_pipeline/
 │   ├── recovery/             # SignedPARecoveryStage
 │   ├── association/          # PureDOFamilyAssociationStage
 │   ├── gates/                # FamilyBirthRadiusGateStage, FamilySizeGateStage
-│   ├── segmentation/         # IslandFirstSegmentationStage
+│   ├── segmentation/         # IslandFirstSegmentationStage, CMEProductsStage
 │   └── validation/           # ExternalValidationStage
 ├── experiments/
 │   ├── runner.py             # 파이썬 코드용 실험 실행기
@@ -79,6 +79,7 @@ cme_pipeline/
 | `birth_gate` | `AssociationOutput` | `BirthGateOutput` | `birth_gated_family_ids` (23개 통과 패밀리), `rejected_family_reasons` |
 | `size_gate` | `BirthGateOutput` | `SizeGateOutput` | `admitted_family_ids` (15개 패밀리), `admitted_track_ids` (37개 트랙), `recovered_patch_masks` (**5,174개 패치**) |
 | `segmentation`| `SizeGateOutput` | `SegmentationOutput` | `final_pixel_segmentation_union` (**50,665픽셀**), `framewise_pixel_summary_df` |
+| `products` | `SegmentationOutput` | `CMEProductsOutput` | independent catalog CSV, diagnostic PNG/GIF |
 | `validation` | `CMEProductsOutput` | `ValidationOutput` | `comparison_metrics_df` (5대 카탈로그 일치도 지표) |
 
 ---
