@@ -93,6 +93,13 @@ class SegmentationConfig:
 
 
 @dataclass
+class ProductsConfig:
+    catalog: bool = True
+    visualization: bool = True
+    animation: bool = True
+
+
+@dataclass
 class ValidationConfig:
     catalogs: List[str] = field(
         default_factory=lambda: ["SEEDS", "CACTus", "MVCC", "Göttingen"]
@@ -115,6 +122,7 @@ class PipelineConfig:
     birth_gate: BirthGateConfig = field(default_factory=BirthGateConfig)
     size_gate: SizeGateConfig = field(default_factory=SizeGateConfig)
     segmentation: SegmentationConfig = field(default_factory=SegmentationConfig)
+    products: ProductsConfig = field(default_factory=ProductsConfig)
     validation: ValidationConfig = field(default_factory=ValidationConfig)
 
     @classmethod
@@ -152,6 +160,8 @@ class PipelineConfig:
                 cfg.size_gate = SizeGateConfig(**v)
             elif k == "segmentation" and isinstance(v, dict):
                 cfg.segmentation = SegmentationConfig(**v)
+            elif k == "products" and isinstance(v, dict):
+                cfg.products = ProductsConfig(**v)
             elif k == "validation" and isinstance(v, dict):
                 cfg.validation = ValidationConfig(**v)
             elif hasattr(cfg, k):
