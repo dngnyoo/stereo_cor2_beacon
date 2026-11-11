@@ -161,6 +161,15 @@ class SegmentationOutput:
 
 
 @dataclass
+class CMEProductsOutput:
+    """Catalog and diagnostic visualization products, preserving segmentation."""
+    segmentation_output: SegmentationOutput
+    event_catalog_df: pd.DataFrame
+    frame_measurements_df: pd.DataFrame
+    artifact_files: List[str] = field(default_factory=list)
+
+
+@dataclass
 class ValidationOutput:
     """Output from External Catalogue Validation Stage."""
     segmentation_output: SegmentationOutput

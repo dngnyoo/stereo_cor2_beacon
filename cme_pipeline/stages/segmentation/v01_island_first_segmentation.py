@@ -167,7 +167,7 @@ class IslandFirstSegmentationStage(PipelineStage):
             **{"mask_" + k: v for k, v in family_pixel_masks.items()}
         )
 
-        return SegmentationOutput(
+        output = SegmentationOutput(
             size_gate_output=inputs,
             final_pixel_segmentation_union=final_pixel_union,
             family_pixel_masks=family_pixel_masks,
@@ -176,3 +176,4 @@ class IslandFirstSegmentationStage(PipelineStage):
             total_segmented_pixels=tot_segmented_px,
         )
 
+        return output

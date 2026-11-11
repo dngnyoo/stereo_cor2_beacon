@@ -5,6 +5,7 @@ from cme_pipeline.stages.gates.v01_birth_radius_gate import FamilyBirthRadiusGat
 from cme_pipeline.stages.gates.v01_family_size_gate import FamilySizeGateStage
 from cme_pipeline.stages.segmentation.v01_island_first_segmentation import IslandFirstSegmentationStage
 from cme_pipeline.stages.validation.v01_external_catalog_validation import ExternalValidationStage
+from cme_pipeline.stages.segmentation.cme_products import CMEProductsStage
 
 
 STAGE_REGISTRY = {
@@ -20,6 +21,9 @@ STAGE_REGISTRY = {
     "segmentation": {
         "v01_island_first_segmentation": IslandFirstSegmentationStage,
     },
+    "products": {
+        "v01_cme_products": CMEProductsStage,
+    },
     "validation": {
         "v01_external_catalog_validation": ExternalValidationStage,
     },
@@ -34,6 +38,7 @@ ALIASES = {
     "segmentation": {
         "island_first": "v01_island_first_segmentation",
     },
+    "products": {"default": "v01_cme_products"},
     "validation": {},
 }
 
