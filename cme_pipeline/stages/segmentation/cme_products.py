@@ -14,7 +14,7 @@ from cme_pipeline.utils.io import compute_dict_hash
 
 class CMEProductsStage(PipelineStage):
     name = "products"
-    version = "1.1.0"
+    version = "1.2.0"
 
     def compute_fingerprint(self, inputs, config, context):
         mask_hash = hashlib.sha256()
