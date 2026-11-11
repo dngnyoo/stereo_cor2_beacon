@@ -176,10 +176,4 @@ class IslandFirstSegmentationStage(PipelineStage):
             total_segmented_pixels=tot_segmented_px,
         )
 
-        # Independent event catalog is generated before any external validation.
-        from cme_pipeline.stages.segmentation.cme_catalog import save_cme_catalog
-        catalog_file, frame_file = save_cme_catalog(output, context.tables_dir)
-        context.info(f"Independent CME catalog saved: {catalog_file}")
-        context.info(f"Per-frame CME measurements saved: {frame_file}")
         return output
-
