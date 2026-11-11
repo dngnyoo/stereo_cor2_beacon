@@ -8,7 +8,7 @@
 
 ## 1. Pipeline Architecture (파이프라인 아키텍처)
 
-파이프라인은 다음 7개 Stage로 구성되며, 엄격한 실행 순서를 준수합니다.
+파이프라인은 현재 **8개 Stage**로 구성되며, 엄격한 실행 순서를 준수합니다.
 
 ```text
 [1. E1TrackingStage]
@@ -29,7 +29,10 @@
 [6. IslandFirstSegmentationStage]
        │  (Stage 26 Sub-Patch Pixel Segmentation, Z > 0, Area >= 16 px)
        ▼
-[7. ExternalValidationStage]
+[7. CMEProductsStage]
+       │  (Independent CME Catalog + PNG/GIF Diagnostic Visualization)
+       ▼
+[8. ExternalValidationStage]
           (SEEDS, CACTus, MVCC/CORSET, Göttingen Recalculation)
 ```
 
@@ -76,7 +79,7 @@ cme_pipeline/
 | `birth_gate` | `AssociationOutput` | `BirthGateOutput` | `birth_gated_family_ids` (23개 통과 패밀리), `rejected_family_reasons` |
 | `size_gate` | `BirthGateOutput` | `SizeGateOutput` | `admitted_family_ids` (15개 패밀리), `admitted_track_ids` (37개 트랙), `recovered_patch_masks` (**5,174개 패치**) |
 | `segmentation`| `SizeGateOutput` | `SegmentationOutput` | `final_pixel_segmentation_union` (**50,665픽셀**), `framewise_pixel_summary_df` |
-| `validation` | `SegmentationOutput` | `ValidationOutput` | `comparison_metrics_df` (5대 카탈로그 일치도 지표) |
+| `validation` | `CMEProductsOutput` | `ValidationOutput` | `comparison_metrics_df` (5대 카탈로그 일치도 지표) |
 
 ---
 
@@ -176,30 +179,41 @@ print("Segmentation pixels identical?:", diff["array_comparisons"]["final_pixel_
 
 ---
 
-## 8. Independent CME Event Catalog (experimental)
 
-The Segmentation Stage automatically writes two CSV files, without reading external
-catalogs or using validation results:
+---
 
-- `runs/<run_name>/tables/cme_event_catalog.csv`: one row per admitted family with
-  at least one segmented pixel. Includes first/last observed time, frame counts,
-  member tracks, CPA, angular width, maximum projected front height, and an
-  exploratory plane-of-sky linear speed estimate.
-- `runs/<run_name>/tables/cme_frame_measurements.csv`: per-family per-frame pixel
-  count, CPA, angular width, and front height.
+## 8. CME Products Stage: Independent Catalog & Visualization
 
-Event CPA and width come from the family mask at its **maximum-area frame**.
-Height is measured in projected solar radii. Speed is a simple linear regression
-on front heights (minimum 3 distinct timestamps), *not* deprojected 3D speed;
-low-confidence fits are explicitly flagged. A family without positive segmented
-pixels is not exported as an observed event.
+`products` is a separate **Stage 7 of 8**, positioned between Segmentation and External Validation. It receives `SegmentationOutput`, produces `CMEProductsOutput`, and preserves the original `SegmentationOutput` for unchanged external validation. It does **not** use external catalog values to construct event candidates.
 
-To regenerate the catalog after updating code, use the available frozen benchmark:
+The `feature/independent-cme-catalog` branch enables the following by default:
 
-```bash
-python -m cme_pipeline run --config configs/baseline_rule_b.yaml --from-stage segmentation
+```yaml
+products:
+  catalog: true
+  visualization: true
+  animation: true
 ```
 
-The standalone CSVs are produced at Segmentation, *before* External Validation.
-This is a first-pass research catalog of **pipeline candidates**, not a
-scientifically calibrated or independently validated solar CME event catalog.
+Generated files in `runs/<run_name>/`:
+
+| File | Content |
+|:---|:---|
+| `tables/cme_event_catalog.csv` | Candidate Family event metrics; exploratory speed quality flags |
+| `tables/cme_frame_measurements.csv` | Per-family per-frame radius, CPA, angular width, segmented area |
+| `visualizations/segmentation_overlays/frame_*.png` | RD image with union segmentation overlay for every frame |
+| `visualizations/family_tracking/*.png` | Family peak-area frame snapshot |
+| `visualizations/height_time/*.png` | Maximum mask-radius time series and exploratory linear fit |
+| `visualizations/cme_animation.gif` | Time-ordered animation of union segmentation overlays |
+
+To generate or regenerate these outputs without recomputing Segmentation:
+
+```bash
+python -m cme_pipeline run --config configs/baseline_rule_b.yaml --from-stage products
+```
+
+When product files are missing, the Products stage detects that condition and regenerates them even if its cached object exists. Set `products.visualization: false` if only the CSV catalog is needed. The `animation` option controls GIF creation and only applies when visualization is enabled.
+
+Speed is an exploratory line-fit using the outermost segmented pixel over time. It should not be interpreted as a verified CME leading-front speed. The exported families are **candidates**, not independently confirmed CMEs. The reference benchmark still uses precomputed Detection inputs, not raw-FITS-to-catalog processing.
+
+Detailed clone-to-results instructions: [repository README](../README.md).
