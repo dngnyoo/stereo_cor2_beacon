@@ -37,6 +37,11 @@ segmentation:
   occulter_r_min_px: 22.0
   fov_r_max_px: 122.5
 
+products:
+  catalog: true
+  visualization: true
+  animation: true
+
 validation:
   catalogs:
     - SEEDS
