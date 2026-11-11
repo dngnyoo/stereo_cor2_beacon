@@ -4,7 +4,7 @@ Rendering conventions follow the existing research scripts
 cme_pipeline/experiments/generate_study_visualizations.py and
 cme_pipeline/experiments/run_full_day_corrected_visualization.py:
 north-up, coolwarm, fixed RD [-600,+600] DN, invalid pixels black,
-solar geometry, tracking identifiers and UTC/cadence annotation.
+solar geometry, admitted-family identifiers and UTC/cadence annotation.
 Only the segmentation layer and candidate-catalog plots are additions.
 """
 
@@ -166,6 +166,55 @@ def draw_track_annotations(ax, track, index: int):
                 zorder=12, path_effects=[pe.withStroke(linewidth=2, foreground="black")])
 
 
+def family_display_label(family_id: str) -> str:
+    """Compact label for an admitted family, e.g. FAM_T19 -> F19."""
+    match = re.fullmatch(r"FAM_T0*(\\d+)", str(family_id))
+    return f"F{int(match.group(1))}" if match else str(family_id)
+
+
+def frame_file_stem(track, index: int) -> str:
+    """Use actual manifest Pair index and observation UTC (never array index)."""
+    row = track.manifest_df.iloc[index]
+    if "pair_index" not in row or "end_time" not in row:
+        raise ValueError("Visualization requires pair_index and end_time")
+    timestamp = pd.to_datetime(row["end_time"], utc=True, errors="raise")
+    if pd.isna(timestamp):
+        raise ValueError("Visualization timestamp is missing")
+    return f"pair_{int(row['pair_index']):03d}_{timestamp.strftime('%Y%m%dT%H%M%SZ')}"
+
+
+def draw_family_annotations(ax, segmentation, index: int):
+    """Draw contours and IDs only for admitted, positively segmented families.
+
+    Family masks define the published output. Do not display tracking-stage
+    owners or predicted-only tracks as if they were accepted CME families.
+    """
+    import matplotlib.patheffects as pe
+
+    family_masks = segmentation.family_pixel_masks
+    admitted = set(segmentation.size_gate_output.admitted_family_ids)
+    if set(family_masks) != admitted:
+        raise ValueError("Family mask IDs differ from admitted family IDs")
+
+    palette = ["#00FF66", "#00E5FF", "#FFD600", "#FF40A0", "#D58BFF",
+               "#FF9100", "#9CFF57", "#FFFFFF"]
+    for ordinal, family_id in enumerate(sorted(admitted)):
+        mask = np.asarray(family_masks[family_id][index], dtype=bool)
+        if not mask.any():
+            continue
+        color = palette[ordinal % len(palette)]
+        draw_mask_outline(ax, mask, color=color, linewidth=1.25)
+        yy, xx = np.nonzero(mask)
+        # Same pixel coordinate frame as matplotlib extent=[0,W,0,H].
+        x, y = xx.mean() + .5, yy.mean() + .5
+        ax.text(
+            x, y, family_display_label(family_id),
+            fontsize=8.5, fontweight="bold", color=color,
+            ha="center", va="center", zorder=14,
+            path_effects=[pe.withStroke(linewidth=2.6, foreground="black")],
+        )
+
+
 def _frame_banner(track, i: int) -> tuple[str, str]:
     row = track.manifest_df.iloc[i]
     pair = int(row["pair_index"]) if "pair_index" in row else i
@@ -191,15 +240,27 @@ def _style_image_axis(ax, geom, shape):
     ax.axis("off")
 
 
-def _save_science_frame(target, track, idx, mask, title, annotate_tracks=False):
+def _save_science_frame(target, track, idx, mask, title, segmentation=None, family_id=None):
     import matplotlib.pyplot as plt
     fc = track.frame_cache[idx]
     fig, ax = plt.subplots(figsize=(7.2, 7.0), dpi=120, facecolor="#0e0e0e")
     fig.subplots_adjust(left=.03, right=.97, bottom=.10, top=.88)
     image = draw_rd_background(ax, fc["rd"], fc["val"])
-    draw_mask_outline(ax, mask)
-    if annotate_tracks:
-        draw_track_annotations(ax, track, idx)
+    if segmentation is not None:
+        draw_family_annotations(ax, segmentation, idx)
+    elif family_id is not None:
+        draw_mask_outline(ax, mask)
+        import matplotlib.patheffects as pe
+        yy, xx = np.nonzero(np.asarray(mask, dtype=bool))
+        if len(xx):
+            ax.text(xx.mean() + .5, yy.mean() + .5,
+                    family_display_label(family_id), color="#00FF66",
+                    fontsize=9.0, fontweight="bold", ha="center", va="center",
+                    zorder=14, path_effects=[
+                        pe.withStroke(linewidth=2.6, foreground="black")
+                    ])
+    else:
+        draw_mask_outline(ax, mask)
     _style_image_axis(ax, track.geometry, np.asarray(mask).shape)
     banner, color = _frame_banner(track, idx)
     fig.suptitle(f"{banner}\n{title}", color=color, fontsize=9.5, weight="bold", y=.965)
@@ -235,10 +296,10 @@ def create_visualizations(segmentation, frames: pd.DataFrame, output_dir: Path,
     overlay_paths: list[Path] = []
 
     for i, mask in enumerate(union):
-        target = overlay_dir / f"frame_{i:03d}.png"
+        target = overlay_dir / f"{frame_file_stem(track, i)}_families.png"
         _save_science_frame(target, track, i, mask,
-                            "Union segmented candidates + observed tracks",
-                            annotate_tracks=True)
+                            "Admitted CME family segmentation",
+                            segmentation=segmentation)
         paths.append(target)
         overlay_paths.append(target)
 
@@ -247,9 +308,12 @@ def create_visualizations(segmentation, frames: pd.DataFrame, output_dir: Path,
         if not np.any(counts):
             continue
         i = int(np.argmax(counts))
-        target = family_dir / f"{_safe_name(fid)}.png"
+        target = family_dir / (
+            f"{_safe_name(fid)}_{frame_file_stem(track, i)}_peak.png"
+        )
         _save_science_frame(target, track, i, mask_stack[i],
-                            f"{fid} | peak frame | {int(counts[i])} segmented pixels")
+                            f"{fid} | peak segmented frame | {int(counts[i])} pixels",
+                            family_id=fid)
         paths.append(target)
 
         selected = frames.loc[frames["family_id"] == fid].copy()
@@ -274,7 +338,9 @@ def create_visualizations(segmentation, frames: pd.DataFrame, output_dir: Path,
         ax.grid(True, linestyle=":", color="gray", alpha=.3)
         ax.legend(facecolor="#262626", labelcolor="white", fontsize=8)
         fig.tight_layout()
-        target = height_dir / f"{_safe_name(fid)}.png"
+        first_stamp = selected["timestamp"].iloc[0].strftime("%Y%m%dT%H%M%SZ")
+        last_stamp = selected["timestamp"].iloc[-1].strftime("%Y%m%dT%H%M%SZ")
+        target = height_dir / f"{_safe_name(fid)}_{first_stamp}_to_{last_stamp}_height_time.png"
         fig.savefig(target, facecolor=fig.get_facecolor())
         plt.close(fig)
         paths.append(target)
