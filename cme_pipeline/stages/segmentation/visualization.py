@@ -168,7 +168,7 @@ def draw_track_annotations(ax, track, index: int):
 
 def family_display_label(family_id: str) -> str:
     """Compact label for an admitted family, e.g. FAM_T19 -> F19."""
-    match = re.fullmatch(r"FAM_T0*(\\d+)", str(family_id))
+    match = re.fullmatch(r"FAM_T0*(\d+)", str(family_id))
     return f"F{int(match.group(1))}" if match else str(family_id)
 
 
