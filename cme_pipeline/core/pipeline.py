@@ -54,7 +54,7 @@ def resolve_association_stage(method: str) -> PipelineStage:
 
 
 def resolve_stages(config: PipelineConfig) -> List[PipelineStage]:
-    """Resolves and instantiates the canonical 7 stages via algorithm registries."""
+    """Resolves and instantiates the canonical 8 stages via algorithm registries."""
     # Validate parameters immediately on resolution so unsupported keys fail fast
     resolve_and_validate_tracking_parameters(config.tracking.method, config.tracking)
 
@@ -64,6 +64,7 @@ def resolve_stages(config: PipelineConfig) -> List[PipelineStage]:
     birth_stage = resolve_stage("birth_gate", "v01_birth_radius_gate")
     size_stage = resolve_stage("size_gate", "v01_family_size_gate")
     seg_stage = resolve_stage("segmentation", config.segmentation.method)
+    products_stage = resolve_stage("products", "default")
     val_stage = resolve_stage("validation", "v01_external_catalog_validation")
 
     return [
@@ -73,6 +74,7 @@ def resolve_stages(config: PipelineConfig) -> List[PipelineStage]:
         birth_stage,
         size_stage,
         seg_stage,
+        products_stage,
         val_stage,
     ]
 
@@ -128,6 +130,15 @@ class Pipeline:
             # Compute fingerprint
             fp = stage.compute_fingerprint(current_output, self.config, self.context)
             can_use_cache = self.config.cache_enabled and self.context.cache.is_valid(s_name, fp)
+
+            # A cached product object is insufficient if its PNG/CSV/GIF
+            # side-effect files have since been removed.
+            if can_use_cache and callable(getattr(stage, "outputs_exist", None)):
+                cached_output = self.context.cache.load_output(s_name)
+                if not stage.outputs_exist(cached_output):
+                    self.context.info(f"Stage {s_name}: missing output artifacts, regenerating.")
+                    self.context.cache.invalidate_from(s_name, self.stage_names)
+                    can_use_cache = False
 
             if can_use_cache:
                 self.context.info(f"[Stage {idx+1}/{len(self.stages)}] {s_name}: CACHE HIT (loading cached output)")
