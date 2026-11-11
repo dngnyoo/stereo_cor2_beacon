@@ -74,6 +74,45 @@ class TestIndependentCMECatalog(unittest.TestCase):
             self.assertTrue(frame_path.is_file())
             self.assertEqual(len(pd.read_csv(event_path)), 1)
 
+    def test_products_stage_writes_diagnostic_outputs(self):
+        from types import SimpleNamespace
+        from cme_pipeline.stages.segmentation.cme_products import CMEProductsStage
+        from cme_pipeline.core.config import PipelineConfig
+
+        seg = example_segmentation()
+        # The diagnostic renderer requires frame-cache RD and validity arrays.
+        track = seg.size_gate_output.birth_gate_output.association_output.tracking_output
+        track.frame_cache = [
+            {"rd": np.zeros((3, 3)), "val": np.ones((3, 3), dtype=bool)}
+            for _ in range(4)
+        ]
+        seg.final_pixel_segmentation_union = seg.family_pixel_masks["FAM_001"].copy()
+        seg.total_segmented_pixels = int(seg.final_pixel_segmentation_union.sum())
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            context = SimpleNamespace(
+                tables_dir=root / "tables",
+                visualizations_dir=root / "visualizations",
+                info=lambda message: None,
+            )
+            cfg = PipelineConfig()
+            stage = CMEProductsStage()
+            product = stage.run(seg, cfg, context)
+            self.assertTrue(stage.outputs_exist(product))
+            self.assertTrue((context.tables_dir / "cme_event_catalog.csv").is_file())
+            self.assertTrue((context.visualizations_dir / "cme_animation.gif").is_file())
+            self.assertEqual(len(list((context.visualizations_dir / "segmentation_overlays").glob("*.png"))), 4)
+            self.assertTrue(list((context.visualizations_dir / "height_time").glob("*.png")))
+            (context.tables_dir / "cme_event_catalog.csv").unlink()
+            self.assertFalse(stage.outputs_exist(product))
+
+    def test_eight_stage_order(self):
+        from cme_pipeline.core.config import PipelineConfig
+        from cme_pipeline.core.pipeline import resolve_stages
+        names = [stage.name for stage in resolve_stages(PipelineConfig())]
+        self.assertEqual(names[-3:], ["segmentation", "products", "validation"])
+
+
     def test_single_frame_speed_is_not_invented(self):
         seg = example_segmentation()
         seg.family_pixel_masks["FAM_001"][1:] = False
