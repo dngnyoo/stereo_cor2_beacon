@@ -112,10 +112,37 @@ class TestIndependentCMECatalog(unittest.TestCase):
             self.assertTrue(stage.outputs_exist(product))
             self.assertTrue((context.tables_dir / "cme_event_catalog.csv").is_file())
             self.assertTrue((context.visualizations_dir / "cme_animation.gif").is_file())
-            self.assertEqual(len(list((context.visualizations_dir / "segmentation_overlays").glob("*.png"))), 4)
+            overlay_paths = sorted((context.visualizations_dir / "segmentation_overlays").glob("*.png"))
+            self.assertEqual(len(overlay_paths), 4)
+            self.assertEqual(overlay_paths[0].name, "pair_001_20101212T000000Z_families.png")
+            family_paths = sorted((context.visualizations_dir / "family_tracking").glob("*.png"))
+            self.assertTrue(family_paths)
+            self.assertTrue(family_paths[0].name.startswith("FAM_001_pair_003_20101212T010000Z_peak"))
             self.assertTrue(list((context.visualizations_dir / "height_time").glob("*.png")))
             (context.tables_dir / "cme_event_catalog.csv").unlink()
             self.assertFalse(stage.outputs_exist(product))
+
+    def test_family_labels_and_observation_filenames(self):
+        import matplotlib
+        matplotlib.use("Agg", force=True)
+        import matplotlib.pyplot as plt
+        from cme_pipeline.stages.segmentation.visualization import (
+            family_display_label, frame_file_stem, draw_family_annotations,
+        )
+        self.assertEqual(family_display_label("FAM_T19"), "F19")
+        self.assertEqual(family_display_label("FAM_T003"), "F3")
+        self.assertEqual(family_display_label("FAM_001"), "FAM_001")
+        seg = example_segmentation()
+        track = seg.size_gate_output.birth_gate_output.association_output.tracking_output
+        self.assertEqual(frame_file_stem(track, 2), "pair_003_20101212T010000Z")
+        fig, ax = plt.subplots()
+        draw_family_annotations(ax, seg, 2)
+        self.assertEqual([item.get_text() for item in ax.texts], ["FAM_001"])
+        plt.close(fig)
+        fig, ax = plt.subplots()
+        draw_family_annotations(ax, seg, 3)
+        self.assertFalse(ax.texts)
+        plt.close(fig)
 
     def test_scientific_visualization_standard(self):
         import matplotlib
