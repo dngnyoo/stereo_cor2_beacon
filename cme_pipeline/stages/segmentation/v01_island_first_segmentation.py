@@ -167,7 +167,7 @@ class IslandFirstSegmentationStage(PipelineStage):
             **{"mask_" + k: v for k, v in family_pixel_masks.items()}
         )
 
-        return SegmentationOutput(
+        output = SegmentationOutput(
             size_gate_output=inputs,
             final_pixel_segmentation_union=final_pixel_union,
             family_pixel_masks=family_pixel_masks,
@@ -175,4 +175,11 @@ class IslandFirstSegmentationStage(PipelineStage):
             family_pixel_statistics_df=df_fam_stats,
             total_segmented_pixels=tot_segmented_px,
         )
+
+        # Independent event catalog is generated before any external validation.
+        from cme_pipeline.stages.segmentation.cme_catalog import save_cme_catalog
+        catalog_file, frame_file = save_cme_catalog(output, context.tables_dir)
+        context.info(f"Independent CME catalog saved: {catalog_file}")
+        context.info(f"Per-frame CME measurements saved: {frame_file}")
+        return output
 
