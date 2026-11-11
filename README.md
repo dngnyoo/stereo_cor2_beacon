@@ -2,18 +2,15 @@
 
 A reproducible research pipeline for tracking **coronal mass ejection (CME) candidates** in STEREO-A COR2 data, recovering candidate structures, building families, producing pixel-level segmentation masks, and comparing results with independent CME catalogs.
 
-**Start here:** [QUICK_START.md](QUICK_START.md) — clone, install, run, inspect outputs, and verify the frozen benchmark.
+**Start here:** [QUICK_START.md](QUICK_START.md) — clone, install, run, inspect catalogs and visualizations, and verify the frozen benchmark.
 
-## Available versions
+## Current release
 
-| Branch | Pipeline | What it produces |
-| --- | --- | --- |
-| **`main` (default)** | 7 stages: tracking → recovery → association → birth gate → size gate → segmentation → validation | Tracking and segmentation arrays, summary tables, run report, external-catalog comparisons |
-| [`feature/independent-cme-catalog`](https://github.com/dngnyoo/stereo_cor2_beacon/tree/feature/independent-cme-catalog) | 8 stages: adds **CME Products** between segmentation and validation | All baseline outputs **plus** independent candidate catalog CSVs, family-labeled scientific PNGs, and GIF |
+The default **`main` branch now contains the complete eight-stage pipeline**, including an independent candidate-event catalog and standardized scientific visualizations. The earlier seven-stage benchmark metrics remain the reference regression target. The previous development branch is retained for provenance, but is no longer required to produce catalogs or PNG/GIF output.
 
-> The CME Products feature is on a **development branch**. Its code and documentation are available, but it has **not yet been merged into `main` or fully verified end-to-end in a fresh environment**. The seven-stage baseline has been reproduced from a fresh GitHub clone.
+**Validation status:** the seven-stage benchmark was reproduced from a clean GitHub clone on 2026-11-11. The newly merged eight-stage `main` code still requires a fresh-clone end-to-end run and updated tests before its outputs can be considered regression-verified.
 
-## Quick start: baseline on `main`
+## Quick start: generate the full CME results on `main`
 
 Run the following from a Linux shell with Python 3.12 available:
 
@@ -33,12 +30,7 @@ The selected 2010-12-12 frozen benchmark inputs are included in the repository; 
 
 Outputs are written to `runs/baseline_rule_b/`. Run configuration: [`configs/baseline_rule_b.yaml`](configs/baseline_rule_b.yaml).
 
-To generate **candidate event catalogs and visualizations**, check out the feature branch **before installing and running**:
-
-```bash
-git switch feature/independent-cme-catalog
-python -m cme_pipeline run --config configs/baseline_rule_b.yaml --force
-```
+The default command now produces segmentation masks, independent candidate catalog CSVs, diagnostic PNG images, a GIF animation, and external validation results. No branch switch is needed.
 
 For precise output paths, test commands, cache regeneration, and troubleshooting, follow [QUICK_START.md](QUICK_START.md).
 
@@ -60,16 +52,16 @@ Frozen COR2 detection inputs
    |
 6. Island-first pixel segmentation
    |
-   +-- [feature branch only] 7. CME Products: catalog + visualization
+7. CME Products: independent catalog + scientific visualization
    |
-7. External catalog validation (8 on the feature branch)
+8. External catalog validation
 ```
 
 **Important scope restriction:** this is a reproducible **frozen-detection** benchmark. It uses precomputed detection / running-difference inputs, not a fully integrated pipeline from arbitrary raw FITS files.
 
 ## Reproduced baseline results
 
-The following metrics were obtained in a fresh clone of the `main` branch on **2026-11-11**, using an existing Python virtual environment:
+The following metrics were obtained in a fresh clone of the previous seven-stage `main` branch on **2026-11-11**, using an existing Python virtual environment, on the previous seven-stage baseline (expected unchanged by the new Products stage):
 
 | Quantity | Result |
 | --- | ---: |
@@ -86,11 +78,11 @@ The following metrics were obtained in a fresh clone of the `main` branch on **2
 | MVCC/CORSET angular IoU | 0.4032 |
 | Göttingen angular IoU | 0.5547 |
 
-These are **angular reference-catalog comparison metrics**, not general pixelwise IoUs. A fresh environment installation and the updated eight-stage feature still require independent verification.
+These are **angular reference-catalog comparison metrics**, not general pixelwise IoUs. A fresh environment installation and the merged eight-stage pipeline still require independent verification.
 
 ## Principal outputs
 
-On **`main`**, see:
+The current **`main`** baseline produces:
 
 - `runs/baseline_rule_b/arrays/final_pixel_segmentation_union.npy` — benchmark union pixel masks, shape `(32, 256, 256)`.
 - `runs/baseline_rule_b/arrays/family_pixel_masks.npz` — candidate Family-specific masks (possible overlap).
@@ -98,7 +90,7 @@ On **`main`**, see:
 - `runs/baseline_rule_b/report.md` — run summary and validation comparison.
 - `runs/baseline_rule_b/manifest.json` and `pipeline.log` — run provenance and execution messages.
 
-On **`feature/independent-cme-catalog`**, the additional CME Products Stage generates:
+The **CME Products Stage** additionally generates:
 
 - `tables/cme_event_catalog.csv` and `tables/cme_frame_measurements.csv`
 - `visualizations/segmentation_overlays/pair_XXX_YYYYMMDDTHHMMSSZ_families.png`
@@ -122,7 +114,7 @@ To see cache status: `python -m cme_pipeline status --config configs/baseline_ru
 
 To rerun the segmentation and later stages: `python -m cme_pipeline run --config configs/baseline_rule_b.yaml --from-stage segmentation`.
 
-On the feature branch, CME Products can be regenerated using `--from-stage products` while reusing preceding stage caches.
+CME Products can be regenerated on `main` using `--from-stage products` while reusing preceding stage caches.
 
 ## Additional research scripts
 
@@ -131,6 +123,6 @@ The repository retains historical Beacon/science preprocessing and experimental 
 ## Current limitations
 
 - Frozen benchmark inputs are bundled, but not a general raw FITS → detection → catalog production workflow.
-- The feature-branch eight-stage pipeline and its visualization output need end-to-end and fresh-environment verification before promotion to `main`.
+- The merged eight-stage pipeline and its visualization output still need end-to-end regression verification and a fresh-environment installation test.
 - Independent Family catalogs are candidate-level outputs; physical CME identity, front continuity, speeds, and angular widths need additional validation.
 - External validation currently uses reference material specific to the frozen 2010-12-12 benchmark.
