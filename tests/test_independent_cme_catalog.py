@@ -28,7 +28,10 @@ def example_segmentation(n=4):
             "2010-12-12T01:00:00", "2010-12-12T01:30:00",
         ],
     })
-    geom = SimpleNamespace(pa_raster=pa, radius_raster=radius, rsun_px=10.0)
+    geom = SimpleNamespace(
+        pa_raster=pa, radius_raster=radius, rsun_px=10.0,
+        sx=1.0, sy=1.0, occulter_r_min_px=0.5, fov_r_max_px=1.5,
+    )
     track = SimpleNamespace(manifest_df=manifest, geometry=geom)
     assoc = SimpleNamespace(tracking_output=track)
     birth = SimpleNamespace(association_output=assoc)
@@ -113,6 +116,31 @@ class TestIndependentCMECatalog(unittest.TestCase):
             self.assertTrue(list((context.visualizations_dir / "height_time").glob("*.png")))
             (context.tables_dir / "cme_event_catalog.csv").unlink()
             self.assertFalse(stage.outputs_exist(product))
+
+    def test_scientific_visualization_standard(self):
+        import matplotlib
+        matplotlib.use("Agg", force=True)
+        import matplotlib.pyplot as plt
+        from cme_pipeline.stages.segmentation.visualization import (
+            VMIN_RD, VMAX_RD, GIF_DURATION_MS,
+            prepare_rd, draw_rd_background, get_rd_cmap, draw_solar_references,
+        )
+        seg = example_segmentation()
+        geom = seg.size_gate_output.birth_gate_output.association_output.tracking_output.geometry
+        self.assertEqual((VMIN_RD, VMAX_RD), (-600.0, 600.0))
+        self.assertEqual(GIF_DURATION_MS, 500)
+        self.assertEqual(get_rd_cmap().name, "coolwarm")
+        rd = np.array([[100.0, 999.0], [-100.0, -999.0]])
+        valid = np.array([[True, False], [True, True]])
+        self.assertTrue(np.isnan(prepare_rd(rd, valid)[0, 1]))
+        fig, ax = plt.subplots()
+        image = draw_rd_background(ax, rd, valid)
+        self.assertEqual(image.get_clim(), (-600.0, 600.0))
+        self.assertEqual(image.origin, "lower")
+        self.assertEqual(image.cmap.get_bad().tolist(), [0.0, 0.0, 0.0, 1.0])
+        draw_solar_references(ax, geom)
+        self.assertGreaterEqual(len(ax.lines), 5)
+        plt.close(fig)
 
     def test_eight_stage_order(self):
         from cme_pipeline.core.config import PipelineConfig
