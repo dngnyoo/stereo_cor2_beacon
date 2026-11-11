@@ -34,7 +34,7 @@ class CMEProductsStage(PipelineStage):
         """Detect missing side-effect files even when the pickle cache is valid."""
         if not isinstance(output, CMEProductsOutput):
             return False
-        return bool(output.artifact_files) and all(
+        return all(
             Path(path).is_file() for path in output.artifact_files
         )
 
