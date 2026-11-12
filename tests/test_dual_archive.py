@@ -40,11 +40,11 @@ def test_dual_archive_selects_science_and_fallback_beacon(tmp_path, monkeypatch)
     }
     assert by_name[shared_different].read_bytes() == b"science-version"
     assert by_name[beacon_only].read_bytes() == b"beacon-only"
-    assert not (tmp_path / "raw/beacon/20240101" / shared_same).exists()
+    assert (tmp_path / "raw/beacon/20240101" / shared_same).exists()
     assert (tmp_path / "raw/beacon/20240101" / shared_different).exists()
     assert (tmp_path / "raw/science/20240101" / science_d4).exists()
     assert "different_versions_retained" in inventory.read_text()
-    assert "identical_removed" in sources.read_text()
+    assert "identical_retained" in sources.read_text()
 
 
 def test_dual_archive_rejects_no_d7(tmp_path, monkeypatch):
@@ -57,3 +57,33 @@ def test_dual_archive_rejects_no_d7(tmp_path, monkeypatch):
     import pytest
     with pytest.raises(ValueError, match="provided d7"):
         dual_archive.collect_dual_archive(["20240101"], tmp_path)
+
+
+def test_dual_archive_shared_raw_reuse_across_runs(tmp_path, monkeypatch):
+    shared = tmp_path / "data" / "raw" / "cor2"
+    created = []
+
+    def fake_download(day, product, directory):
+        directory.mkdir(parents=True, exist_ok=True)
+        file = directory / f"{day}_002424_d7c2A.fts"
+        if not file.exists():
+            file.write_bytes(f"{day}:{product}".encode())
+            created.append(str(file))
+        return [file]
+
+    monkeypatch.setattr(dual_archive, "download_cor2", fake_download)
+    run_one = tmp_path / "runs" / "first" / "acquisition"
+    first, inv1, _ = dual_archive.collect_dual_archive(
+        ["20240101"], run_one, raw_root=shared
+    )
+    assert len(first) == 1 and len(created) == 2
+    assert (run_one / "manifests" / "raw_inventory.csv").exists()
+    run_two = tmp_path / "runs" / "second" / "acquisition"
+    second, inv2, _ = dual_archive.collect_dual_archive(
+        ["20240101", "20240102"], run_two, raw_root=shared
+    )
+    assert len(second) == 2 and len(created) == 4
+    assert first[0] == second[0]
+    assert inv1 != inv2
+    assert (shared / "science" / "20240102").is_dir()
+    assert (shared / "beacon" / "20240102").is_dir()
