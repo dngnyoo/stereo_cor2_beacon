@@ -1,3 +1,10 @@
+> **Calibration update (November 2026):** The production STEREO-A pipeline
+> uses `Calibration/cor2A_mask.fts` exclusively as its default raw-FITS mask.
+> The older `cor2_mask.fts` was incorrectly used for historical comparisons;
+> its results are retained for provenance, not as the official scientific
+> baseline. Any archived frozen-reference numeric comparison must be
+> interpreted accordingly. See [Quick Start](QUICK_START.md).
+>
 ## Frozen Stage 26 source reconciliation (2010-12-12)
 
 The uploaded original `run_historical_d7_segmentation.py` is the 2010
@@ -17,11 +24,10 @@ selected pairs are drawn from available source FITS by filename with
 strict 30-minute tolerance. This is a *reproduction mode*, not the
 general month/date analysis selection policy.
 
-The original source's file `cor2_mask.fts` is distinct from
-`cor2A_mask.fts`; do not replace it merely based on spacecraft name.
-The checked-in `Calibration/cor2_mask.fts` on this GitHub branch is an
-empty placeholder. Copy the 17MB original file locally from the
-historical source tree before running reproduction.
+**Current behavior:** all newly computed raw-FITS preprocessing defaults to
+the verified `Calibration/cor2A_mask.fts`. Historical `cor2_mask.fts` runs
+are archived for old-mask reproducibility only. Do not replace COR2-A
+with a similarly named old mask when processing STEREO-A observations.
 
 **Validation is pending execution:** these changes have been committed to
 the development branch, but real FITS numerical equivalence to the
