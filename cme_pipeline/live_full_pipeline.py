@@ -70,7 +70,9 @@ def run_live_full(*, config_path: str | Path, date: str,
                 run_dir.parent / f"{run_name}_frozen_input" / "preprocessed"
             )
         detection_dir = run_detection(
-            preprocessed_dir, method=method, denoiser=denoiser, requested_date=date,\n            output_dir=run_dir.parent / f"{run_name}_detection"\n        )
+            preprocessed_dir, method=method, denoiser=denoiser, requested_date=date,
+            output_dir=run_dir.parent / f"{run_name}_detection"
+        )
     assert detection_dir is not None
     detection_dir = Path(detection_dir).resolve()
     metadata = json.loads((detection_dir / "detection_metadata.json").read_text())
