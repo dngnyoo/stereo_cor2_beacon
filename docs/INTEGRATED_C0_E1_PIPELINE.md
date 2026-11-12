@@ -65,9 +65,7 @@ preprocessing, run causal C0, independently recompute E1 and execute recovery,
 association, gates, segmentation and CME products. An existing preprocessed
 directory can instead be supplied with `--preprocessed-dir`.
 
-For dates other than 20101212, the historical external catalog validation
-stage is skipped because those fixed reference records are not appropriate
-for other days.
+The historical external catalog validation stage runs **only** with\n`--frozen-regression`, even when a general run uses date `20101212`.\nThe fixed validation reference indexes 32 historical frames and cannot\nbe applied to the general run's different observation sequence.\nGeneral runs still produce CME catalogs and segmentation masks.\n\nIf a run failed at the validation stage before this fix, the independent\nC0 results are kept in `runs/<run-name>_detection/`. Use a fresh\n`--run-name` with `--detection-dir` pointing there to avoid recalculating C0.
 
 ## Scientific scope and limitations
 
