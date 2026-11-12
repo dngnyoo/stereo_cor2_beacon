@@ -70,6 +70,15 @@ def parse_args() -> argparse.Namespace:
                                 help="30-minute phase in seconds (d7 only; May 2024 default: 1434).")
     prepare_parser.add_argument("--output-dir", default=None)
 
+    # Run an alternative detector on the same RD arrays without recalibrating.
+    detect_parser = subparsers.add_parser(
+        "detect-data", help="Replay C0 or C3 on existing North-up No-MSB RD arrays."
+    )
+    detect_parser.add_argument("--preprocessed-dir", required=True)
+    detect_parser.add_argument("--method", choices=("c0", "c3"), default="c3")
+    detect_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
+    detect_parser.add_argument("--date", default=None, help="Analysis YYYYMMDD; infer from RD metadata if omitted")
+
     # 'status' subcommand
     status_parser = subparsers.add_parser("status", help="Show pipeline stage cache status.")
     status_parser.add_argument(
@@ -120,6 +129,15 @@ def main() -> None:
                 print("Status: RD_READY_DETECTION_NOT_RUN")
         else:
             print("Status: INVENTORIED_NOT_PREPROCESSED (use --preprocess for RD)")
+        return
+
+    if args.command == "detect-data":
+        from cme_pipeline.live_detection import run_detection
+        from cme_pipeline.data_preparation import validate_date
+        detected = run_detection(args.preprocessed_dir, method=args.method,
+                                 denoiser=args.denoiser,
+                                 requested_date=validate_date(args.date) if args.date else None)
+        print(f"Detector outputs: {detected}")
         return
 
     config_path = Path(args.config)
