@@ -111,8 +111,10 @@ def run_live_full(*, config_path: str | Path, date: str,
         historical_geometry=frozen_regression
     )
     stages = resolve_stages(cfg)
-    if date != "20101212":
-        # The external catalog comparison is explicitly tied to 2010-12-12.
+    # Fixed historical catalog arrays are indexed by the frozen 32-frame
+    # evaluation sequence. Other runs, including general 20101212, may have
+    # a different frame count/order and must not use that validator.
+    if not frozen_regression:
         stages = [stage for stage in stages if stage.name != "validation"]
     pipeline = Pipeline(cfg, stages=stages)
     result = pipeline.run(initial_input=tracking)
@@ -145,7 +147,10 @@ def run_live_full(*, config_path: str | Path, date: str,
         "recovered_patches": sizes.total_recovered_patches,
         "union_mask_pixels": int(seg.final_pixel_segmentation_union.sum()),
         "stages": steps,
-        "external_validation": "20101212 reference" if date == "20101212" else "SKIPPED_DATE_SPECIFIC",
+        "external_validation": (
+            "20101212_FROZEN_REFERENCE" if frozen_regression
+            else "SKIPPED_NON_FROZEN_OBSERVATION_SEQUENCE"
+        ),
         "caveats": [
             "General-date E1 uses WCS-derived solar center but historical RSUN_PX/occulter geometry scale.",
             "Only VALID analysis-date observations are passed to E1 tracking; gaps are recomputed.",
