@@ -91,7 +91,7 @@ def run(repo: Path, science: Path, detection: Path, output: Path):
         else:
             iou, mismatch = np.nan, None
         summary.append({
-            "utc_end": row._time.isoformat(), "frozen_pair_index": i + 1,
+            "utc_end": pd.Timestamp(paired.iloc[len(summary)]["_time"]).isoformat(), "frozen_pair_index": i + 1,
             "new_pair_index": j + 1, "status": status,
             "mask_valid_iou": (float((np.asarray(ref_val[i], bool) & np.asarray(new_val[j], bool)).sum() /
                                   (np.asarray(ref_val[i], bool) | np.asarray(new_val[j], bool)).sum())
