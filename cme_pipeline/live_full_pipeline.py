@@ -5,6 +5,7 @@ remains available through the legacy 'run' CLI and explicit --frozen-regression.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import numpy as np
@@ -19,6 +20,42 @@ def select_live_stages(stages, *, frozen_regression: bool):
     return [stage for stage in stages if stage.name != "validation"]
 
 
+def check_run_request(run_dir: Path, request: dict, *, resume: bool) -> bool:
+    """Create a fresh run or verify an interrupted run has identical inputs.
+
+    Returns True when a known complete run can be safely reused.
+    """
+    state_file = run_dir / "run_request.json"
+    if run_dir.exists():
+        if not resume:
+            raise FileExistsError(f"Refusing to overwrite existing pipeline run: {run_dir}")
+        if not state_file.is_file():
+            raise ValueError(f"Cannot resume run without request provenance: {state_file}")
+        stored = json.loads(state_file.read_text(encoding="utf-8"))
+        if stored != request:
+            raise ValueError(
+                "Resume arguments/config/mask changed; use a new --run-name"
+            )
+        return (run_dir / "integrated_run_summary.json").is_file()
+    if resume:
+        raise FileNotFoundError(f"Cannot resume nonexistent run: {run_dir}")
+    run_dir.mkdir(parents=True, exist_ok=False)
+    state_file.write_text(json.dumps(request, indent=2) + "\n", encoding="utf-8")
+    return False
+
+
+def stage_ready(path: Path, required: tuple[str, ...]) -> bool:
+    """Reuse only a completed stage; reject ambiguous partial artifacts."""
+    if not path.exists():
+        return False
+    if all((path / name).is_file() for name in required):
+        return True
+    raise RuntimeError(
+        f"Incomplete stage directory {path}; inspect or archive it "
+        "before resuming. Raw FITS remain safe and reusable."
+    )
+
+
 def run_live_full(*, config_path: str | Path, date: str,
                   run_name: str, detection_dir: str | Path | None = None,
                   preprocessed_dir: str | Path | None = None,
@@ -27,7 +64,8 @@ def run_live_full(*, config_path: str | Path, date: str,
                   warmup_days: int = 2, phase_sec: float | None = None,
                   mask_path: str | Path | None = None,
                   method: str = "c0", denoiser: str = "gaussian",
-                  frozen_regression: bool = False) -> Path:
+                  frozen_regression: bool = False,
+                  resume: bool = False) -> Path:
     from cme_pipeline.data_preparation import validate_date, prepare_source
     from cme_pipeline.north_up_preprocessing import run_no_msb_north_up
     from cme_pipeline.live_detection import run_detection
@@ -53,16 +91,33 @@ def run_live_full(*, config_path: str | Path, date: str,
     cfg.cache_enabled = False
     repo = Path(cfg.repo_root)
     run_dir = (repo / cfg.output_base_dir / run_name).resolve()
-    if run_dir.exists():
-        raise FileExistsError(f"Refusing to overwrite existing pipeline run: {run_dir}")
+    calibrated_sha = None
     if source is not None:
-        # Validate calibration assets before potentially costly downloads.
+        # Validate calibration before expensive acquisition and include the
+        # actual mask contents in the resume identity.
         from cme_pipeline.north_up_preprocessing import load_cor2_mask
         preflight_mask = mask_path
         if frozen_regression and preflight_mask is None:
             preflight_mask = repo / "Calibration" / "cor2_mask.fts"
-        load_cor2_mask(preflight_mask)
-    run_dir.mkdir(parents=True, exist_ok=False)
+        _, _, calibrated_sha = load_cor2_mask(preflight_mask)
+    request = {
+        "schema_version": 1,
+        "date": date, "run_name": run_name,
+        "config_sha256": hashlib.sha256(Path(config_path).read_bytes()).hexdigest(),
+        "source": source,
+        "input_dir": str(Path(input_dir).resolve()) if input_dir else None,
+        "preprocessed_dir": str(Path(preprocessed_dir).resolve()) if preprocessed_dir else None,
+        "detection_dir": str(Path(detection_dir).resolve()) if detection_dir else None,
+        "acquisition_dir": str(Path(acquisition_dir).resolve()) if acquisition_dir else None,
+        "warmup_days": warmup_days,
+        "phase_sec": phase_sec, "mask_sha256": calibrated_sha,
+        "mask_path": str(Path(mask_path).resolve()) if mask_path else None,
+        "method": method, "denoiser": denoiser,
+        "frozen_regression": frozen_regression,
+    }
+    if check_run_request(run_dir, request, resume=resume):
+        print(f"Verified complete run, no work needed: {run_dir}")
+        return run_dir
     if source is not None:
         if source not in {"local", "download"}:
             raise ValueError("source must be local or download")
