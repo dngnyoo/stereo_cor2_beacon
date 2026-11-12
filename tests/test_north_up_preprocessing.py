@@ -18,6 +18,9 @@ def wcs_header(n=256):
     w.wcs.crval = [0, 0]
     w.wcs.cdelt = [-30., 30.]
     hdr = w.to_header()
+    hdr["NAXIS"] = 2
+    hdr["NAXIS1"] = n
+    hdr["NAXIS2"] = n
     hdr["EXPTIME"] = 2.0
     return hdr
 
