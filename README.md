@@ -10,6 +10,18 @@ The default **`main` branch now contains the complete eight-stage pipeline**, in
 
 **Validation status:** the seven-stage benchmark was reproduced from a clean GitHub clone on 2026-11-11. The newly merged eight-stage `main` code still requires a fresh-clone end-to-end run and updated tests before its outputs can be considered regression-verified.
 
+## Development: integrated FITS → C0 → E1 → CME workflow
+
+On `feature/data-preparation`, the experimental `run-data` CLI supports
+local/downloaded d7 FITS, existing North-up RD, or existing C0 detections.
+It **recomputes E1 tracks from detections**, then runs the canonical stage
+orchestrator through CME products and (only on 2010-12-12) external validation.
+The historical 60-pair regression fixture is opt-in via `--frozen-regression`;
+general runs preserve all valid selected RD pairs.
+
+See [Integrated C0/E1 pipeline](docs/INTEGRATED_C0_E1_PIPELINE.md) for
+commands, safety constraints, and current scientific limitations.
+
 ## Quick start: generate the full CME results on `main`
 
 Run the following from a Linux shell with Python 3.12 available:
