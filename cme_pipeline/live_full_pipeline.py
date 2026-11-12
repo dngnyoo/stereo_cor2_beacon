@@ -12,6 +12,12 @@ import numpy as np
 from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.pipeline import Pipeline, resolve_stages
 
+def select_live_stages(stages, *, frozen_regression: bool):
+    """Historical external validator requires the explicit frozen 32-frame sequence."""
+    if frozen_regression:
+        return list(stages)
+    return [stage for stage in stages if stage.name != "validation"]
+
 
 def run_live_full(*, config_path: str | Path, date: str,
                   run_name: str, detection_dir: str | Path | None = None,
@@ -110,12 +116,7 @@ def run_live_full(*, config_path: str | Path, date: str,
         detection_dir, e1_dir / "03_patch_e1_track_states.csv", cfg,
         historical_geometry=frozen_regression
     )
-    stages = resolve_stages(cfg)
-    # Fixed historical catalog arrays are indexed by the frozen 32-frame
-    # evaluation sequence. Other runs, including general 20101212, may have
-    # a different frame count/order and must not use that validator.
-    if not frozen_regression:
-        stages = [stage for stage in stages if stage.name != "validation"]
+    stages = select_live_stages(resolve_stages(cfg), frozen_regression=frozen_regression)
     pipeline = Pipeline(cfg, stages=stages)
     result = pipeline.run(initial_input=tracking)
     if result["status"] != "SUCCESS":
