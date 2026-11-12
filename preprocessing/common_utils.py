@@ -31,6 +31,7 @@ from astropy.io import fits
 
 # --- 1. Path Configuration (Global Constants) ---
 BASE_DIR = "./DATA"
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def get_directories(date_str):
     return {
@@ -39,8 +40,8 @@ def get_directories(date_str):
         "beacon_seq": os.path.join(BASE_DIR, "STEREO_DATA_seq/STA/Beacon_seq", date_str),
         "science_seq": os.path.join(BASE_DIR, "STEREO_DATA_seq/STA/Science_seq", date_str),
         "l2_dir": os.path.join(BASE_DIR, f"L2_RESULTS_{date_str[2:]}"),
-        "bkg_base": os.path.join(BASE_DIR, "Backgrounds"),
-        "cal_dir": os.path.join(BASE_DIR, "Calibration")
+        "bkg_base": os.path.join(PROJECT_ROOT, "Calibration", "backgrounds"),
+        "cal_dir": os.path.join(PROJECT_ROOT, "Calibration")
     }
 
 # --- 2. Data Loading & Filtering ---

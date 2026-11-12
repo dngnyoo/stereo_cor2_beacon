@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import numpy as np
 from astropy.io import fits
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     # User Environment Path Configuration
     RAW_INPUT_DIR = "/home/aababc/stereo_project/cor/STEREO_DATA/STA/science/20120723" 
     L2_OUTPUT_DIR = "/home/aababc/stereo_project/cor/L2_PB_CMAD_RESULTS"
-    CAL_DIR = "/home/aababc/stereo_project/cor/Calibration"
-    BKG_DIR = "/home/aababc/stereo_project/cor/Backgrounds"
+    CAL_DIR = str(Path(__file__).resolve().parents[1] / "Calibration")
+    BKG_DIR = str(Path(__file__).resolve().parents[1] / "Calibration" / "backgrounds")
     
     process_l2_synthesis(RAW_INPUT_DIR, L2_OUTPUT_DIR, CAL_DIR, BKG_DIR)

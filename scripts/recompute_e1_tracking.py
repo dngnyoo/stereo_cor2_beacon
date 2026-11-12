@@ -516,7 +516,7 @@ def run(detection_dir: Path, repo: Path, output_dir: Path, *,
         (output_dir / "summary.json").write_text(json.dumps(report, indent=2) + "\n")
         print(json.dumps(report, indent=2))
         return 0
-    refpath = repo / "validation_20101212/experiments/11_d7_patch_first_tracking_feasibility/results/tables/03_patch_e1_track_states.csv"
+    refpath = repo / "validation/frozen/20101212/experiments/11_d7_patch_first_tracking_feasibility/results/tables/03_patch_e1_track_states.csv"
     frozen = pd.read_csv(refpath)
     key = ["track_id", "pair_index", "state", "component_id", "component_uid"]
     actual_key = states[key].fillna("<NA>").astype(str).sort_values(key).reset_index(drop=True)

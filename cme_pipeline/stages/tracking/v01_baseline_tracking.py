@@ -61,7 +61,7 @@ class E1TrackingStage(PipelineStage):
         lbls_all = det_out.raw_component_labels
 
         # 2. Load E1 Tracking Baseline Track Table (Exp 11)
-        exp11_dir = context.repo_root / "validation_20101212/experiments/11_d7_patch_first_tracking_feasibility"
+        exp11_dir = context.repo_root / "validation/frozen/20101212/experiments/11_d7_patch_first_tracking_feasibility"
         df_states_e1 = pd.read_csv(exp11_dir / "results/tables/03_patch_e1_track_states.csv")
 
         obs_all = df_states_e1[df_states_e1["state"] == "OBSERVED"].copy()

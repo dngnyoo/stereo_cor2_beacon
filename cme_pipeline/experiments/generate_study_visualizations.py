@@ -89,8 +89,8 @@ def get_rd_cmap():
 # =========================================================================
 def generate_fig_01(repo_root: Path, out_dir: Path) -> Path:
     """Two-frame causal locking illustration using Track 15 (Pair 30 and 31)."""
-    rd_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
-    val_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
+    rd_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
+    val_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 
     # Pair 30 (p_raw = 29), Pair 31 (p_raw = 30)
     rd_30 = np.where(val_all[29], rd_all[29], np.nan)
@@ -266,8 +266,8 @@ def generate_fig_02(repo_root: Path, out_dir: Path) -> Path:
 # =========================================================================
 def generate_fig_03(repo_root: Path, out_dir: Path) -> Path:
     """Side-by-side comparison of T19 vs T26 separation at Pair 34/35."""
-    rd_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
-    val_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
+    rd_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
+    val_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 
     # Pair 34 (p_raw = 33)
     rd_34 = np.where(val_all[33], rd_all[33], np.nan)
@@ -475,8 +475,8 @@ def generate_fig_04(repo_root: Path, out_dir: Path) -> Path:
 # =========================================================================
 def generate_fig_05(repo_root: Path, out_dir: Path) -> Path:
     """Tri-panel comparison of 4x4 recovered patch masks at Pair 34."""
-    rd_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
-    val_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
+    rd_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
+    val_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 
     rec_a = np.load(repo_root / "runs/baseline_rule_b/arrays/recovered_patch_masks_pipeline_b_full_day.npy")[5]  # f_idx 5 = Pair 34
     rec_b = np.load(repo_root / "runs/variant_b_association_only/arrays/recovered_patch_masks_pipeline_b_full_day.npy")[5]
@@ -535,8 +535,8 @@ def generate_fig_05(repo_root: Path, out_dir: Path) -> Path:
 # =========================================================================
 def generate_fig_06(repo_root: Path, out_dir: Path) -> Path:
     """Pixel segmentation overlay comparison: Run A vs Run C + Difference Map."""
-    rd_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
-    val_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
+    rd_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
+    val_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 
     seg_a = np.load(repo_root / "runs/baseline_rule_b/arrays/final_pixel_segmentation_union.npy")[5]
     seg_c = np.load(repo_root / "runs/variant_c_full_birth_anchored/arrays/final_pixel_segmentation_union.npy")[5]
@@ -681,8 +681,8 @@ def generate_fig_07(repo_root: Path, out_dir: Path) -> Path:
 # =========================================================================
 def generate_fig_08(repo_root: Path, out_dir: Path) -> Path:
     """Renders 32 side-by-side comparative frames, archives high-res PNGs, and builds GIF."""
-    rd_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
-    val_all = np.load(repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
+    rd_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
+    val_all = np.load(repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
     man = pd.read_csv(repo_root / "runs/baseline_rule_b/tables/01_full_day_frame_manifest.csv")
 
     seg_a_all = np.load(repo_root / "runs/baseline_rule_b/arrays/final_pixel_segmentation_union.npy")
