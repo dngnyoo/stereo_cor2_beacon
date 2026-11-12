@@ -46,3 +46,39 @@ Run tests:
 ```bash
 python -m pytest -q tests/test_seeds_validation.py
 ```
+
+## Visual review: overlay SEEDS on existing segmentation PNGs
+
+This is the quick **image-only** review path. It does NOT rerun detection,
+load 3D mask arrays, or calculate IoU; it leaves all original PNGs untouched.
+
+```bash
+python -m scripts.visualize_seeds_overlay \
+  --run-dir runs/clean_cor2a_verify \
+  --gif
+```
+
+Input: `<run>/visualizations/segmentation_overlays/pair_###_YYYYMMDDTHHMMSSZ_families.png`
+
+Outputs:
+- `<run>/validation/seeds/frames/pair_###_..._seeds.png`
+- `<run>/validation/seeds/seeds_overlay.gif` (optional `--gif`)
+
+Magenta translucent sectors come from SEEDS central PA, angular width,
+and `seeds_height` (radius converted using `--rsun-px`), using only
+evaluable source observations within the default ±900-second time window.
+
+**Not a true SEEDS binary pixel mask**: the drawn wedge is an approximate
+angular/height region intended for visual inspection. The source PNG already
+contains the pipeline's segmentation contours and labels. Existing PNGs use a
+fixed 864×840 layout (7.2×7 in at 120 dpi) with a centered square axes region.
+The overlay checks this layout before drawing. It uses historical geometry
+defaults: `--sx 126.618 --sy 127.503 --rsun-px 8.163 --inner-px 22
+--outer-limit-px 120`; adjust them explicitly if your run's geometry differs.
+Wrong orientation or geometry can produce a visually misleading overlay.
+This utility uses source timestamps encoded in PNG filenames rather than
+historical frame offsets.
+
+```bash
+python -m pytest -q tests/test_seeds_png_overlay.py
+```
