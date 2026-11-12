@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlsplit, unquote
 import json
 import re
+import time
 
 from astropy.io import fits
 from bs4 import BeautifulSoup
@@ -64,9 +65,31 @@ def download_cor2(date: str, product: str, output_dir: Path,
         raise ValueError(f"Unknown COR2 product: {product}; choose {sorted(SOURCE_URLS)}")
     client = session if session is not None else requests.Session()
     base_url = f"{SOURCE_URLS[product]}{date}/"
-    response = client.get(base_url, timeout=(10, 60))
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, "html.parser")
+    # NASA may occasionally close connections without sending a response.
+    # Retry transient failures without masking permanent HTTP errors.
+    def request_with_retry(url: str, *, stream: bool = False):
+        for attempt in range(5):
+            try:
+                response = client.get(
+                    url, stream=stream,
+                    timeout=(15, 120) if stream else (15, 60),
+                )
+                response.raise_for_status()
+                return response
+            except requests.RequestException as exc:
+                transient = not isinstance(exc, requests.HTTPError) or (
+                    exc.response is not None
+                    and exc.response.status_code in (408, 429, 500, 502, 503, 504)
+                )
+                if not transient or attempt == 4:
+                    raise
+                delay = min(2 ** attempt, 8)
+                print(f"Transient NASA request error ({exc}); retrying in {delay}s "
+                      f"({attempt + 1}/4): {url}", flush=True)
+                time.sleep(delay)
+
+    with request_with_retry(base_url) as response:
+        soup = BeautifulSoup(response.text, "html.parser")
     names = set()
     for link in soup.find_all("a", href=True):
         candidate = unquote(urlsplit(link["href"]).path).split("/")[-1]
@@ -84,18 +107,30 @@ def download_cor2(date: str, product: str, output_dir: Path,
         target = output_dir / name
         if not target.is_file() or target.stat().st_size == 0:
             temporary = target.with_name(target.name + ".part")
-            try:
-                with client.get(urljoin(base_url, name), stream=True, timeout=(10, 120)) as stream:
-                    stream.raise_for_status()
-                    with temporary.open("wb") as handle:
-                        for block in stream.iter_content(chunk_size=1024 * 1024):
-                            if block:
-                                handle.write(block)
-                if not temporary.is_file() or temporary.stat().st_size == 0:
-                    raise ValueError(f"Empty downloaded file: {name}")
-                temporary.replace(target)
-            finally:
-                temporary.unlink(missing_ok=True)
+            file_url = urljoin(base_url, name)
+            for attempt in range(5):
+                try:
+                    # Always restart failed streams from byte zero; never
+                    # promote an incomplete .part file to a valid FITS.
+                    with request_with_retry(file_url, stream=True) as stream:
+                        with temporary.open("wb") as handle:
+                            for block in stream.iter_content(chunk_size=1024 * 1024):
+                                if block:
+                                    handle.write(block)
+                    if not temporary.is_file() or temporary.stat().st_size == 0:
+                        raise IOError(f"Empty downloaded file: {name}")
+                    temporary.replace(target)
+                    print(f"Downloaded {name}", flush=True)
+                    break
+                except (requests.RequestException, OSError) as exc:
+                    if attempt == 4:
+                        raise
+                    delay = min(2 ** attempt, 8)
+                    print(f"Interrupted FITS download ({exc}); retrying in {delay}s "
+                          f"({attempt + 1}/4): {name}", flush=True)
+                    time.sleep(delay)
+                finally:
+                    temporary.unlink(missing_ok=True)
         result.append(target)
     return result
 
