@@ -57,6 +57,10 @@ def run(repo: Path, science: Path, detection: Path, output: Path):
     new_rd = np.load(science / "north_up_RD_DNs_per_second.npy", mmap_mode="r")
     new_val = np.load(science / "north_up_pair_valid_masks.npy", mmap_mode="r")
     ref_grid = np.load(frozen_det / "science_arrays/patch_activation_grid4.npy", mmap_mode="r")
+    ref_grid_index = {int(global_idx): local_idx for local_idx, global_idx in
+                      enumerate(ref_manifest.index[ref_manifest["date_str"] == 20101212])}
+    if len(ref_grid_index) != len(ref_grid):
+        raise ValueError("Frozen detection grid count does not match Dec12 pairs")
     new_grid = np.load(detection / "patch_state_p04.npy", mmap_mode="r")
     new_detect = pd.read_csv(detection / "frame_detection_summary.csv")
     ref_th = pd.read_csv(frozen_pre / "tables/03_detector_thresholds.csv")
@@ -79,7 +83,7 @@ def run(repo: Path, science: Path, detection: Path, output: Path):
         status = str(new_detect.iloc[j]["status"])
         if status == "VALID":
             compare = np.asarray(new_grid[j] == 1)
-            frozen = np.asarray(ref_grid[i], bool)
+            frozen = np.asarray(ref_grid[ref_grid_index[i]], bool)
             intersection = np.logical_and(compare, frozen).sum()
             union = np.logical_or(compare, frozen).sum()
             iou = float(intersection / union) if union else 1.0
