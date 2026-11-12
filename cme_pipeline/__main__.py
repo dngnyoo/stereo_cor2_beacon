@@ -105,7 +105,7 @@ def parse_args() -> argparse.Namespace:
     full_parser.add_argument("--phase-sec", type=float)
     full_parser.add_argument("--mask-path")
     full_parser.add_argument("--method", choices=("c0",), default="c0")
-    full_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
+    full_parser.add_argument("--denoiser", choices=("gaussian",), default="gaussian")
     full_parser.add_argument(
         "--frozen-regression", action="store_true",
         help="Opt in to 20101212 60-pair fixture and frozen E1 numerical checks."
