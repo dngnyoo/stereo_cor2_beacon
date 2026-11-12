@@ -2,7 +2,7 @@
 
 A reproducible research pipeline for tracking **coronal mass ejection (CME) candidates** in STEREO-A COR2 data, recovering candidate structures, building families, producing pixel-level segmentation masks, and comparing results with independent CME catalogs.
 
-**Start here:** [QUICK_START.md](QUICK_START.md) — clone, install, run, inspect catalogs and visualizations, and verify the frozen benchmark.
+**Start here:** [QUICK_START.md](QUICK_START.md) — install the verified calibration mask, download/reuse NASA FITS, run the complete raw-to-catalog pipeline, and compare with the historical Frozen benchmark.
 
 ## Current release and reproducibility
 
@@ -64,54 +64,58 @@ completed stages while rejecting partial artifacts. This new resume path
 still requires an execution regression on MELONHOUSE.
 
 
-## Quick start: generate the full CME results on `main`
+## Quick start: raw FITS to CME catalog
 
-Run the following from a Linux shell with Python 3.12 available:
+General E2E processing uses the new `run-data` CLI and the separately installed
+official `Calibration/cor2A_mask.fts` (SHA-256 above):
 
 ```bash
 git clone https://github.com/dngnyoo/stereo_cor2_beacon.git
 cd stereo_cor2_beacon
-
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 
-python -m cme_pipeline run --config configs/baseline_rule_b.yaml --force
+# Install the real COR2-A static mask from your verified calibration source.
+cp ~/stereo_cor2/handover/calibration/cor2A_mask.fts Calibration/cor2A_mask.fts
+sha256sum Calibration/cor2A_mask.fts
+
+python -m cme_pipeline run-data \
+  --config configs/baseline_rule_b.yaml \
+  --date 20101212 --run-name 20101212_cor2a_e2e_v1 \
+  --source download --warmup-days 1
 ```
 
-The selected 2010-12-12 frozen benchmark inputs are included in the repository; there is **no separate raw-image download step** for this reproducible benchmark.
+Raw archive files accumulate in `data/raw/cor2/{science,beacon}/YYYYMMDD/`.
+When the experimenter selects a previously downloaded day, its verified files
+are reused instead of downloaded again; new days are added to the same tree.
+An individual experiment's metadata, RD, C0, E1 and final masks/catalogs
+are stored together under `runs/<run-name>/`. The run name must be unique.
 
-Outputs are written to `runs/baseline_rule_b/`. Run configuration: [`configs/baseline_rule_b.yaml`](configs/baseline_rule_b.yaml).
+For the historical frozen-detection benchmark (no raw download):
+`python -m cme_pipeline run --config configs/baseline_rule_b.yaml --force`.
+The old-mask Frozen and official COR2-A general runs are **different scientific
+conditions**; don't expect matching pixel totals.
 
-The default command now produces segmentation masks, independent candidate catalog CSVs, diagnostic PNG images, a GIF animation, and external validation results. No branch switch is needed.
-
-For precise output paths, test commands, cache regeneration, and troubleshooting, follow [QUICK_START.md](QUICK_START.md).
+See [QUICK_START.md](QUICK_START.md) for the complete commands, local tests,
+`--resume`, migration, mask comparison and troubleshooting.
 
 ## Pipeline overview
 
 ```text
-Frozen COR2 detection inputs
-   |
-   v
-1. Tracking (E1 baseline; alternative methods supported)
-   |
-2. Signed dynamic PA recovery
-   |
-3. Family association (Rule B baseline)
-   |
-4. Family birth-radius gate
-   |
-5. Family size gate
-   |
-6. Island-first pixel segmentation
-   |
-7. CME Products: independent catalog + scientific visualization
-   |
-8. External catalog validation
+Shared NASA STEREO-A COR2 Science/Beacon FITS (data/raw/cor2)
+  -> d7 30-minute cadence selection (DATE-OBS; gaps not bridged)
+  -> No-MSB calibration + COR2-A mask + North-up RD
+  -> C0 detection (24h causal threshold warmup)
+  -> independent E1 component-first tracking
+  -> Signed-PA recovery / family association / birth & size gates
+  -> pixel segmentation / candidate CME catalog and visualizations
+  -> run manifest + reproducibility summary
 ```
 
-**Important scope restriction:** this is a reproducible **frozen-detection** benchmark. It uses precomputed detection / running-difference inputs, not a fully integrated pipeline from arbitrary raw FITS files.
+General runs omit the historical external catalog validator because it
+assumes a fixed 32-frame Frozen sequence; the legacy benchmark retains
+that validation path.
 
 ## Reproduced baseline results
 
@@ -132,7 +136,7 @@ The following metrics were obtained in a fresh clone of the original seven-stage
 | MVCC/CORSET angular IoU | 0.4032 |
 | Göttingen angular IoU | 0.5547 |
 
-These are **angular reference-catalog comparison metrics**, not general pixelwise IoUs. A fresh environment installation and the merged eight-stage pipeline still require independent verification.
+These are **angular reference-catalog comparison metrics**, not general pixelwise IoUs. The separately validated general 63-pair pipeline used a different input sequence and is not directly comparable on pixel counts.
 
 ## Principal outputs
 
@@ -176,7 +180,18 @@ The repository retains historical Beacon/science preprocessing and experimental 
 
 ## Current limitations
 
-- Frozen benchmark inputs are bundled, but not a general raw FITS → detection → catalog production workflow.
-- The merged eight-stage pipeline and its visualization output still need end-to-end regression verification and a fresh-environment installation test.
-- Independent Family catalogs are candidate-level outputs; physical CME identity, front continuity, speeds, and angular widths need additional validation.
-- External validation currently uses reference material specific to the frozen 2010-12-12 benchmark.
+- The general raw FITS → CME catalog pipeline has reproduced the old-mask
+  2010-12-12 63-pair result at the pixel level in a fresh checkout.
+  The new shared-data/run-layout, resume and official COR2-A baseline still
+  require local execution/regression verification.
+- The official COR2-A 17MB binary must be installed separately until a
+  verified asset distribution is published; the tracked empty placeholder
+  must not be interpreted as a valid mask.
+- Historical external validation applies to the explicit Frozen
+  2010-12-12 sequence only.
+- Other dates and physical CME interpretations require scientific validation:
+  candidate families need not be unique physical eruptions, and general
+  E1 geometry still retains historical radial/occulter scale assumptions.
+- Full cross-machine portability of manifests containing absolute FITS
+  source paths has not yet been certified; keep old acquisition paths while
+  migrating, or regenerate manifests from shared raw sources.

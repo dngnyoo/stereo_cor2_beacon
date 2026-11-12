@@ -1,35 +1,41 @@
-# Python
+# Python environments, caches, build artifacts
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 venv/
 .venv/
+build/
+dist/
 
-# Environment and secrets
+# Local settings and secrets
 .env
 .env.*
 !.env.example
 
-# Generated pipeline outputs
-runs/
-RESULTS/
+# Runtime observations and run products (never commit experimental data)
+# /data/raw/cor2/{science,beacon}/YYYYMMDD/ contains immutable NASA FITS.
+/data/
+/datasets/
+/runs/
+/RESULTS/
 .cache/
+*.part
+*.migrating
 
-# Local research datasets
-validation_20101212/
-one_month_pipeline/
-one_month_preprocessing_detection_survey/
+# Historic local-only research snapshots (not production source)
+/validation_20101212/
+/one_month_pipeline/
+/one_month_preprocessing_detection_survey/
 
-# IDE
+# Calibration FITS are intentional release assets, NOT general runtime data.
+# Do not glob-ignore Calibration/*.fts: the verified official COR2-A asset
+# must eventually be packaged or tracked separately from the old placeholder.
+
+# OS and editor files
 .vscode/
 .idea/
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Local research datasets
-/datasets/
-# Shared downloaded observations (never commit large raw FITS)
-/data/
