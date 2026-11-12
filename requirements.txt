@@ -12,3 +12,4 @@ scikit-image
 sunpy
 urllib3==2.6.3
 opencv-python==4.13.0.90
+reproject>=0.14,<1
