@@ -176,7 +176,8 @@ def prepare_source(*, date: str, source: str, product: str,
                    input_dir: str | Path | None, output_dir: str | Path,
                    phase_sec: float | None = None,
                    warmup_days: int = 0,
-                   frozen_reference_pairs: bool = False) -> Path:
+                   frozen_reference_pairs: bool = False,
+                   raw_root: str | Path | None = None) -> Path:
     """Acquire the analysis date and optional preceding UTC warmup days."""
     date = validate_date(date)
     if not 0 <= warmup_days <= 7:
@@ -194,7 +195,8 @@ def prepare_source(*, date: str, source: str, product: str,
             # archives, retain provenance, and choose Science-first d7.
             from cme_pipeline.dual_archive import collect_dual_archive
             files, raw_inventory_path, selected_sources_path = collect_dual_archive(
-                requested_days, output_dir
+                requested_days, output_dir,
+                raw_root=Path(raw_root) if raw_root is not None else None,
             )
         else:
             for observed_date in requested_days:
@@ -326,6 +328,7 @@ def prepare_source(*, date: str, source: str, product: str,
         "files": records,
         "cadence_selection": cadence,
         "raw_inventory_manifest": str(raw_inventory_path) if source == "download" and product == "d7" else None,
+        "raw_data_root": str(Path(raw_root).resolve()) if source == "download" and raw_root is not None else None,
         "selected_d7_sources_manifest": str(selected_sources_path) if source == "download" and product == "d7" else None,
         "status": "INVENTORIED_NOT_PREPROCESSED",
         "next_step": "Validated COR2 calibration, north-up RD and C3 detection are required.",
