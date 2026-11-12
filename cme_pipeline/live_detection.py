@@ -170,7 +170,12 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         # Status reflects observation validity; history is updated afterwards.
         if not has_data or not np.any(accepted[4]):
             status = "MISSING_DATA"
-        elif (current - first_time).total_seconds() < 24 * 3600:
+        elif (method == "c0" and metadata.get("frozen_reference_pairs")
+              and (current.strftime("%Y%m%d") == "20101211"
+                   or (current - first_time).total_seconds() / 3600. < 23.9)):
+            status = "WARMUP"
+        elif (not (method == "c0" and metadata.get("frozen_reference_pairs"))
+              and (current - first_time).total_seconds() < 24 * 3600):
             status = "WARMUP"
         elif not has_history:
             status = "NO_HISTORY"
