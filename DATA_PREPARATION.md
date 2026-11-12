@@ -34,30 +34,61 @@ Date (YYYYMMDD)                         Researcher-supplied COR2 FITS
 
 ## Current commands (implemented)
 
-Inventory and validate a user's local FITS images:
+Select **d7 only** from a local COR2 FITS directory, validate `DATE-OBS` against
+the timestamp in the FITS filename, and record strict 30-minute pairs and gaps:
 
 ```bash
-python -m cme_pipeline prepare-data \
-    --date 20240510 \
-    --source local \
-    --product science_raw \
-    --input-dir /path/to/cor2_images
+python -m cme_pipeline prepare-data --date 20240510 \
+  --source local --input-dir /path/to/d7_images
 ```
 
-Download one STEREO-A COR2 product from the NASA archive and inventory it:
+Download only `_d7c2` image files from the NASA STEREO-A INS_DATA
+`L0/a/img/cor2/<YYYYMMDD>/` archive, then run the same selection:
 
 ```bash
-python -m cme_pipeline prepare-data \
-    --date 20240510 \
-    --source download \
-    --product science_raw
+python -m cme_pipeline prepare-data --date 20240510 --source download
 ```
 
-Product choices: `beacon_raw`, `science_raw`, `beacon_seq`, `science_seq`. You must specify which observational product is intended. A valid UTC `DATE-OBS` is required in each input FITS; files with a different calendar date are rejected rather than silently mixed.
+The default `--product d7` is now the intended data stream; an explicit
+`--phase-sec 1434` reproduces the historic May 2024 phase (23m54s).
+This default phase is **not validated as universal**. Changing the date alone
+does not guarantee a usable cadence, and a mismatch intentionally raises an error.
 
-Outputs: `runs/data_prep_<date>_<product>/input_manifest.json` and, for `download`, downloaded FITS under that run directory's `raw/<product>/<date>/`.
+Output is `runs/data_prep_<date>_d7/input_manifest.json`, including all
+qualified d7 FITS files, selected observations, strict 30-minute pairs and
+nonbridged gaps. Downloads reside in `raw/d7/<date>/` within the same run.
+The manifest is marked `INVENTORIED_NOT_PREPROCESSED`.
 
-`input_manifest.json` reports `status = INVENTORIED_NOT_PREPROCESSED`, intentionally. **Do not claim that these images are already processed or that a new-date CME catalog has been generated.**
+**Not implemented yet:** No-MSB FITS calibration, fixed North-up reprojection,
+RD construction, detector C0/C3 replay, and dispatch to Tracking. Do not
+treat an input manifest as a detector result.
+
+## Intended detector variants
+
+- `c0` — baseline Dynamic-T detector from
+  `stereo_cor2_dev/segmentation_pipeline/05_run_dynamicT_detection.py`
+  (historical neighboring-parent refinement).
+- `c3` — intended **default** for future science runs, from
+  `one_month_preprocessing_detection_survey/09_frame_median_floor_qc/`
+  (pure hierarchy, pre-floor global-activation QC, p04-only floor, -1 unavailable).
+- Frozen 2010 benchmark — unchanged in `main`; loading frozen masks is not
+  equivalent to replaying either algorithm on new FITS.
+
+## Canonical acquisition and preparation sources
+
+1. `stereo_cor2_dev/download_1M.py` identifies STEREO-A COR2 `_d7c2`
+   files from INS_DATA. This filtering is reused in the current entry point.
+2. `stereo_cor2_dev/segmentation_pipeline/01_select_d7_30min.py` checks
+   header/filename timestamps and the 1800 ± 2 second cadence. This
+   algorithm is adapted to arbitrary requested dates with configurable phase.
+3. `segmentation_pipeline/16_no_MSB_preprocessing.py`: trim, EXPTIME,
+   SEBIP, bias correction. Preserve **DN/s**, do not multiply MSB factor.
+4. `handover_archive/preprocessing/reproject.py`: fixed North-up WCS and
+   footprint. Reprojection order and calibration provenance require a
+   science regression test before use.
+5. `segmentation_pipeline/17_no_MSB_RD.py`: strictly paired RD, no gap bridge.
+6. C0 from stage 05 and C3 from its isolated experiment; implement with
+   shared RD/P95/T24 inputs so scientifically meaningful comparisons are possible.
 
 ## Existing code surveyed
 
