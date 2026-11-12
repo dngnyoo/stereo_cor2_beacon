@@ -59,7 +59,7 @@ qualified d7 FITS files, selected observations, strict 30-minute pairs and
 nonbridged gaps. Downloads reside in `raw/d7/<date>/` within the same run.
 The manifest is marked `INVENTORIED_NOT_PREPROCESSED`.
 
-**Not implemented yet:** dispatch to availability-aware Tracking. C0/C3 and RD preprocessing code is implemented but requires a real-data numerical regression run. Do not
+**Not implemented yet:** availability-aware Recovery/Association/Gates/Segmentation/Products on live dates. C0/C3 and RD preprocessing code is implemented but requires a real-data numerical regression run. Do not
 treat an input manifest as a detector result.
 
 ## No-MSB / North-up outputs (`--preprocess`)
@@ -149,6 +149,47 @@ end-to-end on real NASA FITS. Tracking is not wired to the new arrays; its
 active-mask contract currently cannot represent C3 `-1` observations
 without an availability-aware adapter. Do not treat these results as a
 validated finished CME catalog.
+
+## Availability-aware live Tracking (A3/A4/A5b)
+
+Once C3 Detection exists, run the currently supported live tracking methods
+**without loading the frozen 2010 inputs**:
+
+```bash
+python -m cme_pipeline track-data \
+  --date 20240510 \
+  --detection-dir runs/data_prep_20240510_d7/detection_c3_gaussian \
+  --method a5b
+```
+
+Use `--method a3` or `--method a4` to compare tracking algorithms.
+`track-data` invokes the existing tracking stages with an explicit
+`DetectionOutput`; it never loads the 2010 E1 frozen track table.
+
+The `live_tracking_input.py` adapter enforces the detector tri-state
+contract: valid frames contain 0/1 patch observations, while `WARMUP`,
+`NO_HISTORY`, `MISSING_DATA`, and `GLOBAL_ACTIVATION` frames retain -1
+unavailability in component labels and status metadata. The downstream
+tracker's Boolean patch grid is intentionally always false on unavailable
+frames **but not interpreted as valid no-CME evidence**. On an unavailable
+observation, A3/A4/A5b skip track matching and do not increment missed
+frames; the next usable observation still applies the original maximum
+cadence-gap timeout measured since the previous usable observation.
+An actual VALID frame with no detections continues to count as a missed
+observation. Frozen 2010 inputs without status fields retain unchanged
+tracking behavior.
+
+Outputs under `runs/live_20240510_c3_a5b/` include:
+`tables/live_observation_manifest.csv`, `tables/live_tracking_states.csv`,
+and `tracking_metadata.json`. These are Tracking artifacts only, not
+an independently validated CME catalog.
+
+**Caution:** This is a first integration. C0/C3 regression against the
+historical reference masks, real NASA FITS end-to-end test and downstream
+Recovery/Association/Gates/Segmentation/Products validation remain pending.
+Warmup days contribute eligible tracking observations as well as threshold
+history, so analysis-window attribution must be verified before catalog
+publication. Original Frozen 2010 benchmark remains unchanged.
 
 ## Intended detector variants
 
