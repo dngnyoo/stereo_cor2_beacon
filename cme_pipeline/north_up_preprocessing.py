@@ -10,6 +10,7 @@ Outputs are DN/s, never raw DNs or MSB. Detector integration follows separately.
 from __future__ import annotations
 
 import csv
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -157,6 +158,48 @@ def reproject_historical(image, source_wcs, target_wcs, *, order):
         shape_out=(256, 256), order=order, return_footprint=True
     )
 
+
+# Reference asset provided from the original 2010 STEREO-A calibration archive.
+COR2A_MASK_SHA256 = "7cde9474fa9d1fe93d9a6ff08464598d5d2250b423b00be449ca24b2ec7ca606"
+COR2A_MASK_FILENAME = "cor2A_mask.fts"
+
+
+def load_cor2_mask(mask_path: str | Path | None = None) -> tuple[np.ndarray, Path, str]:
+    """Read the official COR2-A static mask and record its provenance.
+
+    An explicit mask path remains supported for frozen regression and
+    controlled ablation runs. An empty/unreadable official asset is an error,
+    never a reason to silently switch to a different mask.
+    """
+    official_path = Path(__file__).resolve().parents[1] / "Calibration" / COR2A_MASK_FILENAME
+    path = Path(mask_path).expanduser().resolve() if mask_path is not None else official_path.resolve()
+    if not path.is_file() or path.stat().st_size == 0:
+        raise FileNotFoundError(
+            f"Missing or empty COR2 calibration mask: {path}. "
+            "Install the 17 MB verified cor2A_mask.fts in Calibration/ "
+            "or provide --mask-path."
+        )
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    sha = digest.hexdigest()
+    if mask_path is None and sha != COR2A_MASK_SHA256:
+        raise ValueError(
+            f"Official COR2-A mask SHA-256 mismatch at {path}: {sha}. "
+            f"Expected {COR2A_MASK_SHA256}. Use --mask-path only for "
+            "an explicitly controlled alternative-mask experiment."
+        )
+    try:
+        with fits.open(path, memmap=False) as hdul:
+            data = np.asarray(hdul[0].data, dtype=np.float32)
+    except (OSError, ValueError, TypeError) as exc:
+        raise ValueError(f"Unreadable COR2 mask FITS: {path}") from exc
+    if data.shape != (2048, 2048) or not np.isfinite(data).all():
+        raise ValueError(f"Invalid COR2 mask pixels/shape at {path}: {data.shape}")
+    return data, path, sha
+
+
 def run_no_msb_north_up(manifest_path: str | Path, *,
                          mask_path: str | Path | None = None,
                          shape=(256, 256)) -> Path:
@@ -180,6 +223,8 @@ def run_no_msb_north_up(manifest_path: str | Path, *,
     if output_dir.exists():
         raise FileExistsError(f"Refusing to overwrite existing preprocessing: {output_dir}")
 
+    # Validate the required mask before any costly image calibration.
+    mask_data, mask_path, mask_sha256 = load_cor2_mask(mask_path)
     # Calibrate exactly once per selected image. Header/WCS are checked before
     # any output writes, so broken observations cannot become empty detections.
     calibrated = {}
@@ -187,13 +232,6 @@ def run_no_msb_north_up(manifest_path: str | Path, *,
         source = str(frame["file"])
         calibrated[source] = calibrate_no_msb(Path(source))
     target = target_north_up_wcs([h for _, h in calibrated.values()], shape=shape)
-    if mask_path is None:
-        mask_path = Path(__file__).resolve().parents[1] / "Calibration" / "cor2_mask.fts"
-    mask_path = Path(mask_path).resolve()
-    if not mask_path.is_file():
-        raise FileNotFoundError(f"Required COR2 occulter mask: {mask_path}")
-    with fits.open(mask_path, memmap=False) as hdul:
-        mask_data = np.asarray(hdul[0].data, dtype=np.float32)
     native_mask = downsample_static_mask(mask_data, shape=shape, threshold=.95)
     native_occulter = historical_central_occulter(native_mask)
     north_up = {}
@@ -259,6 +297,8 @@ def run_no_msb_north_up(manifest_path: str | Path, *,
         "north_up": True,
         "cadence_tolerance_sec": 2.,
         "mask": str(mask_path),
+        "mask_sha256": mask_sha256,
+        "mask_identity": ("COR2-A_OFFICIAL" if mask_sha256 == COR2A_MASK_SHA256 else "CUSTOM_EXPLICIT"),
         "mask_rule": "historical block-mean >=0.95, central invalid component, per-frame source WCS",
         "status": "RD_READY_DETECTION_NOT_RUN",
     }, indent=2), encoding="utf-8")
