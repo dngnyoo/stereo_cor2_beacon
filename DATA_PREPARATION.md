@@ -1,3 +1,28 @@
+## 2010-12-12 independent C0 reproduction check
+
+The frozen reference manifest uses a **24m24s** phase, not the May 2024
+default of 23m54s. Always specify `--phase-sec 1464` for this check:
+
+```bash
+python -m cme_pipeline prepare-data --date 20101212 \
+  --source download --phase-sec 1464 --warmup-days 2 \
+  --preprocess --detect c0 --denoiser gaussian
+
+python scripts/validate_20101212_c0.py \
+  --science-dir runs/data_prep_20101212_d7/preprocessed \
+  --detection-dir runs/data_prep_20101212_d7/detection_c0_gaussian \
+  --output-dir runs/c0_20101212_validation
+```
+
+Inspect `summary.json` and `per_pair_comparison.csv`.
+The reference includes 60 pairs across December 11 and 12; compare
+December 12 pairs by UTC timestamps, with December 11 reference rows
+retaining their global frozen-array index. This validation is not
+already executed. Exact C0 patch equality cannot be expected unless
+the physical RD, WCS, denoising, patch activity and hierarchy all
+match the frozen recipe. A scalar comparison is diagnostic only and
+does not prove equivalence between DN/s and the frozen DN array.
+
 # Data Preparation: Input Contract and Integration Plan
 
 **Development status:** the `feature/data-preparation` branch implements **d7 acquisition, strict cadence selection, No-MSB North-up RD and an initial C0/C3 detector replay**. A numerical reference comparison and availability-aware Tracking handoff are still required; the `main` Frozen Benchmark is unchanged.
