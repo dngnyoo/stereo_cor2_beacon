@@ -6,7 +6,7 @@ C3 detector are separate, not-yet-integrated scientific steps.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit, unquote
 import json
@@ -139,14 +139,22 @@ def inspect_fits(paths: list[Path], *, expected_date: str | None = None) -> list
 
 def prepare_source(*, date: str, source: str, product: str,
                    input_dir: str | Path | None, output_dir: str | Path,
-                   phase_sec: float | None = None) -> Path:
-    """Prepare a provenance-preserving image inventory, not a detection result."""
+                   phase_sec: float | None = None,
+                   warmup_days: int = 0) -> Path:
+    """Acquire the analysis date and optional preceding UTC warmup days."""
     date = validate_date(date)
+    if not 0 <= warmup_days <= 7:
+        raise ValueError("warmup_days must be between 0 and 7")
+    target_date = datetime.strptime(date, "%Y%m%d").date()
+    requested_days = [(target_date - timedelta(days=i)).strftime("%Y%m%d")
+                      for i in range(warmup_days, -1, -1)]
     output_dir = Path(output_dir).resolve()
     if source == "download":
         if input_dir is not None:
             raise ValueError("Do not pass input_dir for download source")
-        files = download_cor2(date, product, output_dir / "raw" / product / date)
+        files = []
+        for observed_date in requested_days:
+            files.extend(download_cor2(observed_date, product, output_dir / "raw" / product / observed_date))
     elif source == "local":
         if input_dir is None:
             raise ValueError("local source requires --input-dir")
@@ -158,7 +166,11 @@ def prepare_source(*, date: str, source: str, product: str,
         files = [p for p in files if is_d7(p.name)]
         if not files:
             raise ValueError("No STEREO-A COR2 d7 (_d7c2) FITS files found")
-    records = inspect_fits(files, expected_date=date)
+    records = inspect_fits(files, expected_date=date if warmup_days == 0 else None)
+    permitted = set(requested_days)
+    records = [r for r in records if r["date_obs"][:10].replace("-", "") in permitted]
+    if not any(r["date_obs"][:10].replace("-", "") == date for r in records):
+        raise ValueError(f"No observations on requested analysis date {date}")
     cadence = None
     if product == "d7":
         cadence = select_d7_pairs(
@@ -172,6 +184,8 @@ def prepare_source(*, date: str, source: str, product: str,
     manifest_path.write_text(json.dumps({
         "schema_version": 1,
         "date": date,
+        "warmup_days_requested": warmup_days,
+        "included_dates": requested_days,
         "source": source,
         "product": product,
         "created_utc": datetime.now(timezone.utc).isoformat(),
