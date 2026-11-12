@@ -150,10 +150,14 @@ def run_live_full(*, config_path: str | Path, date: str,
         # Frozen selection is deliberately opt-in. General RD data are never trimmed.
         if frozen_regression:
             from scripts.build_frozen_replay import build
-            preprocessed_dir = build(
-                repo, Path(preprocessed_dir),
-                run_dir / "frozen_input" / "preprocessed"
-            )
+            candidate = run_dir / "frozen_input" / "preprocessed"
+            if resume and stage_ready(candidate, (
+                    "preprocessing_metadata.json", "01_rd_manifest.csv",
+                    "north_up_RD_DNs_per_second.npy",
+                    "north_up_pair_valid_masks.npy", "target_wcs_header.txt")):
+                preprocessed_dir = candidate
+            else:
+                preprocessed_dir = build(repo, Path(preprocessed_dir), candidate)
         candidate = run_dir / "detection"
         if resume and stage_ready(candidate, (
                 "detection_metadata.json", "frame_detection_summary.csv",
