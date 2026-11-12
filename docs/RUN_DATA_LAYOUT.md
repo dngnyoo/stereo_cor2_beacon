@@ -28,6 +28,7 @@ Each `run-data` run owns all of its output below a single name:
 
 ```text
 runs/<run_name>/
+  run_request.json
   acquisition/
     input_manifest.json
     manifests/raw_inventory.csv
@@ -110,9 +111,29 @@ verifies SHA-256 for every newly created file.
 - **Never automatically delete:** raw files, unique experiments, historical
   frozen references, or files still referenced by recorded manifests.
 
-## Currently unsupported
+## Interrupted run recovery
 
-`run-data` uses a fresh name for each attempt; automatic stage-level resume
-after an interrupted run is not yet certified. Shared-date acquisition reuse
-works across different run names. The 2010 general 63-pair pre-mask-switch
-pixel-identical regression is distinct from new official COR2-A results.
+Use `--resume` with **the same** `run-data` arguments, run name, configuration
+content and mask bytes. The persisted `run_request.json` locks these
+inputs. It reuses complete acquisition manifests, RD, C0, and E1 stage files
+and re-runs the canonical downstream stages when the final report is absent.
+An incomplete stage directory is rejected instead of being overwritten.
+If `integrated_run_summary.json` exists, the completed run is reused without
+work. Runs from the legacy layout lack `run_request.json` and must be
+replayed under a new name.
+
+```bash
+python -m cme_pipeline run-data \
+  --config configs/baseline_rule_b.yaml \
+  --date 20101212 --run-name 20101212_cor2a_baseline \
+  --source download --warmup-days 1 --resume
+```
+
+Resume of a partially completed stage is fail-closed; inspect that stage,
+back it up and create a new run name rather than deleting uncertain data.
+Completed shared-date raw acquisition is reused even with different run names.
+
+The 2010 general 63-pair pre-mask-switch pixel-identical regression is
+distinct from new official COR2-A results. The layout/resume changes have
+not yet been scientifically replayed on MELONHOUSE; run the provided offline
+tests and one 63-pair regression before treating this as certified.
