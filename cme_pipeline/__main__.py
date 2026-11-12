@@ -66,6 +66,8 @@ def parse_args() -> argparse.Namespace:
                                 help="Preceding UTC dates; defaults to 2 when --detect is used.")
     prepare_parser.add_argument("--mask-path", default=None,
                                 help="Override COR2 static occulter mask FITS.")
+    prepare_parser.add_argument("--frozen-reference-pairs", action="store_true",
+                                help="Select exactly the historical 60 paired FITS (20101212 only).")
     prepare_parser.add_argument("--phase-sec", default=None, type=float,
                                 help="30-minute phase in seconds (d7 only; May 2024 default: 1434).")
     prepare_parser.add_argument("--output-dir", default=None)
@@ -121,6 +123,7 @@ def main() -> None:
             output_dir=target,
             phase_sec=args.phase_sec,
             warmup_days=warmup_days,
+            frozen_reference_pairs=args.frozen_reference_pairs,
         )
         print(f"FITS input manifest: {manifest}")
         if args.preprocess:
