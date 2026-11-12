@@ -21,14 +21,17 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def collect_dual_archive(days: list[str], root: Path) -> tuple[list[Path], Path, Path]:
+def collect_dual_archive(days: list[str], root: Path, *,
+                         raw_root: Path | None = None) -> tuple[list[Path], Path, Path]:
     """Download complete FITS listings from both archives, select d7 and audit.
 
-    Source directories are separate. Only byte-identical same-name files are
-    removed (the Beacon copy); conflicting versions are retained on disk.
+    Source directories are separate. Both copies remain immutable, including
+    byte-identical duplicates, so a later run never downloads them again.
+    Raw files may live in a shared data/raw/cor2 tree while manifests are
+    written to this run's own root.
     """
     root = Path(root)
-    raw = root / "raw"
+    raw = Path(raw_root) if raw_root is not None else root / "raw"
     records = []
     chosen = {}
     for day in days:
@@ -52,9 +55,6 @@ def collect_dual_archive(days: list[str], root: Path) -> tuple[list[Path], Path,
             # Consistent policy for any date: Science L0 preferred where present.
             selected = science if science is not None else beacon
             selected_source = "science" if science is not None else "beacon"
-            if equal:
-                # Already verified the copies byte-for-byte via SHA-256.
-                beacon.unlink()
             if d7:
                 if name in chosen:
                     raise ValueError(f"Repeated d7 filename across days: {name}")
@@ -66,7 +66,7 @@ def collect_dual_archive(days: list[str], root: Path) -> tuple[list[Path], Path,
                 "beacon_path": str(beacon) if beacon and not equal else "",
                 "science_sha256": science_hash or "",
                 "beacon_sha256": beacon_hash or "",
-                "duplicate_status": ("identical_removed" if equal else
+                "duplicate_status": ("identical_retained" if equal else
                                      "different_versions_retained" if conflict else
                                      "single_source"),
                 "selected_source": selected_source if d7 else "",
