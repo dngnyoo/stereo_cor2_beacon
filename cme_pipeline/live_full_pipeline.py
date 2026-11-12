@@ -96,10 +96,9 @@ def run_live_full(*, config_path: str | Path, date: str,
         # Validate calibration before expensive acquisition and include the
         # actual mask contents in the resume identity.
         from cme_pipeline.north_up_preprocessing import load_cor2_mask
-        preflight_mask = mask_path
-        if frozen_regression and preflight_mask is None:
-            preflight_mask = repo / "Calibration" / "cor2_mask.fts"
-        _, _, calibrated_sha = load_cor2_mask(preflight_mask)
+        # All raw-FITS preprocessing, including optional historical checks,
+        # uses the verified official COR2-A mask by default.
+        _, _, calibrated_sha = load_cor2_mask(mask_path)
     request = {
         "schema_version": 1,
         "date": date, "run_name": run_name,
@@ -134,10 +133,8 @@ def run_live_full(*, config_path: str | Path, date: str,
                 phase_sec=phase_sec, frozen_reference_pairs=False,
                 raw_root=repo / "data" / "raw" / "cor2" if source == "download" else None,
             )
-        # Frozen regression retains the historic mask, not the COR2-A default.
+        # A single official mask for every raw-FITS processing path.
         selected_mask = mask_path
-        if frozen_regression and selected_mask is None:
-            selected_mask = repo / "Calibration" / "cor2_mask.fts"
         candidate = location / "preprocessed"
         if resume and stage_ready(candidate, (
                 "preprocessing_metadata.json", "01_rd_manifest.csv",
