@@ -228,7 +228,7 @@ def run_no_msb_north_up(manifest_path: str | Path, *,
         valids.append(valid)
         rows.append({
             "pair_index": int(pair["pair_index"]),
-            "date_str": int(data["date"]),
+            "date_str": int(str(pair["end_time"])[:10].replace("-", "")),
             "rd_pair_id": f"{data['date']}_{int(pair['pair_index']):05d}",
             "start_time": pair["start_time"],
             "end_time": pair["end_time"],
