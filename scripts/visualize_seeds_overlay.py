@@ -49,6 +49,22 @@ def sector_points(bpa, width, r_inner, r_outer, sx, sy, bounds):
 
 def load_seeds(path):
     df = pd.read_csv(path)
+    detail_keys = {"DATE", "TIME", "BPA", "PASTART", "PAEND",
+                   "HMHEIGHT", "parent_event_id"}
+    if detail_keys.issubset(df.columns):
+        starts = pd.to_numeric(df["PASTART"], errors="raise")
+        ends = pd.to_numeric(df["PAEND"], errors="raise")
+        widths = (ends - starts) % 360.0
+        if (widths <= 0).any():
+            raise ValueError("Invalid SEEDS PASTART/PAEND interval")
+        df = pd.DataFrame({
+            "parent_event_id": df["parent_event_id"],
+            "seeds_timestamp": df["DATE"].astype(str) + " " + df["TIME"].astype(str),
+            "is_evaluable": True,
+            "seeds_bpa": df["BPA"],
+            "seeds_width": widths,
+            "seeds_height": df["HMHEIGHT"],
+        })
     keys = {"parent_event_id", "seeds_timestamp", "is_evaluable", "seeds_bpa",
             "seeds_width", "seeds_height"}
     if not keys.issubset(df.columns):
