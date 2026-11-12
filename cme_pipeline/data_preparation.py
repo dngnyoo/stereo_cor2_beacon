@@ -173,15 +173,11 @@ def prepare_source(*, date: str, source: str, product: str,
     if not any(r["date_obs"][:10].replace("-", "") == date for r in records):
         raise ValueError(f"No observations on requested analysis date {date}")
     cadence = None
-    if product == "d7":
-        cadence = select_d7_pairs(
-            records,
-            phase_sec=DEFAULT_PHASE_SEC if phase_sec is None else phase_sec,
-        )
     if frozen_reference_pairs:
         if date != "20101212" or product != "d7":
             raise ValueError("Frozen reference pair selection is 20101212 d7 only")
         import csv
+        from cme_pipeline.cadence_selection import parse_timestamp, FILENAME_TIME_RE
         reference = Path(__file__).resolve().parents[1] / (
             "validation_20101212/experiments/01_d7_baseline_segmentation/"
             "results/00_manifest/01_rd_manifest.csv"
@@ -190,35 +186,71 @@ def prepare_source(*, date: str, source: str, product: str,
             rows = list(csv.DictReader(stream))
         if len(rows) != 60:
             raise ValueError("Frozen reference must contain 60 pairs")
-        file_lookup = {Path(f["file"]).name: f for f in cadence["selected_frames"]}
-        exact_pairs = []
-        selected_names = set()
+
+        # Frozen mode bypasses the modern phase-selected frame list. The
+        # historical source manifest, not a phase heuristic, defines the
+        # exact FITS frames to calibrate and pair.
+        file_lookup = {}
+        for record in records:
+            name = Path(record["file"]).name
+            if name in file_lookup:
+                raise ValueError(f"Duplicate FITS filename in source: {name}")
+            file_lookup[name] = record
+        exact_pairs, selected_names = [], set()
         for item in rows:
             first, second = item["prev_file"], item["curr_file"]
-            if first not in file_lookup or second not in file_lookup:
-                raise ValueError(f"Frozen reference FITS unavailable: {first}, {second}")
-            start = file_lookup[first]["date_obs"]
-            end = file_lookup[second]["date_obs"]
-            from cme_pipeline.cadence_selection import parse_timestamp
-            dt = (parse_timestamp(end) - parse_timestamp(start)).total_seconds()
+            absent = [name for name in (first, second) if name not in file_lookup]
+            if absent:
+                raise ValueError(
+                    f"Frozen reference FITS genuinely absent from downloaded inventory: {absent}. "
+                    f"Check the raw/d7 daily directories and source URL."
+                )
+            start, end = (parse_timestamp(file_lookup[name]["date_obs"])
+                          for name in (first, second))
+            for name, stamp in ((first, start), (second, end)):
+                match = FILENAME_TIME_RE.search(name)
+                if match is None:
+                    raise ValueError(f"Missing timestamp in FITS filename: {name}")
+                named = datetime.strptime("".join(match.groups()), "%Y%m%d%H%M%S")
+                if abs((named - stamp).total_seconds()) > 1.:
+                    raise ValueError(f"Frozen FITS filename/DATE-OBS mismatch: {name}")
+            dt = (end - start).total_seconds()
             if abs(dt - 1800.) > 2.:
-                raise ValueError("Frozen reference pair does not have 30-minute cadence")
+                raise ValueError(
+                    f"Frozen pair not separated by 30 minutes: {first}, {second}: {dt}s"
+                )
             exact_pairs.append({
                 "pair_index": len(exact_pairs) + 1,
                 "start_file": file_lookup[first]["file"],
                 "end_file": file_lookup[second]["file"],
-                "start_time": start, "end_time": end,
+                "start_time": start.isoformat(),
+                "end_time": end.isoformat(),
                 "delta_t_sec": dt, "delta_t_min": dt / 60.,
             })
             selected_names.update((first, second))
-        cadence["pairs"] = exact_pairs
-        cadence["selected_frames"] = [
-            f for f in cadence["selected_frames"]
-            if Path(f["file"]).name in selected_names
+        selected_frames = [
+            {"file": rec["file"], "date_obs": rec["date_obs"]}
+            for rec in records if Path(rec["file"]).name in selected_names
         ]
-        cadence["n_pairs"] = len(exact_pairs)
-        cadence["n_selected"] = len(cadence["selected_frames"])
-        cadence["reference_pair_manifest"] = str(reference)
+        cadence = {
+            "mode": "frozen_reference_pairs",
+            "phase_sec": phase_sec,
+            "cadence_sec": 1800.,
+            "selected_frames": selected_frames,
+            "pairs": exact_pairs,
+            "gaps": [],
+            "n_input": len(records),
+            "n_selected": len(selected_frames),
+            "n_pairs": len(exact_pairs),
+            "n_gaps": 0,
+            "reference_pair_manifest": str(reference),
+        }
+    elif product == "d7":
+        from cme_pipeline.cadence_selection import select_d7_pairs, DEFAULT_PHASE_SEC
+        cadence = select_d7_pairs(
+            records,
+            phase_sec=DEFAULT_PHASE_SEC if phase_sec is None else phase_sec,
+        )
     elif phase_sec is not None:
         raise ValueError("--phase-sec is only supported with --product d7")
     output_dir.mkdir(parents=True, exist_ok=True)
