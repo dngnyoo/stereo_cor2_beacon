@@ -79,6 +79,14 @@ def parse_args() -> argparse.Namespace:
     detect_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
     detect_parser.add_argument("--date", default=None, help="Analysis YYYYMMDD; infer from RD metadata if omitted")
 
+    track_parser = subparsers.add_parser(
+        "track-data", help="Run availability-aware A3/A4/A5b tracking on live C0/C3 detection."
+    )
+    track_parser.add_argument("--detection-dir", required=True)
+    track_parser.add_argument("--method", choices=("a3", "a4", "a5b"), default="a5b")
+    track_parser.add_argument("--date", required=True, help="Analysis YYYYMMDD")
+    track_parser.add_argument("--run-name", default=None)
+
     # 'status' subcommand
     status_parser = subparsers.add_parser("status", help="Show pipeline stage cache status.")
     status_parser.add_argument(
@@ -138,6 +146,54 @@ def main() -> None:
                                  denoiser=args.denoiser,
                                  requested_date=validate_date(args.date) if args.date else None)
         print(f"Detector outputs: {detected}")
+        return
+
+    if args.command == "track-data":
+        from cme_pipeline.data_preparation import validate_date
+        from cme_pipeline.live_tracking_input import load_live_tracking_input
+        from cme_pipeline.core.context import PipelineContext
+        from cme_pipeline.stages.tracking.registry import get_tracking_stage
+        import pandas as pd
+
+        date = validate_date(args.date)
+        detected = load_live_tracking_input(args.detection_dir)
+        if detected.dataset_metadata["detector"] not in ("c0", "c3"):
+            raise ValueError("Live tracking requires a C0/C3 detection directory")
+        if not detected.manifest_df["warmup_or_eval"].eq("EVALUATION").any():
+            raise ValueError("No frames on requested analysis date")
+        if detected.dataset_metadata["dataset_id"].split("_")[0] != date:
+            raise ValueError("Requested date and detector run date disagree")
+        cfg = PipelineConfig()
+        cfg.date_str = int(date)
+        cfg.tracking.method = args.method
+        cfg.run_name = args.run_name or f"live_{date}_{detected.dataset_metadata['detector']}_{args.method}"
+        ctx = PipelineContext(cfg)
+        tracker = get_tracking_stage(args.method)
+        output = tracker.run(detected, cfg, ctx)
+        unavailable_pairs = set(
+            detected.manifest_df.loc[
+                ~detected.manifest_df["usable_detection"].astype(bool),
+                "pair_index"
+            ].astype(int)
+        )
+        if not output.track_states_df.empty:
+            reported = set(output.track_states_df["pair_index"].dropna().astype(int))
+            if unavailable_pairs & reported:
+                raise RuntimeError("Unavailable detector observations appeared as tracking states")
+        output.manifest_df.to_csv(ctx.tables_dir / "live_observation_manifest.csv", index=False)
+        output.track_states_df.to_csv(ctx.tables_dir / "live_tracking_states.csv", index=False)
+        import json
+        (ctx.run_dir / "tracking_metadata.json").write_text(json.dumps({
+            "requested_date": date,
+            "method": args.method,
+            "detector": detected.dataset_metadata["detector"],
+            "detection_dir": str(Path(args.detection_dir).resolve()),
+            "total_tracks": output.total_tracks,
+            "n_unavailable": len(unavailable_pairs),
+            "status": "TRACKING_READY_DOWNSTREAM_NOT_RUN",
+        }, indent=2))
+        print(f"Tracking outputs: {ctx.run_dir}")
+        print("Status: TRACKING_READY_DOWNSTREAM_NOT_RUN")
         return
 
     config_path = Path(args.config)
