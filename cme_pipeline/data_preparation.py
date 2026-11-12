@@ -205,6 +205,20 @@ def prepare_source(*, date: str, source: str, product: str,
         if input_dir is None:
             raise ValueError("local source requires --input-dir")
         files = list_fits(Path(input_dir))
+        if product == "d7":
+            # Reusing a dual-archive raw directory can expose science and
+            # beacon copies of the same frame. Match download's science-first
+            # policy without changing or deleting any downloaded FITS.
+            by_name = {}
+            for file in files:
+                if "_d7c2" not in file.name.lower():
+                    continue
+                parts = {part.lower() for part in file.parts}
+                rank = 0 if "science" in parts else (1 if "beacon" in parts else 2)
+                previous = by_name.get(file.name)
+                if previous is None or (rank, str(file)) < previous[0]:
+                    by_name[file.name] = ((rank, str(file)), file)
+            files = sorted((item[1] for item in by_name.values()), key=lambda p: p.name)
     else:
         raise ValueError("source must be 'local' or 'download'")
     if product == "d7":
@@ -291,11 +305,10 @@ def prepare_source(*, date: str, source: str, product: str,
             "reference_pair_manifest": str(reference),
         }
     elif product == "d7":
-        from cme_pipeline.cadence_selection import select_d7_pairs, DEFAULT_PHASE_SEC
-        cadence = select_d7_pairs(
-            records,
-            phase_sec=DEFAULT_PHASE_SEC if phase_sec is None else phase_sec,
-        )
+        from cme_pipeline.cadence_selection import select_d7_pairs, infer_d7_phase
+        selected_phase = infer_d7_phase(records) if phase_sec is None else phase_sec
+        cadence = select_d7_pairs(records, phase_sec=selected_phase)
+        cadence["phase_source"] = "inferred_from_DATE_OBS" if phase_sec is None else "explicit"
     elif phase_sec is not None:
         raise ValueError("--phase-sec is only supported with --product d7")
     output_dir.mkdir(parents=True, exist_ok=True)
