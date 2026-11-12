@@ -111,8 +111,14 @@ def main(argv=None) -> int:
     result = acquire(args.date, output_root=args.output_root,
                      base=args.base_url, timeout=args.timeout,
                      force=args.force)
+    from scripts.parse_seeds_monthly import parse_monthly
+    raw_path = Path(result["directory"]) / "monthly.txt"
+    events = parse_monthly(raw_path.read_text(encoding="utf-8-sig"), date=args.date)
+    event_path = Path(result["directory"]) / f"seeds_events_{args.date}.csv"
+    events.to_csv(event_path, index=False)
     print(json.dumps(result, indent=2))
-    print("Inspect monthly.txt header and first records before enabling event parsing.")
+    print(f"Parsed {len(events)} SEEDS events: {event_path}")
+    print("Event summaries only; no invented SEEDS frame-level measurements.")
     return 0
 
 
