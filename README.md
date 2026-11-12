@@ -39,10 +39,12 @@ cp ~/stereo_cor2/handover/calibration/cor2A_mask.fts Calibration/cor2A_mask.fts
 sha256sum Calibration/cor2A_mask.fts
 ```
 
-The historical `--frozen-regression` mode continues using the original
-`Calibration/cor2_mask.fts` unless explicitly overridden.
-For a deliberate alternative-mask experiment, supply `--mask-path`; results
-must be recorded as a separate run and must not replace either baseline.
+All new raw-FITS runs use the official `Calibration/cor2A_mask.fts` by default,
+including `--frozen-regression` selection. Previously recorded frozen reference
+results made with `cor2_mask.fts` are historical artifacts, not current
+COR2-A scientific baselines; numerical agreement with those historical
+references is **not** expected when the mask changes. Explicit
+`--mask-path` is retained only for controlled archival comparisons.
 
 See [Integrated C0/E1 pipeline](docs/INTEGRATED_C0_E1_PIPELINE.md)
 for complete CLI usage and limitations.
