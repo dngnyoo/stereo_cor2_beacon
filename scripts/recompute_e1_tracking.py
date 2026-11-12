@@ -177,7 +177,7 @@ def patch_association_cost(track: PatchMotionTrack, patch: PatchComponent, times
     return float(cost), overlap, pa_diff, radial_diff
 
 
-def run(detection_dir: Path, repo: Path, output_dir: Path):
+def run(detection_dir: Path, repo: Path, output_dir: Path, *,\n        compare_frozen: bool = True, historical_geometry: bool = True):
     detection_dir, repo, output_dir = detection_dir.resolve(), repo.resolve(), output_dir.resolve()
     metadata = json.loads((detection_dir / "detection_metadata.json").read_text())
     pre = Path(metadata["input_dir"])
@@ -194,7 +194,7 @@ def run(detection_dir: Path, repo: Path, output_dir: Path):
     hdr = fits.Header.fromstring((pre / "target_wcs_header.txt").read_text(), sep="\n")
     wcs = WCS(hdr)
     # Exact Frozen E1 geometry center (not WCS-derived), required for benchmark consistency.
-    SX, SY = 126.618, 127.503
+    SX, SY = (126.618, 127.503) if historical_geometry else tuple(\n        float(v) for v in wcs.world_to_pixel_values(0.0, 0.0))
     yy, xx = np.indices(IMAGE_SHAPE, dtype=float)
     world = wcs.pixel_to_world_values(xx, yy)
     lon = (np.asarray(world[0], float) + 180.0) % 360.0 - 180.0
@@ -502,6 +502,18 @@ def run(detection_dir: Path, repo: Path, output_dir: Path):
     states.to_csv(output_dir / "03_patch_e1_track_states.csv", index=False)
     pd.DataFrame(comp_geom_rows).to_csv(output_dir / "01_patch_component_geometries.csv", index=False)
     pd.DataFrame(candidate_logs).to_csv(output_dir / "02_patch_e1_candidate_evaluations.csv", index=False)
+    if not compare_frozen:
+        report = {
+            "status": "TRACKING_RECOMPUTED_NOT_REFERENCE_VALIDATED",
+            "new_component_count": len(comp_geom_rows),
+            "new_tracks": len(tracks),
+            "new_track_states": len(states),
+            "historical_geometry": bool(historical_geometry),
+            "note": "Live E1 generation; no historical sample-count or Frozen CSV dependency.",
+        }
+        (output_dir / "summary.json").write_text(json.dumps(report, indent=2) + "\n")
+        print(json.dumps(report, indent=2))
+        return 0
     refpath = repo / "validation_20101212/experiments/11_d7_patch_first_tracking_feasibility/results/tables/03_patch_e1_track_states.csv"
     frozen = pd.read_csv(refpath)
     key = ["track_id", "pair_index", "state", "component_id", "component_uid"]
