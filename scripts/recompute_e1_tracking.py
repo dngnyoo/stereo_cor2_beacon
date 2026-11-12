@@ -8,7 +8,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+import sys
 import argparse
+
+# Allow direct execution: python scripts/recompute_e1_tracking.py
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 import json
 import numpy as np
 import pandas as pd
