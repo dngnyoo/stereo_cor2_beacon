@@ -89,7 +89,7 @@ man_df = base.manifest_df
 geom = base.geometry
 
 # Load science arrays
-exp01_dir = repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation"
+exp01_dir = repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation"
 rd_all = np.load(exp01_dir / "results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
 val_all = np.load(exp01_dir / "results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 

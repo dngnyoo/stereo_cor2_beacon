@@ -117,7 +117,7 @@ class BirthAnchoredTrackingStage(PipelineStage):
         base_stage = E1TrackingStage()
         base_out = base_stage.run(inputs, config, context)
 
-        val_root = context.repo_root / "validation_20101212"
+        val_root = context.repo_root / "validation/frozen/20101212"
         exp11_dir = val_root / "experiments/11_d7_patch_first_tracking_feasibility"
         df_geom = pd.read_csv(exp11_dir / "results/tables/01_patch_component_geometries.csv")
 

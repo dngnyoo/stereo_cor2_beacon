@@ -50,7 +50,7 @@ class ExternalValidationStage(PipelineStage):
         if isinstance(inputs, CMEProductsOutput):
             inputs = inputs.segmentation_output
 
-        val_root = context.repo_root / "validation_20101212"
+        val_root = context.repo_root / "validation/frozen/20101212"
         exp04_dir = val_root / "experiments/04_d7_external_catalog_validation"
         catalogs_dir = val_root / "catalogs"
 

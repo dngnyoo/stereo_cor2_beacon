@@ -293,8 +293,8 @@ def main():
     val_lines.append("=" * 60)
 
     # Check 1: Baseline E1 bit-exact reproducibility
-    hist_rec_path = repo_root / "validation_20101212/full_day_pipeline_validation/01_full_day_pipeline/results/science_arrays/recovered_patch_masks_pipeline_b_full_day.npy"
-    hist_seg_path = repo_root / "validation_20101212/full_day_pipeline_validation/01_full_day_pipeline/results/science_arrays/final_pixel_segmentation_union.npy"
+    hist_rec_path = repo_root / "validation/frozen/20101212/full_day_pipeline_validation/01_full_day_pipeline/results/science_arrays/recovered_patch_masks_pipeline_b_full_day.npy"
+    hist_seg_path = repo_root / "validation/frozen/20101212/full_day_pipeline_validation/01_full_day_pipeline/results/science_arrays/final_pixel_segmentation_union.npy"
     hist_rec = np.load(hist_rec_path)
     hist_seg = np.load(hist_seg_path)
 
