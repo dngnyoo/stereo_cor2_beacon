@@ -1,3 +1,32 @@
+## Frozen Stage 26 source reconciliation (2010-12-12)
+
+The uploaded original `run_historical_d7_segmentation.py` is the 2010
+reproduction source. The current code now uses its **native 2048x2048
+`Calibration/cor2_mask.fts`**, block-average to 256x256 (>=0.95), isolates
+the central connected invalid occulter, reprojects the mask and occulter
+using **each source FITS image WCS**, and combines the projected pair masks.
+The mask FITS itself has no WCS and must never be separately interpreted
+as a celestial WCS. North-up target is the median original world-to-pixel
+solar center and absolute input `CDELT`; it does not negate X.
+
+Pass `--frozen-reference-pairs` to reconstruct only the exact 60 pairs
+from the original frozen RD manifest (28 warmup pairs on Dec 11 and
+32 evaluation pairs on Dec 12). It also activates the reference's
+23.9-hour numeric-jitter warmup guard for historical C0 only. The 60
+selected pairs are drawn from available source FITS by filename with
+strict 30-minute tolerance. This is a *reproduction mode*, not the
+general month/date analysis selection policy.
+
+The original source's file `cor2_mask.fts` is distinct from
+`cor2A_mask.fts`; do not replace it merely based on spacecraft name.
+The checked-in `Calibration/cor2_mask.fts` on this GitHub branch is an
+empty placeholder. Copy the 17MB original file locally from the
+historical source tree before running reproduction.
+
+**Validation is pending execution:** these changes have been committed to
+the development branch, but real FITS numerical equivalence to the
+frozen RD, validity mask, T24 and detection masks has not been demonstrated.
+
 ## 2010-12-12 independent C0 reproduction check
 
 The frozen reference manifest uses a **24m24s** phase, not the May 2024
@@ -6,7 +35,7 @@ default of 23m54s. Always specify `--phase-sec 1464` for this check:
 ```bash
 python -m cme_pipeline prepare-data --date 20101212 \
   --source download --phase-sec 1464 --warmup-days 2 \
-  --preprocess --detect c0 --denoiser gaussian
+  --frozen-reference-pairs --preprocess --detect c0 --denoiser gaussian
 
 python scripts/validate_20101212_c0.py \
   --science-dir runs/data_prep_20101212_d7/preprocessed \
