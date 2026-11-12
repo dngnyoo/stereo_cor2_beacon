@@ -42,6 +42,26 @@ def _require_columns(df: pd.DataFrame, names: tuple[str, ...], name: str) -> Non
 
 def _read_seeds(path: Path) -> pd.DataFrame:
     table = pd.read_csv(path)
+    # Accept both the legacy curated reference and the new official detail
+    # tables. The latter has source-native column names and no observation-
+    # availability decisions; temporal eligibility is handled downstream.
+    detail_cols = {"DATE", "TIME", "BPA", "PASTART", "PAEND",
+                   "HMLEAD", "parent_event_id"}
+    if detail_cols.issubset(table.columns):
+        pa_start = pd.to_numeric(table["PASTART"], errors="raise")
+        pa_end = pd.to_numeric(table["PAEND"], errors="raise")
+        # This dataset uses angular start/end sectors, not event-level WIDTH.
+        widths = (pa_end - pa_start) % 360.0
+        if (widths <= 0).any():
+            raise ValueError("Invalid SEEDS PASTART/PAEND interval")
+        table = pd.DataFrame({
+            "parent_event_id": table["parent_event_id"],
+            "seeds_timestamp": table["DATE"].astype(str) + " " + table["TIME"].astype(str),
+            "is_evaluable": True,
+            "seeds_bpa": table["BPA"],
+            "seeds_width": widths,
+            "seeds_lead": table["HMLEAD"],
+        })
     _require_columns(table, SEEDS_FIELDS, "SEEDS reference")
     # This file also stores *historical candidate scores*. Explicitly discard
     # them: a comparison of the new pipeline must be computed independently.
