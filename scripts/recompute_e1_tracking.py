@@ -177,7 +177,8 @@ def patch_association_cost(track: PatchMotionTrack, patch: PatchComponent, times
     return float(cost), overlap, pa_diff, radial_diff
 
 
-def run(detection_dir: Path, repo: Path, output_dir: Path, *,\n        compare_frozen: bool = True, historical_geometry: bool = True):
+def run(detection_dir: Path, repo: Path, output_dir: Path, *,
+        compare_frozen: bool = True, historical_geometry: bool = True):
     detection_dir, repo, output_dir = detection_dir.resolve(), repo.resolve(), output_dir.resolve()
     metadata = json.loads((detection_dir / "detection_metadata.json").read_text())
     pre = Path(metadata["input_dir"])
@@ -194,7 +195,8 @@ def run(detection_dir: Path, repo: Path, output_dir: Path, *,\n        compare_f
     hdr = fits.Header.fromstring((pre / "target_wcs_header.txt").read_text(), sep="\n")
     wcs = WCS(hdr)
     # Exact Frozen E1 geometry center (not WCS-derived), required for benchmark consistency.
-    SX, SY = (126.618, 127.503) if historical_geometry else tuple(\n        float(v) for v in wcs.world_to_pixel_values(0.0, 0.0))
+    SX, SY = (126.618, 127.503) if historical_geometry else tuple(
+        float(v) for v in wcs.world_to_pixel_values(0.0, 0.0))
     yy, xx = np.indices(IMAGE_SHAPE, dtype=float)
     world = wcs.pixel_to_world_values(xx, yy)
     lon = (np.asarray(world[0], float) + 180.0) % 360.0 - 180.0
