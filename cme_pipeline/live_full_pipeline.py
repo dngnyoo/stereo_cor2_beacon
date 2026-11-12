@@ -10,8 +10,7 @@ from pathlib import Path
 import numpy as np
 
 from cme_pipeline.core.config import PipelineConfig
-from cme_pipeline.core.context import PipelineContext
-from cme_pipeline.core.pipeline import resolve_stages
+from cme_pipeline.core.pipeline import Pipeline, resolve_stages
 
 
 def run_live_full(*, config_path: str | Path, date: str,
@@ -109,24 +108,22 @@ def run_live_full(*, config_path: str | Path, date: str,
         detection_dir, e1_dir / "03_patch_e1_track_states.csv", cfg,
         historical_geometry=frozen_regression
     )
-    ctx = PipelineContext(cfg)
+    stages = resolve_stages(cfg)
+    if date != "20101212":
+        # The external catalog comparison is explicitly tied to 2010-12-12.
+        stages = [stage for stage in stages if stage.name != "validation"]
+    pipeline = Pipeline(cfg, stages=stages)
+    result = pipeline.run(initial_input=tracking)
+    if result["status"] != "SUCCESS":
+        raise RuntimeError("Integrated pipeline failed")
+    ctx = pipeline.context
     tracking.track_states_df.to_csv(
         ctx.stages_dir / "recomputed_e1_track_states.csv", index=False
     )
-    current = tracking
-    steps = []
-    # External catalog files are date-specific; running on other dates would
-    # produce scientifically invalid comparisons.
-    for stage in resolve_stages(cfg)[1:]:
-        if stage.name == "validation" and date != "20101212":
-            ctx.info("Skipping 2010-only external catalog validation for new date")
-            continue
-        ctx.info(f"[Live C0/E1] Running {stage.name}")
-        current = stage.run(current, cfg, ctx)
-        steps.append(stage.name)
-    seg = current.segmentation_output
+    seg = result["stage_outputs"]["segmentation"]
     sizes = seg.size_gate_output
     association = sizes.birth_gate_output.association_output
+    steps = result["executed_stages"]
     report = {
         "status": "INTEGRATED_EXECUTED_NOT_FULLY_CERTIFIED",
         "date": date,
