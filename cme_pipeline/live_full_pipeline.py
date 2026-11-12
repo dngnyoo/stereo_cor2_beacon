@@ -181,10 +181,16 @@ def run_live_full(*, config_path: str | Path, date: str,
         raise ValueError("Frozen regression requires explicit 60-pair fixture")
 
     e1_dir = run_dir / "tracking"
-    if not (resume and stage_ready(e1_dir, (
-            "summary.json", "03_patch_e1_track_states.csv",
-            "01_patch_component_geometries.csv",
-            "02_patch_e1_candidate_evaluations.csv"))):
+    e1_ready = resume and stage_ready(e1_dir, (
+        "summary.json", "03_patch_e1_track_states.csv",
+        "01_patch_component_geometries.csv",
+        "02_patch_e1_candidate_evaluations.csv"))
+    if e1_ready:
+        e1_status = json.loads((e1_dir / "summary.json").read_text()).get("status")
+        accepted = "PASS" if frozen_regression else "TRACKING_RECOMPUTED_NOT_REFERENCE_VALIDATED"
+        if e1_status != accepted:
+            raise RuntimeError(f"Refusing to resume failed E1 tracking: {e1_status}")
+    if not e1_ready:
         if e1_dir.exists():
             raise FileExistsError(f"Refusing to overwrite tracking directory: {e1_dir}")
         outcome = recompute_e1(
