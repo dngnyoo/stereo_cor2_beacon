@@ -1,6 +1,6 @@
 # Data Preparation: Input Contract and Integration Plan
 
-**Development status:** the `feature/data-preparation` branch provides the **image acquisition + FITS metadata inventory** entry point. Raw COR2 FITS preprocessing and the new C3 detector are **NOT yet integrated** with the eight-stage research pipeline. The current `main` benchmark is unchanged.
+**Development status:** the `feature/data-preparation` branch provides **d7 selection, No-MSB calibration, North-up reprojection and strict 30-minute RD generation**. C0/C3 Detection and live Tracking are **not yet integrated**. The current `main` benchmark is unchanged.
 
 ## Target workflow
 
@@ -39,14 +39,14 @@ the timestamp in the FITS filename, and record strict 30-minute pairs and gaps:
 
 ```bash
 python -m cme_pipeline prepare-data --date 20240510 \
-  --source local --input-dir /path/to/d7_images
+  --source local --input-dir /path/to/d7_images --preprocess
 ```
 
 Download only `_d7c2` image files from the NASA STEREO-A INS_DATA
 `L0/a/img/cor2/<YYYYMMDD>/` archive, then run the same selection:
 
 ```bash
-python -m cme_pipeline prepare-data --date 20240510 --source download
+python -m cme_pipeline prepare-data --date 20240510 --source download --preprocess
 ```
 
 The default `--product d7` is now the intended data stream; an explicit
@@ -59,9 +59,41 @@ qualified d7 FITS files, selected observations, strict 30-minute pairs and
 nonbridged gaps. Downloads reside in `raw/d7/<date>/` within the same run.
 The manifest is marked `INVENTORIED_NOT_PREPROCESSED`.
 
-**Not implemented yet:** No-MSB FITS calibration, fixed North-up reprojection,
-RD construction, detector C0/C3 replay, and dispatch to Tracking. Do not
+**Not implemented yet:** detector C0/C3 replay and dispatch to Tracking. No-MSB FITS calibration, fixed North-up reprojection and strict 30-minute RD are implemented but still require a real-data regression run. Do not
 treat an input manifest as a detector result.
+
+## No-MSB / North-up outputs (`--preprocess`)
+
+The new science arrays appear under
+`runs/data_prep_<date>_d7/preprocessed/`:
+
+```text
+north_up_RD_DNs_per_second.npy     # float32 [N,256,256] DN/s
+north_up_pair_valid_masks.npy     # bool [N,256,256]
+target_wcs_header.txt             # fixed solar-centered North-up WCS
+01_rd_manifest.csv                # pair UTC start/end, source paths, dt
+preprocessing_metadata.json       # units, method provenance, status
+```
+
+`Calibration/cor2_mask.fts` must have a valid WCS and must reproject
+to a usable mask on the selected grid. Override with `--mask-path` when
+necessary; do not bypass occulter masking silently.
+
+The calibration path follows legacy `scc_img_trim`, EXPTIME correction,
+SEBIP and bias removal; **get_calfac(MSB) is never called**.
+Registered North-up imaging is performed before pair subtraction.
+Only exactly matched 1800 +/- 2 s pairs enter the RD stack; missing
+30-minute intervals are recorded but never bridged.
+
+**Scientific verification still required:** legacy FITS trim orientation,
+solar WCS plate-scale fidelity, occulter mask footprint, and a framewise
+comparison to previously generated No-MSB RD. The output is explicitly
+named `DNs_per_second` to avoid misrepresenting it as frozen 2010 raw DN.
+
+**24-hour warmup warning:** Selecting a single date alone does not
+supply a full preceding 24-hour score history. A date-window or
+previous-day warmup fetch must be added before C3 can provide routine
+valid detections throughout the requested day.
 
 ## Intended detector variants
 
