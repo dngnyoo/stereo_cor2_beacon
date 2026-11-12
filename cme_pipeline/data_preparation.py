@@ -296,7 +296,7 @@ def prepare_source(*, date: str, source: str, product: str,
         import csv
         from cme_pipeline.cadence_selection import parse_timestamp, FILENAME_TIME_RE
         reference = Path(__file__).resolve().parents[1] / (
-            "validation_20101212/experiments/01_d7_baseline_segmentation/"
+            "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/"
             "results/00_manifest/01_rd_manifest.csv"
         )
         with reference.open(newline="") as stream:

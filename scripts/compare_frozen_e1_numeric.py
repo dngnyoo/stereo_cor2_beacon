@@ -97,7 +97,7 @@ if __name__ == "__main__":
     p.add_argument("--atol", type=float, default=1e-4)
     p.add_argument("--rtol", type=float, default=1e-6)
     args = p.parse_args()
-    reference = args.repo / ("validation_20101212/experiments/"
+    reference = args.repo / ("validation/frozen/20101212/experiments/"
                              "11_d7_patch_first_tracking_feasibility/results/tables/"
                              "03_patch_e1_track_states.csv")
     raise SystemExit(check(reference, args.recomputed_dir / "03_patch_e1_track_states.csv",

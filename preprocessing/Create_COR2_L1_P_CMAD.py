@@ -106,7 +106,7 @@ def cor2_prep_level1(data, header, cal_dir, bkg_base_dir, silent=False):
     # Get all background files in the monthly folder
     # e.g., mc2A_p000_240506.fts, mc2A_p000_240513.fts ...
     bkg_pattern = os.path.join(bkg_dir, f"mc2{obs_char}_p{int(pol):03}_*.fts")
-    available_bkgs = sorted(glob.glob(bkg_pattern))
+    available_bkgs = sorted(f for f in glob.glob(bkg_pattern) if os.path.getsize(f) > 0)
 
     bkg_file = None
     if available_bkgs:
@@ -132,7 +132,7 @@ def cor2_prep_level1(data, header, cal_dir, bkg_base_dir, silent=False):
     
     # --- Redundant path check (Re-check specific date) ---
     bkg_file_spec = os.path.join(bkg_dir, f"mc2{obs_char}_p{int(pol):03}_{yymmdd}.fts")
-    if os.path.exists(bkg_file_spec):
+    if os.path.exists(bkg_file_spec) and os.path.getsize(bkg_file_spec) > 0:
         with fits.open(bkg_file_spec) as bkg_hdul:
             bkg_data = bkg_hdul[0].data.astype(np.float32)
             

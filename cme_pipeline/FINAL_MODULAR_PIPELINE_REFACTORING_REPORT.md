@@ -135,7 +135,7 @@ python -m cme_pipeline run --config configs/baseline_rule_b.yaml --force
 
 ## 6. Baseline 정량 수치 및 마스크 일치 검증 (Phase 4 Reproduction)
 
-기존 `validation_20101212/full_day_pipeline_validation/01_full_day_pipeline/` 산출물과 신규 모듈 산출물을 비트 단위 및 정량 지표로 대조한 결과입니다.
+기존 `validation/frozen/20101212/full_day_pipeline_validation/01_full_day_pipeline/` 산출물과 신규 모듈 산출물을 비트 단위 및 정량 지표로 대조한 결과입니다.
 
 ### [표 1] 핵심 거버넌스 및 과학적 마스크 일치 비교표
 | 검증 항목 | 역사적 기준값 (Historical Baseline) | 신규 모듈값 (Modular Output) | 오차 (Diff) | 판정 |

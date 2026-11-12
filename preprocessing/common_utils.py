@@ -26,11 +26,15 @@ def get_running_diff(curr_img, prev_img):
 
 import os
 import glob
+from pathlib import Path
 import numpy as np
 from astropy.io import fits
 
 # --- 1. Path Configuration (Global Constants) ---
-BASE_DIR = "./DATA"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+BASE_DIR = str(PROJECT_ROOT / "DATA")
+CAL_DIR = str(PROJECT_ROOT / "Calibration")
+BKG_BASE_DIR = str(PROJECT_ROOT / "Calibration" / "backgrounds")
 
 def get_directories(date_str):
     return {
@@ -39,8 +43,8 @@ def get_directories(date_str):
         "beacon_seq": os.path.join(BASE_DIR, "STEREO_DATA_seq/STA/Beacon_seq", date_str),
         "science_seq": os.path.join(BASE_DIR, "STEREO_DATA_seq/STA/Science_seq", date_str),
         "l2_dir": os.path.join(BASE_DIR, f"L2_RESULTS_{date_str[2:]}"),
-        "bkg_base": os.path.join(BASE_DIR, "Backgrounds"),
-        "cal_dir": os.path.join(BASE_DIR, "Calibration")
+        "bkg_base": BKG_BASE_DIR,
+        "cal_dir": CAL_DIR
     }
 
 # --- 2. Data Loading & Filtering ---
@@ -96,7 +100,7 @@ def cor2_prep_level1(data, header, cal_dir, bkg_base_dir, silent=True):
     
     bkg_dir = os.path.join(bkg_base_dir, "monthly_min", obs_char.lower(), yyyymm)
     bkg_pattern = os.path.join(bkg_dir, f"mc2{obs_char}_p{int(pol):03}_*.fts")
-    available_bkgs = sorted(glob.glob(bkg_pattern))
+    available_bkgs = sorted(f for f in glob.glob(bkg_pattern) if os.path.getsize(f) > 0)
 
     if available_bkgs:
         valid_bkgs = [f for f in available_bkgs if os.path.basename(f).split('_')[-1][:6] <= yymmdd]

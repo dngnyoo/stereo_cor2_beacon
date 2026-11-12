@@ -86,11 +86,11 @@ grid4_all = base_out.patch_activation_grid4
 patch_pa = geom.patch_pa
 patch_rad = geom.patch_rad
 
-exp01_dir = repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation"
+exp01_dir = repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation"
 rd_all = np.load(exp01_dir / "results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
 val_all = np.load(exp01_dir / "results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 
-exp11_dir = repo_root / "validation_20101212/experiments/11_d7_patch_first_tracking_feasibility"
+exp11_dir = repo_root / "validation/frozen/20101212/experiments/11_d7_patch_first_tracking_feasibility"
 df_states_e1 = pd.read_csv(exp11_dir / "results/tables/03_patch_e1_track_states.csv")
 lbls_e1_all = np.load(exp11_dir / "results/science_arrays/patch_component_labels.npy")
 

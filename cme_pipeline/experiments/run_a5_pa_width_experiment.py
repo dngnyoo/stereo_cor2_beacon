@@ -102,7 +102,7 @@ def main():
 
     # 4. Load Raw RD Background Data
     print("\n--- Loading Raw RD Background ---")
-    exp01_dir = repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation"
+    exp01_dir = repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation"
     rd_path = exp01_dir / "results/science_arrays/north_up_RD_DNs.npy"
     assert rd_path.exists(), f"RD array missing at {rd_path}!"
     rd_all = np.load(rd_path, mmap_mode="r")

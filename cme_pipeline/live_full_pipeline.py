@@ -199,7 +199,7 @@ def run_live_full(*, config_path: str | Path, date: str,
     if frozen_regression:
         # Verify all shared numeric and categorical Track State fields, not only IDs.
         from scripts.compare_frozen_e1_numeric import check as compare_e1_numeric
-        frozen_track_csv = (repo / "validation_20101212/experiments/"
+        frozen_track_csv = (repo / "validation/frozen/20101212/experiments/"
                             "11_d7_patch_first_tracking_feasibility/results/tables/"
                             "03_patch_e1_track_states.csv")
         comparison_result = compare_e1_numeric(
