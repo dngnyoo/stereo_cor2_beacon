@@ -69,7 +69,7 @@ def parse_args() -> argparse.Namespace:
     prepare_parser.add_argument("--frozen-reference-pairs", action="store_true",
                                 help="Select exactly the historical 60 paired FITS (20101212 only).")
     prepare_parser.add_argument("--phase-sec", default=None, type=float,
-                                help="30-minute phase in seconds (d7 only; May 2024 default: 1434).")
+                                help="30-minute phase in seconds (d7 only; inferred from DATE-OBS by default).")
     prepare_parser.add_argument("--output-dir", default=None)
 
     # Run an alternative detector on the same RD arrays without recalibrating.
@@ -159,6 +159,7 @@ def main() -> None:
             phase_sec=args.phase_sec,
             warmup_days=warmup_days,
             frozen_reference_pairs=args.frozen_reference_pairs,
+            raw_root=Path("data/raw/cor2") if args.source == "download" and args.product == "d7" else None,
         )
         print(f"FITS input manifest: {manifest}")
         if args.preprocess:
