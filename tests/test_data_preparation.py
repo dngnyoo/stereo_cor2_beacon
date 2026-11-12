@@ -58,6 +58,32 @@ class TestDataPreparation(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "date mismatch"):
                 inspect_fits([path], expected_date="20240510")
 
+    def test_local_prior_days_supply_warmup_pairs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "fits"
+            source.mkdir()
+            from datetime import datetime, timedelta
+            first = datetime(2024, 5, 8, 23, 23, 54)
+            for i in range(0, 97):
+                t = first + timedelta(minutes=30 * i)
+                hdr = fits.Header()
+                hdr["DATE-OBS"] = t.isoformat()
+                hdr["DETECTOR"] = "COR2"
+                hdr["OBSRVTRY"] = "STEREO_A"
+                hdr["EXPTIME"] = 1.0
+                path = source / f"sta_{t:%Y%m%d_%H%M%S}_d7c2.fts"
+                fits.writeto(path, np.ones((4, 4), dtype=np.float32), hdr)
+            manifest = prepare_source(
+                date="20240510", source="local", product="d7",
+                input_dir=source, output_dir=root / "prepared", warmup_days=2
+            )
+            selected = json.loads(manifest.read_text())["cadence_selection"]
+            self.assertGreater(selected["n_pairs"], 40)
+            self.assertEqual(selected["n_gaps"], 0)
+            self.assertTrue(selected["selected_frames"][0]["date_obs"].startswith("2024-05-08"))
+            self.assertTrue(selected["selected_frames"][-1]["date_obs"].startswith("2024-05-10"))
+
     def test_no_images_does_not_silently_succeed(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(ValueError, "No FITS"):
