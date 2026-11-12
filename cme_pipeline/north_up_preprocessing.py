@@ -82,45 +82,80 @@ def calibrate_no_msb(path: Path, *, trim_function=None, bias_function=None):
 
 
 def target_north_up_wcs(headers, *, shape=(256, 256)):
-    """Set a fixed solar-centered, north-up angular grid from input WCSes.
+    """Frozen Stage-26 geometry: median unscaled CRPIX and abs(CDELT).
 
-    Uses input celestial scale and input array extent to retain the physical FOV
-    when original FITS resolution differs from 256 x 256. All frames share
-    exactly one WCS target.
+    Do not flip longitude or rescale the plate scale in the 2010 replay.
+    The 2010 d7 native shape is already 256x256.
     """
-    from astropy.wcs.utils import proj_plane_pixel_scales
-
-    scales = []
-    centers = []
-    ctype = None
-    cunit = None
-    for header in headers:
-        w = WCS(header).celestial
-        if w.pixel_n_dim != 2 or w.world_n_dim != 2:
-            raise ValueError("Image requires 2D solar WCS")
-        raw_shape = (int(header["NAXIS2"]), int(header["NAXIS1"]))
-        angle_scale = np.asarray(proj_plane_pixel_scales(w), dtype=float)
-        if not np.all(np.isfinite(angle_scale)) or np.any(angle_scale <= 0):
-            raise ValueError("Invalid WCS angular pixel scale")
-        scales.append(angle_scale * np.array([raw_shape[1] / shape[1], raw_shape[0] / shape[0]]))
-        x0, y0 = w.world_to_pixel_values(0.0, 0.0)
-        centers.append([x0 / raw_shape[1] * shape[1], y0 / raw_shape[0] * shape[0]])
-        if ctype is None:
-            ctype, cunit = w.wcs.ctype, w.wcs.cunit
-    if not scales:
+    centers, scales = [], []
+    first = None
+    for h in headers:
+        if (int(h["NAXIS2"]), int(h["NAXIS1"])) != shape:
+            raise ValueError("Frozen WCS recipe expects 256x256 preprocessed frames")
+        w = WCS(h).celestial
+        if first is None:
+            first = w
+        centers.append(w.world_to_pixel_values(0., 0.))
+        scales.append(np.abs(w.wcs.cdelt))
+    if not centers:
         raise ValueError("No source WCS headers")
-    s = np.median(scales, axis=0)
-    c = np.median(centers, axis=0)
+    center = np.median(centers, axis=0)
+    scale = np.median(scales, axis=0)
     target = WCS(naxis=2)
-    target.wcs.ctype = list(ctype)
-    target.wcs.cunit = list(cunit)
-    target.wcs.crval = [0.0, 0.0]
-    target.wcs.crpix = [float(c[0]) + 1, float(c[1]) + 1]
-    target.wcs.cdelt = [-float(s[0]), float(s[1])]
+    target.wcs.ctype = list(first.wcs.ctype)
+    target.wcs.cunit = list(first.wcs.cunit)
+    target.wcs.crval = [0., 0.]
+    target.wcs.crpix = [float(center[0]) + 1., float(center[1]) + 1.]
+    target.wcs.cdelt = scale
     target.wcs.pc = np.eye(2)
     target.wcs.set()
     return target
 
+
+def downsample_static_mask(mask_data: np.ndarray, shape=(256, 256), *, threshold=.95):
+    """Exact historical 8x8 block average and >=0.95 mask validity."""
+    src = np.asarray(mask_data, dtype=np.float32)
+    if src.ndim != 2 or src.shape[0] % shape[0] or src.shape[1] % shape[1]:
+        raise ValueError(f"Mask shape {src.shape} cannot be block-reduced to {shape}")
+    by, bx = src.shape[0] // shape[0], src.shape[1] // shape[1]
+    average = src.reshape(shape[0], by, shape[1], bx).mean(axis=(1, 3))
+    return np.isfinite(average) & (average >= threshold)
+
+
+def historical_central_occulter(native_mask: np.ndarray):
+    """Historical Stage 26 8-connected invalid region containing center."""
+    from scipy.ndimage import label
+    if native_mask.ndim != 2:
+        raise ValueError("Expected a 2D mask")
+    labs, _ = label(~native_mask, structure=np.ones((3, 3), dtype=bool))
+    central_id = int(labs[native_mask.shape[0] // 2, native_mask.shape[1] // 2])
+    if central_id == 0:
+        raise ValueError("Historical mask has no central occulter")
+    return labs == central_id
+
+
+def reproject_historical(image, source_wcs, target_wcs, *, order):
+    """Stage 26 per-frame observer/date auxiliary WCS inheritance."""
+    import copy
+    from reproject import reproject_interp
+    frame_target = copy.deepcopy(target_wcs)
+    for key in ("hgln_obs", "hglt_obs", "dsun_obs", "rsun_ref"):
+        value = getattr(source_wcs.wcs.aux, key, None)
+        if value is not None:
+            setattr(frame_target.wcs.aux, key, value)
+    for key in ("dateobs", "dateavg", "datebeg", "dateend",
+                "mjdobs", "mjdavg", "mjdbeg", "mjdend"):
+        try:
+            value = getattr(source_wcs.wcs, key)
+            if value not in (None, ""):
+                setattr(frame_target.wcs, key, value)
+        except (AttributeError, TypeError, ValueError):
+            pass
+    frame_target.wcs.set()
+    return reproject_interp(
+        (np.asarray(image), source_wcs), frame_target,
+        shape_out=(256, 256), order=order, return_footprint=True
+    )
 
 def run_no_msb_north_up(manifest_path: str | Path, *,
                          mask_path: str | Path | None = None,
@@ -159,29 +194,30 @@ def run_no_msb_north_up(manifest_path: str | Path, *,
         raise FileNotFoundError(f"Required COR2 occulter mask: {mask_path}")
     with fits.open(mask_path, memmap=False) as hdul:
         mask_data = np.asarray(hdul[0].data, dtype=np.float32)
-        mask_wcs = WCS(hdul[0].header).celestial
-    mask_interp, mask_fp = reproject_interp(
-        (mask_data, mask_wcs), target, shape_out=shape, order="nearest-neighbor"
-    )
-    static_valid = (mask_fp > .95) & np.isfinite(mask_interp) & (mask_interp >= .95)
-    if not np.any(static_valid):
-        raise ValueError("Occulter mask has no valid pixels after reprojection")
-
+    native_mask = downsample_static_mask(mask_data, shape=shape, threshold=.95)
+    native_occulter = historical_central_occulter(native_mask)
     north_up = {}
     for source, (image, hdr) in calibrated.items():
-        reproj, footprint = reproject_interp(
-            (image, WCS(hdr).celestial), target,
-            shape_out=shape, order="bilinear"
+        source_wcs = WCS(hdr).celestial
+        reproj, _ = reproject_historical(image, source_wcs, target, order="bilinear")
+        valid_reproj, valid_footprint = reproject_historical(
+            native_mask.astype(float), source_wcs, target, order="nearest-neighbor"
         )
-        north_up[source] = (reproj, footprint)
+        occ_reproj, occ_footprint = reproject_historical(
+            native_occulter.astype(float), source_wcs, target, order="nearest-neighbor"
+        )
+        occulter = (np.nan_to_num(occ_reproj) >= .5) & (occ_footprint > 0)
+        frame_valid = ((np.nan_to_num(valid_reproj) >= .5) &
+                       (valid_footprint > 0) & np.isfinite(reproj) & ~occulter)
+        north_up[source] = (np.nan_to_num(reproj, nan=0.).astype(np.float32),
+                            frame_valid, occulter)
     rows = []
     rds, valids = [], []
     for pair in pairs:
         first, second = pair["start_file"], pair["end_file"]
-        before, fp_before = north_up[first]
-        after, fp_after = north_up[second]
-        valid = (static_valid & (fp_before > .95) & (fp_after > .95)
-                 & np.isfinite(before) & np.isfinite(after))
+        before, val_before, occ_before = north_up[first]
+        after, val_after, occ_after = north_up[second]
+        valid = val_before & val_after & ~(occ_before | occ_after)
         if not np.any(valid):
             raise ValueError(f"No valid RD pixels for pair {pair['pair_index']}")
         if abs(float(pair["delta_t_sec"]) - 1800.) > 2:
@@ -221,6 +257,7 @@ def run_no_msb_north_up(manifest_path: str | Path, *,
         "north_up": True,
         "cadence_tolerance_sec": 2.,
         "mask": str(mask_path),
+        "mask_rule": "historical block-mean >=0.95, central invalid component, per-frame source WCS",
         "status": "RD_READY_DETECTION_NOT_RUN",
     }, indent=2), encoding="utf-8")
     return output_dir
