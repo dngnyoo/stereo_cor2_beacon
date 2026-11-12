@@ -102,6 +102,8 @@ def parse_args() -> argparse.Namespace:
     full_parser.add_argument("--input-dir", help="Required with --source local")
     full_parser.add_argument("--acquisition-dir")
     full_parser.add_argument("--warmup-days", type=int, default=2)
+    full_parser.add_argument("--resume", action="store_true",
+                             help="Resume an interrupted v2 run after verifying inputs and finished stages.")
     full_parser.add_argument("--phase-sec", type=float)
     full_parser.add_argument("--mask-path")
     full_parser.add_argument("--method", choices=("c0",), default="c0")
@@ -135,7 +137,7 @@ def main() -> None:
             acquisition_dir=args.acquisition_dir, warmup_days=args.warmup_days,
             phase_sec=args.phase_sec, mask_path=args.mask_path,
             method=args.method, denoiser=args.denoiser,
-            frozen_regression=args.frozen_regression,
+            frozen_regression=args.frozen_regression, resume=args.resume,
         )
         return
 
