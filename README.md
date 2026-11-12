@@ -4,23 +4,48 @@ A reproducible research pipeline for tracking **coronal mass ejection (CME) cand
 
 **Start here:** [QUICK_START.md](QUICK_START.md) — clone, install, run, inspect catalogs and visualizations, and verify the frozen benchmark.
 
-## Current release
+## Current release and reproducibility
 
-The default **`main` branch now contains the complete eight-stage pipeline**, including an independent candidate-event catalog and standardized scientific visualizations. The earlier seven-stage benchmark metrics remain the reference regression target. The previous development branch is retained for provenance, but is no longer required to produce catalogs or PNG/GIF output.
+The integrated `run-data` command supports downloaded or local raw COR2 d7
+FITS, North-up RD, and previously computed C0 detections. It independently
+recomputes E1 tracks and executes Recovery, Association, Birth/Size Gates,
+Segmentation, and CME Products. The original Frozen benchmark is retained.
 
-**Validation status:** the seven-stage benchmark was reproduced from a clean GitHub clone on 2026-11-11. The newly merged eight-stage `main` code still requires a fresh-clone end-to-end run and updated tests before its outputs can be considered regression-verified.
+**Verified on November 12, 2026:** a fresh local checkout reprocessed the
+same December 2010 source FITS into 63 RD pairs, 201 E1 tracks, 15 admitted
+families, and 45,504 segmented pixels. Its final 31×256×256 mask was
+bitwise identical to the prior general 63-pair run (0 changed pixels).
+The original Frozen 60-pair regression also passed separately.
+External catalog validation remains specific to explicit Frozen regression.
+Uninterrupted remote-download-to-final execution and generalization to other
+dates are not yet certified.
 
-## Development: integrated FITS → C0 → E1 → CME workflow
+### Required COR2-A calibration mask
 
-On `feature/data-preparation`, the experimental `run-data` CLI supports
-local/downloaded d7 FITS, existing North-up RD, or existing C0 detections.
-It **recomputes E1 tracks from detections**, then runs the canonical stage
-orchestrator through CME products and (only on 2010-12-12) external validation.
-The historical 60-pair regression fixture is opt-in via `--frozen-regression`;
-general runs preserve all valid selected RD pairs.
+**New general processing uses `Calibration/cor2A_mask.fts` by default.**
+This 2048×2048, approximately 17 MB static calibration asset must be
+installed before running raw FITS preprocessing. It has known SHA-256:
 
-See [Integrated C0/E1 pipeline](docs/INTEGRATED_C0_E1_PIPELINE.md) for
-commands, safety constraints, and current scientific limitations.
+`7cde9474fa9d1fe93d9a6ff08464598d5d2250b423b00be449ca24b2ec7ca606`
+
+The repository's old placeholder masks may be zero bytes. No fallback to a
+different instrument mask is permitted; the pipeline checks the official mask
+checksum and FITS dimensions and fails with an explanatory error when absent.
+
+On the reference WSL setup, install from the archived verified source:
+
+```bash
+cp ~/stereo_cor2/handover/calibration/cor2A_mask.fts Calibration/cor2A_mask.fts
+sha256sum Calibration/cor2A_mask.fts
+```
+
+The historical `--frozen-regression` mode continues using the original
+`Calibration/cor2_mask.fts` unless explicitly overridden.
+For a deliberate alternative-mask experiment, supply `--mask-path`; results
+must be recorded as a separate run and must not replace either baseline.
+
+See [Integrated C0/E1 pipeline](docs/INTEGRATED_C0_E1_PIPELINE.md)
+for complete CLI usage and limitations.
 
 ## Quick start: generate the full CME results on `main`
 
