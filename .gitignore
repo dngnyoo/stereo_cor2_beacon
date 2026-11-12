@@ -39,3 +39,4 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+/Calibration/cor2_mask.fts
