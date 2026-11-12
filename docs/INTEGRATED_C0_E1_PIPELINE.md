@@ -67,6 +67,33 @@ directory can instead be supplied with `--preprocessed-dir`.
 
 The historical external catalog validation stage runs **only** with\n`--frozen-regression`, even when a general run uses date `20101212`.\nThe fixed validation reference indexes 32 historical frames and cannot\nbe applied to the general run's different observation sequence.\nGeneral runs still produce CME catalogs and segmentation masks.\n\nIf a run failed at the validation stage before this fix, the independent\nC0 results are kept in `runs/<run-name>_detection/`. Use a fresh\n`--run-name` with `--detection-dir` pointing there to avoid recalculating C0.
 
+## Recovering a completed download after a cadence-selection error
+
+For 2010-12-12 the actual observed d7 cadence may differ from the
+May 2024 default phase (1434 seconds). The integrated pipeline now infers
+the strongest strict 30-minute DATE-OBS phase unless --phase-sec is
+explicitly provided. It records the selected phase in input_manifest.json.
+
+If a previous --source download run finished retrieving FITS but failed
+before creating its input manifest, **do not redownload**. The original
+files remain in the failed run's acquisition directory. Run a **new run name**
+against those already downloaded raw files:
+
+```bash
+python -m cme_pipeline run-data \
+  --config configs/baseline_rule_b.yaml \
+  --date 20101212 \
+  --run-name raw_e2e_20101212_retry \
+  --source local \
+  --input-dir runs/acquisition_20101212_raw_e2e_20101212/raw \
+  --warmup-days 1
+```
+
+Local d7 ingestion uses Science-first selection when both science and
+beacon copies exist, mirroring the download policy without deleting files.
+The 63-pair target is a **regression expectation**, not a forced count;
+verify exact paired FITS identities before comparing output masks.
+
 ## Scientific scope and limitations
 
 - The new combined command is **not yet locally end-to-end tested**.
