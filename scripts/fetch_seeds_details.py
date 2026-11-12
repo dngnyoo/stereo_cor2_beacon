@@ -106,7 +106,14 @@ def main(argv=None) -> int:
         args.date, raw_root=args.raw_root, output_root=args.output_root,
         base=args.base_url, timeout=args.timeout, force=args.force,
     )
+    from scripts.parse_seeds_details import parse_directory
+    events, frames = parse_directory(Path(result["directory"]), args.date)
+    output = Path("data/catalogs/seeds") / args.date
+    output.mkdir(parents=True, exist_ok=True)
+    events.to_csv(output / "seeds_events.csv", index=False)
+    frames.to_csv(output / "seeds_frames.csv", index=False)
     print(json.dumps(result, indent=2))
+    print(f"Parsed {len(events)} SEEDS events and {len(frames)} frames -> {output}")
     return 0
 
 
