@@ -30,7 +30,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 
-def build_tracking(detection_dir: Path, states_path: Path, cfg: PipelineConfig) -> TrackingOutput:
+def build_tracking(detection_dir: Path, states_path: Path, cfg: PipelineConfig, *,\n                   historical_geometry: bool = True) -> TrackingOutput:
     det = load_live_tracking_input(detection_dir)
     # Reproduce benchmark's policy: tracking only on VALID analysis-date pairs.
     manifest = det.manifest_df
@@ -67,7 +67,8 @@ def build_tracking(detection_dir: Path, states_path: Path, cfg: PipelineConfig) 
     # historical convention is limited to this replay runner, not generic C0.
     header = det.geometry.wcs_header_str
     wcs = WCS(fits.Header.fromstring(header, sep="\n"))
-    sx, sy = 126.618, 127.503
+    sx, sy = ((126.618, 127.503) if historical_geometry else
+              tuple(float(v) for v in wcs.world_to_pixel_values(0.0, 0.0)))
     rasters = compute_wcs_rasters(wcs=wcs, center_xy=(sx, sy), patch_size=4)
     geometry = GeometryContext(
         sx=sx, sy=sy, rsun_px=8.163, occulter_inner_radius_px=16.326,
