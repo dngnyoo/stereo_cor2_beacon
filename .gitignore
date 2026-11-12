@@ -31,3 +31,5 @@ Thumbs.db
 
 # Local research datasets
 /datasets/
+# Shared downloaded observations (never commit large raw FITS)
+/data/
