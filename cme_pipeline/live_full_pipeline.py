@@ -56,6 +56,14 @@ def run_live_full(*, config_path: str | Path, date: str,
     if run_dir.exists():
         raise FileExistsError(f"Refusing to overwrite existing pipeline run: {run_dir}")
     if source is not None:
+        # Validate calibration assets before potentially costly downloads.
+        from cme_pipeline.north_up_preprocessing import load_cor2_mask
+        preflight_mask = mask_path
+        if frozen_regression and preflight_mask is None:
+            preflight_mask = repo / "Calibration" / "cor2_mask.fts"
+        load_cor2_mask(preflight_mask)
+    run_dir.mkdir(parents=True, exist_ok=False)
+    if source is not None:
         if source not in {"local", "download"}:
             raise ValueError("source must be local or download")
         location = Path(acquisition_dir).resolve() if acquisition_dir else run_dir / "acquisition"
