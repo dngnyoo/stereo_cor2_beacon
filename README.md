@@ -2,7 +2,7 @@
 
 A reproducible research pipeline for tracking **coronal mass ejection (CME) candidates** in STEREO-A COR2 data, recovering candidate structures, building families, producing pixel-level segmentation masks, and comparing results with independent CME catalogs.
 
-**Start here:** [QUICK_START.md](QUICK_START.md) — install the verified calibration mask, download/reuse NASA FITS, run the complete raw-to-catalog pipeline, and compare with the historical Frozen benchmark.
+**Start here:** [QUICK_START.md](QUICK_START.md) — clone, install dependencies, download/reuse NASA FITS, and run the complete COR2-A raw-to-catalog pipeline.
 
 ## Current release and reproducibility
 
@@ -20,31 +20,19 @@ External catalog validation remains specific to explicit Frozen regression.
 Uninterrupted remote-download-to-final execution and generalization to other
 dates are not yet certified.
 
-### Required COR2-A calibration mask
+### Official COR2-A calibration
 
-**New general processing uses `Calibration/cor2A_mask.fts` by default.**
-This 2048×2048, approximately 17 MB static calibration asset must be
-installed before running raw FITS preprocessing. It has known SHA-256:
+The repository includes the verified `Calibration/cor2A_mask.fts`
+(2048×2048, 16,781,760 bytes). No manual mask installation is needed.
+The pipeline checks its SHA-256 before calibration:
 
 `7cde9474fa9d1fe93d9a6ff08464598d5d2250b423b00be449ca24b2ec7ca606`
 
-The repository's old placeholder masks may be zero bytes. No fallback to a
-different instrument mask is permitted; the pipeline checks the official mask
-checksum and FITS dimensions and fails with an explanatory error when absent.
-
-On the reference WSL setup, install from the archived verified source:
-
-```bash
-cp ~/stereo_cor2/handover/calibration/cor2A_mask.fts Calibration/cor2A_mask.fts
-sha256sum Calibration/cor2A_mask.fts
-```
-
-All new raw-FITS runs use the official `Calibration/cor2A_mask.fts` by default,
-including `--frozen-regression` selection. Previously recorded frozen reference
-results made with `cor2_mask.fts` are historical artifacts, not current
-COR2-A scientific baselines; numerical agreement with those historical
-references is **not** expected when the mask changes. Explicit
-`--mask-path` is retained only for controlled archival comparisons.
+Previously generated results using `cor2_mask.fts` are archived historical
+comparisons, **not** the official COR2-A baseline. All new raw-FITS
+preprocessing defaults to COR2-A. Other packaged calibration FITS are
+retained for archival/legacy preprocessing compatibility. Explicit
+`--mask-path` is available for deliberate controlled comparisons.
 
 See [Integrated C0/E1 pipeline](docs/INTEGRATED_C0_E1_PIPELINE.md)
 for complete CLI usage and limitations.
