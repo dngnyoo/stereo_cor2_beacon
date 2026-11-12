@@ -5,6 +5,7 @@ remains available through the legacy 'run' CLI and explicit --frozen-regression.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import numpy as np
@@ -19,6 +20,42 @@ def select_live_stages(stages, *, frozen_regression: bool):
     return [stage for stage in stages if stage.name != "validation"]
 
 
+def check_run_request(run_dir: Path, request: dict, *, resume: bool) -> bool:
+    """Create a fresh run or verify an interrupted run has identical inputs.
+
+    Returns True when a known complete run can be safely reused.
+    """
+    state_file = run_dir / "run_request.json"
+    if run_dir.exists():
+        if not resume:
+            raise FileExistsError(f"Refusing to overwrite existing pipeline run: {run_dir}")
+        if not state_file.is_file():
+            raise ValueError(f"Cannot resume run without request provenance: {state_file}")
+        stored = json.loads(state_file.read_text(encoding="utf-8"))
+        if stored != request:
+            raise ValueError(
+                "Resume arguments/config/mask changed; use a new --run-name"
+            )
+        return (run_dir / "integrated_run_summary.json").is_file()
+    if resume:
+        raise FileNotFoundError(f"Cannot resume nonexistent run: {run_dir}")
+    run_dir.mkdir(parents=True, exist_ok=False)
+    state_file.write_text(json.dumps(request, indent=2) + "\n", encoding="utf-8")
+    return False
+
+
+def stage_ready(path: Path, required: tuple[str, ...]) -> bool:
+    """Reuse only a completed stage; reject ambiguous partial artifacts."""
+    if not path.exists():
+        return False
+    if all((path / name).is_file() for name in required):
+        return True
+    raise RuntimeError(
+        f"Incomplete stage directory {path}; inspect or archive it "
+        "before resuming. Raw FITS remain safe and reusable."
+    )
+
+
 def run_live_full(*, config_path: str | Path, date: str,
                   run_name: str, detection_dir: str | Path | None = None,
                   preprocessed_dir: str | Path | None = None,
@@ -27,7 +64,8 @@ def run_live_full(*, config_path: str | Path, date: str,
                   warmup_days: int = 2, phase_sec: float | None = None,
                   mask_path: str | Path | None = None,
                   method: str = "c0", denoiser: str = "gaussian",
-                  frozen_regression: bool = False) -> Path:
+                  frozen_regression: bool = False,
+                  resume: bool = False) -> Path:
     from cme_pipeline.data_preparation import validate_date, prepare_source
     from cme_pipeline.north_up_preprocessing import run_no_msb_north_up
     from cme_pipeline.live_detection import run_detection
@@ -53,37 +91,83 @@ def run_live_full(*, config_path: str | Path, date: str,
     cfg.cache_enabled = False
     repo = Path(cfg.repo_root)
     run_dir = (repo / cfg.output_base_dir / run_name).resolve()
-    if run_dir.exists():
-        raise FileExistsError(f"Refusing to overwrite existing pipeline run: {run_dir}")
+    calibrated_sha = None
+    if source is not None:
+        # Validate calibration before expensive acquisition and include the
+        # actual mask contents in the resume identity.
+        from cme_pipeline.north_up_preprocessing import load_cor2_mask
+        preflight_mask = mask_path
+        if frozen_regression and preflight_mask is None:
+            preflight_mask = repo / "Calibration" / "cor2_mask.fts"
+        _, _, calibrated_sha = load_cor2_mask(preflight_mask)
+    request = {
+        "schema_version": 1,
+        "date": date, "run_name": run_name,
+        "config_sha256": hashlib.sha256(Path(config_path).read_bytes()).hexdigest(),
+        "source": source,
+        "input_dir": str(Path(input_dir).resolve()) if input_dir else None,
+        "preprocessed_dir": str(Path(preprocessed_dir).resolve()) if preprocessed_dir else None,
+        "detection_dir": str(Path(detection_dir).resolve()) if detection_dir else None,
+        "acquisition_dir": str(Path(acquisition_dir).resolve()) if acquisition_dir else None,
+        "warmup_days": warmup_days,
+        "phase_sec": phase_sec, "mask_sha256": calibrated_sha,
+        "mask_path": str(Path(mask_path).resolve()) if mask_path else None,
+        "method": method, "denoiser": denoiser,
+        "frozen_regression": frozen_regression,
+    }
+    if check_run_request(run_dir, request, resume=resume):
+        print(f"Verified complete run, no work needed: {run_dir}")
+        return run_dir
     if source is not None:
         if source not in {"local", "download"}:
             raise ValueError("source must be local or download")
-        location = Path(acquisition_dir or repo / "runs" / f"acquisition_{date}_{run_name}")
-        if location.resolve().exists():
-            raise FileExistsError(f"Refusing to overwrite acquisition directory: {location}")
-        manifest = prepare_source(
-            date=date, source=source, product="d7", input_dir=input_dir,
-            output_dir=location, warmup_days=warmup_days,
-            phase_sec=phase_sec, frozen_reference_pairs=False,
-        )
-        # Frozen regression must retain the original mask, regardless of the
-        # COR2-A official default used by general production processing.
+        location = Path(acquisition_dir).resolve() if acquisition_dir else run_dir / "acquisition"
+        manifest = location / "input_manifest.json"
+        if not (resume and manifest.is_file()):
+            if location.exists() and not resume:
+                raise FileExistsError(
+                    f"Refusing to overwrite acquisition directory: {location}"
+                )
+            manifest = prepare_source(
+                date=date, source=source, product="d7", input_dir=input_dir,
+                output_dir=location, warmup_days=warmup_days,
+                phase_sec=phase_sec, frozen_reference_pairs=False,
+                raw_root=repo / "data" / "raw" / "cor2" if source == "download" else None,
+            )
+        # Frozen regression retains the historic mask, not the COR2-A default.
         selected_mask = mask_path
         if frozen_regression and selected_mask is None:
             selected_mask = repo / "Calibration" / "cor2_mask.fts"
-        preprocessed_dir = run_no_msb_north_up(manifest, mask_path=selected_mask)
+        candidate = location / "preprocessed"
+        if resume and stage_ready(candidate, (
+                "preprocessing_metadata.json", "01_rd_manifest.csv",
+                "north_up_RD_DNs_per_second.npy", "north_up_pair_valid_masks.npy",
+                "target_wcs_header.txt")):
+            preprocessed_dir = candidate
+        else:
+            preprocessed_dir = run_no_msb_north_up(manifest, mask_path=selected_mask)
     if preprocessed_dir is not None:
         # Frozen selection is deliberately opt-in. General RD data are never trimmed.
         if frozen_regression:
             from scripts.build_frozen_replay import build
-            preprocessed_dir = build(
-                repo, Path(preprocessed_dir),
-                run_dir.parent / f"{run_name}_frozen_input" / "preprocessed"
+            candidate = run_dir / "frozen_input" / "preprocessed"
+            if resume and stage_ready(candidate, (
+                    "preprocessing_metadata.json", "01_rd_manifest.csv",
+                    "north_up_RD_DNs_per_second.npy",
+                    "north_up_pair_valid_masks.npy", "target_wcs_header.txt")):
+                preprocessed_dir = candidate
+            else:
+                preprocessed_dir = build(repo, Path(preprocessed_dir), candidate)
+        candidate = run_dir / "detection"
+        if resume and stage_ready(candidate, (
+                "detection_metadata.json", "frame_detection_summary.csv",
+                "patch_state_p04.npy", "patch_component_labels.npy")):
+            detection_dir = candidate
+        else:
+            detection_dir = run_detection(
+                preprocessed_dir, method=method, denoiser=denoiser, requested_date=date,
+                output_dir=candidate
             )
-        detection_dir = run_detection(
-            preprocessed_dir, method=method, denoiser=denoiser, requested_date=date,
-            output_dir=run_dir.parent / f"{run_name}_detection"
-        )
     assert detection_dir is not None
     detection_dir = Path(detection_dir).resolve()
     metadata = json.loads((detection_dir / "detection_metadata.json").read_text())
@@ -96,15 +180,25 @@ def run_live_full(*, config_path: str | Path, date: str,
     ).get("frozen_reference_pairs"):
         raise ValueError("Frozen regression requires explicit 60-pair fixture")
 
-    e1_dir = run_dir.parent / f"{run_name}_e1_recomputed"
-    if e1_dir.exists():
-        raise FileExistsError(f"Refusing to overwrite tracking directory: {e1_dir}")
-    outcome = recompute_e1(
-        detection_dir, repo, e1_dir, compare_frozen=frozen_regression,
-        historical_geometry=frozen_regression
-    )
-    if outcome != 0:
-        raise RuntimeError("E1 recomputation failed Frozen reference comparison")
+    e1_dir = run_dir / "tracking"
+    e1_ready = resume and stage_ready(e1_dir, (
+        "summary.json", "03_patch_e1_track_states.csv",
+        "01_patch_component_geometries.csv",
+        "02_patch_e1_candidate_evaluations.csv"))
+    if e1_ready:
+        e1_status = json.loads((e1_dir / "summary.json").read_text()).get("status")
+        accepted = "PASS" if frozen_regression else "TRACKING_RECOMPUTED_NOT_REFERENCE_VALIDATED"
+        if e1_status != accepted:
+            raise RuntimeError(f"Refusing to resume failed E1 tracking: {e1_status}")
+    if not e1_ready:
+        if e1_dir.exists():
+            raise FileExistsError(f"Refusing to overwrite tracking directory: {e1_dir}")
+        outcome = recompute_e1(
+            detection_dir, repo, e1_dir, compare_frozen=frozen_regression,
+            historical_geometry=frozen_regression
+        )
+        if outcome != 0:
+            raise RuntimeError("E1 recomputation failed Frozen reference comparison")
     if frozen_regression:
         # Verify all shared numeric and categorical Track State fields, not only IDs.
         from scripts.compare_frozen_e1_numeric import check as compare_e1_numeric
@@ -127,9 +221,8 @@ def run_live_full(*, config_path: str | Path, date: str,
     if result["status"] != "SUCCESS":
         raise RuntimeError("Integrated pipeline failed")
     ctx = pipeline.context
-    tracking.track_states_df.to_csv(
-        ctx.stages_dir / "recomputed_e1_track_states.csv", index=False
-    )
+    # E1 states already persist in tracking/03_patch_e1_track_states.csv;
+    # do not write a second identical stages/ copy.
     seg = result["stage_outputs"]["segmentation"]
     sizes = seg.size_gate_output
     association = sizes.birth_gate_output.association_output
@@ -143,6 +236,8 @@ def run_live_full(*, config_path: str | Path, date: str,
         "e1_numeric_regression": "PASS" if frozen_regression else "NOT_APPLICABLE",
         "tracking_input": str((e1_dir / "03_patch_e1_track_states.csv").resolve()),
         "detection_input": str(detection_dir),
+        "raw_data_root": str(repo / "data" / "raw" / "cor2") if source == "download" else None,
+        "run_layout_version": 2,
         "input_pairs": int(json.loads((Path(metadata["input_dir"]) / "preprocessing_metadata.json")
                                      .read_text()).get("n_rd_pairs", -1)),
         "evaluation_pairs": len(tracking.manifest_df),

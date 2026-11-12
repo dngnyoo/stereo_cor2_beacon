@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit, unquote
+import hashlib
 import json
 import re
 import time
@@ -63,6 +64,40 @@ def download_cor2(date: str, product: str, output_dir: Path,
     date = validate_date(date)
     if product not in SOURCE_URLS:
         raise ValueError(f"Unknown COR2 product: {product}; choose {sorted(SOURCE_URLS)}")
+    output_dir = Path(output_dir)
+    completion = output_dir / ".download_complete.json"
+    # A completed day/source listing is authoritative for offline replay.
+    # Verify SHA-256 before reusing; a missing or changed file invalidates
+    # the marker and triggers an incremental refresh from the archive.
+    stale_names = set()
+    if completion.is_file():
+        try:
+            recorded = json.loads(completion.read_text(encoding="utf-8"))
+            if (recorded.get("date") == date and recorded.get("product") == product
+                    and recorded.get("files")):
+                verified = []
+                for item in recorded["files"]:
+                    name = item["name"]
+                    if Path(name).name != name or not name.lower().endswith(FITS_SUFFIXES):
+                        raise ValueError("Invalid raw cache filename")
+                    target = output_dir / name
+                    if not target.is_file() or target.stat().st_size != item["size"]:
+                        stale_names.add(name)
+                        continue
+                    digest = hashlib.sha256()
+                    with target.open("rb") as stream:
+                        for block in iter(lambda: stream.read(1024 * 1024), b""):
+                            digest.update(block)
+                    if digest.hexdigest() != item["sha256"]:
+                        stale_names.add(name)
+                        continue
+                    verified.append(target)
+                if not stale_names:
+                    print(f"Reused cached {product} {date}: {len(verified)} FITS", flush=True)
+                    return verified
+                print(f"Raw cache has {len(stale_names)} missing/changed FITS for {product} {date}; refreshing", flush=True)
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+            print(f"Raw cache incomplete/changed for {product} {date}; refreshing", flush=True)
     client = session if session is not None else requests.Session()
     base_url = f"{SOURCE_URLS[product]}{date}/"
     # NASA may occasionally close connections without sending a response.
@@ -105,7 +140,7 @@ def download_cor2(date: str, product: str, output_dir: Path,
     result = []
     for name in sorted(names):
         target = output_dir / name
-        if not target.is_file() or target.stat().st_size == 0:
+        if name in stale_names or not target.is_file() or target.stat().st_size == 0:
             temporary = target.with_name(target.name + ".part")
             file_url = urljoin(base_url, name)
             for attempt in range(5):
@@ -132,6 +167,27 @@ def download_cor2(date: str, product: str, output_dir: Path,
                 finally:
                     temporary.unlink(missing_ok=True)
         result.append(target)
+    # Commit the day-level inventory only after every expected FITS succeeds.
+    # The atomic marker makes complete dates reusable without network access.
+    inventory = []
+    for target in result:
+        digest = hashlib.sha256()
+        with target.open("rb") as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(block)
+        inventory.append({
+            "name": target.name,
+            "size": target.stat().st_size,
+            "sha256": digest.hexdigest(),
+        })
+    marker = completion.with_name(completion.name + ".tmp")
+    marker.write_text(json.dumps({
+        "schema_version": 1,
+        "date": date,
+        "product": product,
+        "files": inventory,
+    }, indent=2) + "\n", encoding="utf-8")
+    marker.replace(completion)
     return result
 
 
@@ -176,7 +232,8 @@ def prepare_source(*, date: str, source: str, product: str,
                    input_dir: str | Path | None, output_dir: str | Path,
                    phase_sec: float | None = None,
                    warmup_days: int = 0,
-                   frozen_reference_pairs: bool = False) -> Path:
+                   frozen_reference_pairs: bool = False,
+                   raw_root: str | Path | None = None) -> Path:
     """Acquire the analysis date and optional preceding UTC warmup days."""
     date = validate_date(date)
     if not 0 <= warmup_days <= 7:
@@ -194,7 +251,8 @@ def prepare_source(*, date: str, source: str, product: str,
             # archives, retain provenance, and choose Science-first d7.
             from cme_pipeline.dual_archive import collect_dual_archive
             files, raw_inventory_path, selected_sources_path = collect_dual_archive(
-                requested_days, output_dir
+                requested_days, output_dir,
+                raw_root=Path(raw_root) if raw_root is not None else None,
             )
         else:
             for observed_date in requested_days:
@@ -326,6 +384,7 @@ def prepare_source(*, date: str, source: str, product: str,
         "files": records,
         "cadence_selection": cadence,
         "raw_inventory_manifest": str(raw_inventory_path) if source == "download" and product == "d7" else None,
+        "raw_data_root": str(Path(raw_root).resolve()) if source == "download" and raw_root is not None else None,
         "selected_d7_sources_manifest": str(selected_sources_path) if source == "download" and product == "d7" else None,
         "status": "INVENTORIED_NOT_PREPROCESSED",
         "next_step": "Validated COR2 calibration, north-up RD and C3 detection are required.",

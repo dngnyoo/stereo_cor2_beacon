@@ -47,6 +47,23 @@ must be recorded as a separate run and must not replace either baseline.
 See [Integrated C0/E1 pipeline](docs/INTEGRATED_C0_E1_PIPELINE.md)
 for complete CLI usage and limitations.
 
+### Shared raw FITS and one directory per run
+
+`run-data --source download` now saves each NASA archive/date under
+`data/raw/cor2/{science,beacon}/YYYYMMDD/` and reuses each completed,
+SHA-256-verified date automatically. New dates accumulate alongside existing
+dates. No manual `--input-dir` is required for downloaded raw data.
+
+Each new run writes acquisition metadata, North-up RD, C0 detection, E1 tracking,
+and final CME products inside **one** `runs/<run-name>/` tree. Results from
+previous layouts are not moved or deleted automatically. See
+[Raw data and run layout](docs/RUN_DATA_LAYOUT.md) for exact paths, safe
+legacy raw migration, and cleanup guidance. Interrupted v2 runs support
+`--resume` with the same arguments and unchanged config/mask, reusing
+completed stages while rejecting partial artifacts. This new resume path
+still requires an execution regression on MELONHOUSE.
+
+
 ## Quick start: generate the full CME results on `main`
 
 Run the following from a Linux shell with Python 3.12 available:

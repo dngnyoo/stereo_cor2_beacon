@@ -68,3 +68,37 @@ def test_historical_validation_only_runs_in_explicit_frozen_mode():
         assert [stage.name for stage in selected][-1] == "products"
         assert len(selected) == 7
     assert [s.name for s in select_live_stages(stages, frozen_regression=True)][-1] == "validation"
+
+
+def test_run_data_accepts_resume_flag():
+    args = _args("--config", "configs/baseline_rule_b.yaml",
+                 "--date", "20101212", "--run-name", "retry",
+                 "--source", "download", "--resume")
+    assert args.resume is True
+
+
+def test_resume_provenance_guard_and_completion(tmp_path):
+    from cme_pipeline.live_full_pipeline import check_run_request
+
+    run = tmp_path / "runs" / "candidate"
+    expected = {"date": "20101212", "config_sha256": "abc", "mask_sha256": "def"}
+    assert check_run_request(run, expected, resume=False) is False
+    assert check_run_request(run, expected, resume=True) is False
+    with pytest.raises(FileExistsError, match="overwrite"):
+        check_run_request(run, expected, resume=False)
+    with pytest.raises(ValueError, match="changed"):
+        check_run_request(run, {**expected, "mask_sha256": "other"}, resume=True)
+    (run / "integrated_run_summary.json").write_text("{}")
+    assert check_run_request(run, expected, resume=True) is True
+
+
+def test_resume_rejects_partial_stage(tmp_path):
+    from cme_pipeline.live_full_pipeline import stage_ready
+
+    folder = tmp_path / "detection"
+    assert stage_ready(folder, ("detection_metadata.json",)) is False
+    folder.mkdir()
+    with pytest.raises(RuntimeError, match="Incomplete stage"):
+        stage_ready(folder, ("detection_metadata.json",))
+    (folder / "detection_metadata.json").write_text("{}")
+    assert stage_ready(folder, ("detection_metadata.json",)) is True

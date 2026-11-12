@@ -69,7 +69,7 @@ def parse_args() -> argparse.Namespace:
     prepare_parser.add_argument("--frozen-reference-pairs", action="store_true",
                                 help="Select exactly the historical 60 paired FITS (20101212 only).")
     prepare_parser.add_argument("--phase-sec", default=None, type=float,
-                                help="30-minute phase in seconds (d7 only; May 2024 default: 1434).")
+                                help="30-minute phase in seconds (d7 only; inferred from DATE-OBS by default).")
     prepare_parser.add_argument("--output-dir", default=None)
 
     # Run an alternative detector on the same RD arrays without recalibrating.
@@ -102,6 +102,8 @@ def parse_args() -> argparse.Namespace:
     full_parser.add_argument("--input-dir", help="Required with --source local")
     full_parser.add_argument("--acquisition-dir")
     full_parser.add_argument("--warmup-days", type=int, default=2)
+    full_parser.add_argument("--resume", action="store_true",
+                             help="Resume an interrupted v2 run after verifying inputs and finished stages.")
     full_parser.add_argument("--phase-sec", type=float)
     full_parser.add_argument("--mask-path")
     full_parser.add_argument("--method", choices=("c0",), default="c0")
@@ -135,7 +137,7 @@ def main() -> None:
             acquisition_dir=args.acquisition_dir, warmup_days=args.warmup_days,
             phase_sec=args.phase_sec, mask_path=args.mask_path,
             method=args.method, denoiser=args.denoiser,
-            frozen_regression=args.frozen_regression,
+            frozen_regression=args.frozen_regression, resume=args.resume,
         )
         return
 
@@ -159,6 +161,7 @@ def main() -> None:
             phase_sec=args.phase_sec,
             warmup_days=warmup_days,
             frozen_reference_pairs=args.frozen_reference_pairs,
+            raw_root=Path("data/raw/cor2") if args.source == "download" and args.product == "d7" else None,
         )
         print(f"FITS input manifest: {manifest}")
         if args.preprocess:
