@@ -99,7 +99,8 @@ def _pure_hierarchy(flat: dict[int, np.ndarray]) -> dict[int, np.ndarray]:
 def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
                   denoiser: str = "gaussian", requested_date: str | None = None,
                   qc_max_active_fraction: float = .70,
-                  min_floor_patches: int = 3,\n                  output_dir: str | Path | None = None) -> Path:
+                  min_floor_patches: int = 3,
+                  output_dir: str | Path | None = None) -> Path:
     """Compute C0 or C3 on all available RD, save explicit detection statuses.
 
     Historical C0 and C3 differ in parent hierarchy. Both share P95/T24 and
@@ -125,7 +126,8 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         raise ValueError("RD manifest and image count mismatch")
     if requested_date is None:
         requested_date = str(metadata.get("requested_date", manifest[-1]["date_str"]))
-    out = Path(output_dir).resolve() if output_dir is not None else (\n        folder.parent / f"detection_{method}_{denoiser}")
+    out = Path(output_dir).resolve() if output_dir is not None else (
+        folder.parent / f"detection_{method}_{denoiser}")
     if out.exists():
         raise FileExistsError(f"Refusing to overwrite detector results: {out}")
 
