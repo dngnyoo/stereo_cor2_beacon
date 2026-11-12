@@ -16,7 +16,7 @@ from astropy.io import fits
 from bs4 import BeautifulSoup
 import numpy as np
 
-D7_SOURCE_URL = "https://stereo-ssc.nascom.nasa.gov/data/ins_data/secchi/L0/a/img/cor2/"
+D7_SOURCE_URL = "https://stereo-ssc.nascom.nasa.gov/data/beacon/ahead/secchi/img/cor2/"
 
 SOURCE_URLS = {
     "d7": D7_SOURCE_URL,
