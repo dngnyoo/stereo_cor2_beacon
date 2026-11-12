@@ -66,7 +66,12 @@ def run_live_full(*, config_path: str | Path, date: str,
             output_dir=location, warmup_days=warmup_days,
             phase_sec=phase_sec, frozen_reference_pairs=False,
         )
-        preprocessed_dir = run_no_msb_north_up(manifest, mask_path=mask_path)
+        # Frozen regression must retain the original mask, regardless of the
+        # COR2-A official default used by general production processing.
+        selected_mask = mask_path
+        if frozen_regression and selected_mask is None:
+            selected_mask = repo / "Calibration" / "cor2_mask.fts"
+        preprocessed_dir = run_no_msb_north_up(manifest, mask_path=selected_mask)
     if preprocessed_dir is not None:
         # Frozen selection is deliberately opt-in. General RD data are never trimmed.
         if frozen_regression:
