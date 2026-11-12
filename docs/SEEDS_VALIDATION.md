@@ -127,3 +127,42 @@ documented, scientifically justified conversion method before use.
 ```bash
 python -m pytest -q tests/test_collect_seeds.py
 ```
+
+## Official GMU SEEDS STEREO-A/COR2 monthly TXT source
+
+The confirmed source directory pattern is:
+
+`http://spaceweather.gmu.edu/seeds/secchi/detection_cor2/a/YYYY/MM/`
+
+with `monthly.txt` (event records), `daily.txt` (daily detections)
+and `daily_images.txt` (daily image counts). These are distinct datasets.
+
+```bash
+python -m scripts.fetch_seeds_monthly --date 20101212
+```
+
+This writes the exact original bytes (without trying to convert them)
+under `data/catalogs/seeds/raw/2010/12/` together with
+`source_provenance.json` recording SHA-256 and the actual download URL.
+HTTP is supported here because the supplied official endpoint is HTTP;
+do not send authentication secrets to it.
+
+**Remaining step:** the upstream GMU host was not reachable from the
+development environment, so the actual row/column layout in
+`monthly.txt` has not yet been verified. We deliberately **do not**
+interpret positional columns, fabricate per-frame heights, or classify
+daily counts as CME events. After downloading locally, inspect:
+
+```bash
+sed -n '1,35p' data/catalogs/seeds/raw/2010/12/monthly.txt
+```
+
+Use a real sample to build a tested official TXT parser and then connect
+it to the separate event-level and frame-level comparison stages.
+For now, `scripts.collect_seeds` remains for an already normalized
+frame-measurement CSV provided by a verified source; `fetch_seeds_monthly`
+is the direct official-TXT downloader.
+
+```bash
+python -m pytest -q tests/test_fetch_seeds_monthly.py
+```
