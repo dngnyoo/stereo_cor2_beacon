@@ -69,6 +69,7 @@ def download_cor2(date: str, product: str, output_dir: Path,
     # A completed day/source listing is authoritative for offline replay.
     # Verify SHA-256 before reusing; a missing or changed file invalidates
     # the marker and triggers an incremental refresh from the archive.
+    stale_names = set()
     if completion.is_file():
         try:
             recorded = json.loads(completion.read_text(encoding="utf-8"))
@@ -81,12 +82,14 @@ def download_cor2(date: str, product: str, output_dir: Path,
                         raise ValueError("Invalid raw cache filename")
                     target = output_dir / name
                     if not target.is_file() or target.stat().st_size != item["size"]:
+                        stale_names.add(name)
                         raise ValueError("Missing or changed raw cache file")
                     digest = hashlib.sha256()
                     with target.open("rb") as stream:
                         for block in iter(lambda: stream.read(1024 * 1024), b""):
                             digest.update(block)
                     if digest.hexdigest() != item["sha256"]:
+                        stale_names.add(name)
                         raise ValueError("Raw cache checksum mismatch")
                     verified.append(target)
                 print(f"Reused cached {product} {date}: {len(verified)} FITS", flush=True)
@@ -135,7 +138,7 @@ def download_cor2(date: str, product: str, output_dir: Path,
     result = []
     for name in sorted(names):
         target = output_dir / name
-        if not target.is_file() or target.stat().st_size == 0:
+        if name in stale_names or not target.is_file() or target.stat().st_size == 0:
             temporary = target.with_name(target.name + ".part")
             file_url = urljoin(base_url, name)
             for attempt in range(5):
