@@ -58,8 +58,10 @@ Each new run writes acquisition metadata, North-up RD, C0 detection, E1 tracking
 and final CME products inside **one** `runs/<run-name>/` tree. Results from
 previous layouts are not moved or deleted automatically. See
 [Raw data and run layout](docs/RUN_DATA_LAYOUT.md) for exact paths, safe
-legacy raw migration, and cleanup guidance. Automatic stage-level resume is
-not yet certified; rerun with a fresh name to reuse cached raw observations.
+legacy raw migration, and cleanup guidance. Interrupted v2 runs support
+`--resume` with the same arguments and unchanged config/mask, reusing
+completed stages while rejecting partial artifacts. This new resume path
+still requires an execution regression on MELONHOUSE.
 
 
 ## Quick start: generate the full CME results on `main`
