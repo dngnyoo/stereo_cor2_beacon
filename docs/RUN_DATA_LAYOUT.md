@@ -74,10 +74,10 @@ directories. The layout migration does **not** overwrite those results
 or silently rewrite absolute paths in their input manifests. Do not delete
 old acquisition directories until references and results have been backed up.
 
-The official general-run calibration input is `Calibration/cor2A_mask.fts`.
-The reference 17MB mask must be installed with checksum specified in README;
-without it a new raw run fails before downloading. Changing the mask changes
-the scientific experiment and cannot be considered the same 63-pair baseline.
+The official calibration input is `Calibration/cor2A_mask.fts`, now included
+in Git. Its SHA-256 is verified before raw preprocessing. No manual copy or
+installation is required for new clones. The old-mask 63-pair run is retained
+as a historical comparison, not the official COR2-A scientific baseline.
 
 ## Safe migration of existing 1.2GB raw data
 
