@@ -37,6 +37,36 @@ def is_d7(filename: str) -> bool:
     return "_d7c2" in Path(filename).name.lower()
 
 
+def infer_d7_phase(records: list[dict], *,
+                   phase_tolerance_sec: float = PHASE_TOL_SEC) -> float:
+    """Choose the observed 30-minute phase producing most strict consecutive pairs.
+
+    Uses DATE-OBS, not a hard-coded month/date. Ties are broken by number
+    of selected frames, then the earliest phase. Never bridges gaps.
+    An explicit --phase-sec always overrides this inference.
+    """
+    if not records:
+        raise ValueError("No observations available for phase inference")
+    timestamps = sorted(parse_timestamp(r["date_obs"]) for r in records)
+    phases = sorted(set(round(
+        (t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1e6)
+        % CADENCE_SEC, 6) for t in timestamps))
+    best = None
+    for phase in phases:
+        selected = [t for t in timestamps if phase_distance(t, phase) <= phase_tolerance_sec]
+        npairs = sum(
+            abs((b - a).total_seconds() - CADENCE_SEC) <= CADENCE_TOL_SEC
+            for a, b in zip(selected, selected[1:])
+        )
+        score = (npairs, len(selected), -phase)
+        if best is None or score > best[0]:
+            best = (score, phase)
+    assert best is not None
+    if best[0][0] == 0:
+        raise ValueError("No strict 30-minute FITS pairs found; supply --phase-sec or inspect DATE-OBS")
+    return float(best[1])
+
+
 def select_d7_pairs(
     records: list[dict], *,
     phase_sec: float = DEFAULT_PHASE_SEC,
