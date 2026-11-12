@@ -82,3 +82,48 @@ historical frame offsets.
 ```bash
 python -m pytest -q tests/test_seeds_png_overlay.py
 ```
+
+## Fetch SEEDS observations from an HTTPS CSV source
+
+The NASA STEREO event portal links to the GMU SEEDS catalog, but a
+verified direct COR2-A bulk CSV download URL **has not been established**.
+Do **not** infer an endpoint or silently substitute LASCO/C2 data.
+This collector supports source URLs supplied by the user or a confirmed
+archive; it is **not** yet an unattended date-only official-site downloader.
+
+After identifying a verified *COR2-A frame-measurement CSV* endpoint:
+
+```bash
+python -m scripts.collect_seeds \
+  --date 20101212 \
+  --source-url 'https://VERIFIED-ARCHIVE/path/to/seeds_frame_measurements.csv'
+```
+
+For verified year/day-organized archives, replace `--source-url` with
+`--url-template 'https://VERIFIED-ARCHIVE/{year}/{month}/{date}.csv'`.
+The tool downloads up to 20 MiB over HTTPS, validates the known frame-level
+SEEDS reference schema, filters by UTC date, and saves:
+
+- `data/catalogs/seeds/YYYYMMDD/original_source.csv`
+- `data/catalogs/seeds/YYYYMMDD/seeds_frame_reference.csv`
+- `data/catalogs/seeds/YYYYMMDD/source_provenance.json`
+  (URL, UTC download timestamp, original SHA-256).
+
+The output can then be passed to either:
+
+```bash
+python -m scripts.validate_seeds --run-dir runs/clean_cor2a_verify \
+  --seeds-csv data/catalogs/seeds/20101212/seeds_frame_reference.csv
+python -m scripts.visualize_seeds_overlay --run-dir runs/clean_cor2a_verify \
+  --seeds-csv data/catalogs/seeds/20101212/seeds_frame_reference.csv --gif
+```
+
+Important: a generic event-only SEEDS table is *not* interchangeable
+with the per-frame PA/width/height measurements this pipeline requires.
+The collector refuses unknown schemas and does not synthesize missing
+per-frame measurements. An upstream event-only catalog requires its own
+documented, scientifically justified conversion method before use.
+
+```bash
+python -m pytest -q tests/test_collect_seeds.py
+```
