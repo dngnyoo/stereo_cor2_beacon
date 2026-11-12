@@ -122,20 +122,30 @@ def run_live_full(*, config_path: str | Path, date: str,
         if source not in {"local", "download"}:
             raise ValueError("source must be local or download")
         location = Path(acquisition_dir).resolve() if acquisition_dir else run_dir / "acquisition"
-        if location.resolve().exists():
-            raise FileExistsError(f"Refusing to overwrite acquisition directory: {location}")
-        manifest = prepare_source(
-            date=date, source=source, product="d7", input_dir=input_dir,
-            output_dir=location, warmup_days=warmup_days,
-            phase_sec=phase_sec, frozen_reference_pairs=False,
-            raw_root=repo / "data" / "raw" / "cor2" if source == "download" else None,
-        )
-        # Frozen regression must retain the original mask, regardless of the
-        # COR2-A official default used by general production processing.
+        manifest = location / "input_manifest.json"
+        if not (resume and manifest.is_file()):
+            if location.exists() and not resume:
+                raise FileExistsError(
+                    f"Refusing to overwrite acquisition directory: {location}"
+                )
+            manifest = prepare_source(
+                date=date, source=source, product="d7", input_dir=input_dir,
+                output_dir=location, warmup_days=warmup_days,
+                phase_sec=phase_sec, frozen_reference_pairs=False,
+                raw_root=repo / "data" / "raw" / "cor2" if source == "download" else None,
+            )
+        # Frozen regression retains the historic mask, not the COR2-A default.
         selected_mask = mask_path
         if frozen_regression and selected_mask is None:
             selected_mask = repo / "Calibration" / "cor2_mask.fts"
-        preprocessed_dir = run_no_msb_north_up(manifest, mask_path=selected_mask)
+        candidate = location / "preprocessed"
+        if resume and stage_ready(candidate, (
+                "preprocessing_metadata.json", "01_rd_manifest.csv",
+                "north_up_RD_DNs_per_second.npy", "north_up_pair_valid_masks.npy",
+                "target_wcs_header.txt")):
+            preprocessed_dir = candidate
+        else:
+            preprocessed_dir = run_no_msb_north_up(manifest, mask_path=selected_mask)
     if preprocessed_dir is not None:
         # Frozen selection is deliberately opt-in. General RD data are never trimmed.
         if frozen_regression:
@@ -144,10 +154,16 @@ def run_live_full(*, config_path: str | Path, date: str,
                 repo, Path(preprocessed_dir),
                 run_dir / "frozen_input" / "preprocessed"
             )
-        detection_dir = run_detection(
-            preprocessed_dir, method=method, denoiser=denoiser, requested_date=date,
-            output_dir=run_dir / "detection"
-        )
+        candidate = run_dir / "detection"
+        if resume and stage_ready(candidate, (
+                "detection_metadata.json", "frame_detection_summary.csv",
+                "patch_state_p04.npy", "patch_component_labels.npy")):
+            detection_dir = candidate
+        else:
+            detection_dir = run_detection(
+                preprocessed_dir, method=method, denoiser=denoiser, requested_date=date,
+                output_dir=candidate
+            )
     assert detection_dir is not None
     detection_dir = Path(detection_dir).resolve()
     metadata = json.loads((detection_dir / "detection_metadata.json").read_text())
@@ -161,14 +177,18 @@ def run_live_full(*, config_path: str | Path, date: str,
         raise ValueError("Frozen regression requires explicit 60-pair fixture")
 
     e1_dir = run_dir / "tracking"
-    if e1_dir.exists():
-        raise FileExistsError(f"Refusing to overwrite tracking directory: {e1_dir}")
-    outcome = recompute_e1(
-        detection_dir, repo, e1_dir, compare_frozen=frozen_regression,
-        historical_geometry=frozen_regression
-    )
-    if outcome != 0:
-        raise RuntimeError("E1 recomputation failed Frozen reference comparison")
+    if not (resume and stage_ready(e1_dir, (
+            "summary.json", "03_patch_e1_track_states.csv",
+            "01_patch_component_geometries.csv",
+            "02_patch_e1_candidate_evaluations.csv"))):
+        if e1_dir.exists():
+            raise FileExistsError(f"Refusing to overwrite tracking directory: {e1_dir}")
+        outcome = recompute_e1(
+            detection_dir, repo, e1_dir, compare_frozen=frozen_regression,
+            historical_geometry=frozen_regression
+        )
+        if outcome != 0:
+            raise RuntimeError("E1 recomputation failed Frozen reference comparison")
     if frozen_regression:
         # Verify all shared numeric and categorical Track State fields, not only IDs.
         from scripts.compare_frozen_e1_numeric import check as compare_e1_numeric
