@@ -30,8 +30,8 @@ def run_live_full(*, config_path: str | Path, date: str,
     from scripts.run_frozen_e1_downstream import build_tracking
 
     date = validate_date(date)
-    if method != "c0":
-        raise ValueError("The independently recomputed E1 integrated path currently supports C0 only")
+    if method != "c0" or denoiser != "gaussian":
+        raise ValueError("The validated integrated E1 path requires C0 with gaussian denoising")
     choices = sum(x is not None for x in (detection_dir, preprocessed_dir, source))
     if choices != 1:
         raise ValueError("Provide exactly one: --detection-dir, --preprocessed-dir, or --source")
@@ -94,6 +94,18 @@ def run_live_full(*, config_path: str | Path, date: str,
     )
     if outcome != 0:
         raise RuntimeError("E1 recomputation failed Frozen reference comparison")
+    if frozen_regression:
+        # Verify all shared numeric and categorical Track State fields, not only IDs.
+        from scripts.compare_frozen_e1_numeric import check as compare_e1_numeric
+        frozen_track_csv = (repo / "validation_20101212/experiments/"
+                            "11_d7_patch_first_tracking_feasibility/results/tables/"
+                            "03_patch_e1_track_states.csv")
+        comparison_result = compare_e1_numeric(
+            frozen_track_csv, e1_dir / "03_patch_e1_track_states.csv",
+            e1_dir / "numeric_regression", atol=1e-4, rtol=1e-6
+        )
+        if comparison_result:
+            raise RuntimeError("Frozen E1 numerical regression failed")
     tracking = build_tracking(
         detection_dir, e1_dir / "03_patch_e1_track_states.csv", cfg,
         historical_geometry=frozen_regression
@@ -122,6 +134,7 @@ def run_live_full(*, config_path: str | Path, date: str,
         "detector": method,
         "run_name": run_name,
         "frozen_regression": frozen_regression,
+        "e1_numeric_regression": "PASS" if frozen_regression else "NOT_APPLICABLE",
         "tracking_input": str((e1_dir / "03_patch_e1_track_states.csv").resolve()),
         "detection_input": str(detection_dir),
         "input_pairs": int(json.loads((Path(metadata["input_dir"]) / "preprocessing_metadata.json")
