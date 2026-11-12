@@ -30,7 +30,8 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 
-def build_tracking(detection_dir: Path, states_path: Path, cfg: PipelineConfig, *,\n                   historical_geometry: bool = True) -> TrackingOutput:
+def build_tracking(detection_dir: Path, states_path: Path, cfg: PipelineConfig, *,
+                   historical_geometry: bool = True) -> TrackingOutput:
     det = load_live_tracking_input(detection_dir)
     # Reproduce benchmark's policy: tracking only on VALID analysis-date pairs.
     manifest = det.manifest_df
