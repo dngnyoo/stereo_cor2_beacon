@@ -181,7 +181,7 @@ def download_cor2(date: str, product: str, output_dir: Path,
         "date": date,
         "product": product,
         "files": inventory,
-    }, indent=2) + "\\n", encoding="utf-8")
+    }, indent=2) + "\n", encoding="utf-8")
     marker.replace(completion)
     return result
 
