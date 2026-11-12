@@ -30,8 +30,8 @@ import numpy as np
 from astropy.io import fits
 
 # --- 1. Path Configuration (Global Constants) ---
-BASE_DIR = "./DATA"
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+BASE_DIR = os.path.join(PROJECT_ROOT, "DATA")
 
 def get_directories(date_str):
     return {
