@@ -1,6 +1,6 @@
 # Data Preparation: Input Contract and Integration Plan
 
-**Development status:** the `feature/data-preparation` branch provides **d7 selection, No-MSB calibration, North-up reprojection and strict 30-minute RD generation**. C0/C3 Detection and live Tracking are **not yet integrated**. The current `main` benchmark is unchanged.
+**Development status:** the `feature/data-preparation` branch implements **d7 acquisition, strict cadence selection, No-MSB North-up RD and an initial C0/C3 detector replay**. A numerical reference comparison and availability-aware Tracking handoff are still required; the `main` Frozen Benchmark is unchanged.
 
 ## Target workflow
 
@@ -59,7 +59,7 @@ qualified d7 FITS files, selected observations, strict 30-minute pairs and
 nonbridged gaps. Downloads reside in `raw/d7/<date>/` within the same run.
 The manifest is marked `INVENTORIED_NOT_PREPROCESSED`.
 
-**Not implemented yet:** detector C0/C3 replay and dispatch to Tracking. No-MSB FITS calibration, fixed North-up reprojection and strict 30-minute RD are implemented but still require a real-data regression run. Do not
+**Not implemented yet:** dispatch to availability-aware Tracking. C0/C3 and RD preprocessing code is implemented but requires a real-data numerical regression run. Do not
 treat an input manifest as a detector result.
 
 ## No-MSB / North-up outputs (`--preprocess`)
@@ -94,6 +94,54 @@ named `DNs_per_second` to avoid misrepresenting it as frozen 2010 raw DN.
 supply a full preceding 24-hour score history. A date-window or
 previous-day warmup fetch must be added before C3 can provide routine
 valid detections throughout the requested day.
+
+## C0 / C3 detector runs (newly implemented, unverified on NASA FITS)
+
+Run **C3 (default target detector)** on a requested day, with the preceding
+two UTC days fetched for causal T24 warmup:
+
+```bash
+python -m cme_pipeline prepare-data --date 20240510 \
+  --source download --preprocess --detect c3
+```
+
+To compare the original C0 Dynamic-T baseline on the same input:
+
+```bash
+python -m cme_pipeline prepare-data --date 20240510 \
+  --source local --input-dir /path/to/three_days_of_d7 \
+  --preprocess --detect c0
+```
+
+The `--detect` flag defaults to **two preceding UTC dates** (configurable
+with `--warmup-days`). A local directory must include those earlier dates
+itself; files are selected from the requested window using FITS `DATE-OBS`.
+With no warmup, frames are explicitly marked `WARMUP` and not silently
+represented as usable detections. The 2010 Frozen Baseline is unchanged.
+
+New detector artifacts:
+
+```text
+runs/data_prep_<date>_d7/detection_c3_gaussian/
+  patch_state_p04.npy           # [N,64,64] signed int8: -1, 0, 1
+  patch_component_labels.npy    # [N,64,64]; -1 on unavailable frames
+  frame_detection_summary.csv   # UTC, T24, floor, activation QC, status
+  detection_metadata.json       # detector, warmup and provenance
+```
+
+`--detect c0` writes `detection_c0_gaussian/` instead. Alternative
+`--denoiser median` is supported. Detector runs cover warmup and analysis
+observations; `in_requested_date` in the summary identifies requested
+day rows. The C0 output uses an explicit unavailable sentinel during warmup
+for interface safety, unlike legacy archival C0 saved-empty convention.
+
+**Scientific qualification:** C0 and C3 are **algorithmic reimplementations**
+from research source, not yet numerically regression-matched to the frozen
+C0/C3 reference masks. Preprocessing and detection have not yet been tested
+end-to-end on real NASA FITS. Tracking is not wired to the new arrays; its
+active-mask contract currently cannot represent C3 `-1` observations
+without an availability-aware adapter. Do not treat these results as a
+validated finished CME catalog.
 
 ## Intended detector variants
 
