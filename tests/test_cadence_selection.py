@@ -14,7 +14,7 @@ def observation(minute_offset):
 class TestD7Cadence(unittest.TestCase):
     def test_valid_30min_pairs_and_gap(self):
         selection = select_d7_pairs([
-            observation(90), observation(0), observation(30), observation(150)
+            observation(60), observation(0), observation(30), observation(120)
         ])
         self.assertEqual(selection["n_selected"], 4)
         self.assertEqual(selection["n_pairs"], 2)
