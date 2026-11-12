@@ -91,7 +91,7 @@ class Pipeline:
             self.stages: List[PipelineStage] = resolve_stages(config)
         self.stage_names: List[str] = [s.name for s in self.stages]
 
-    def run(self, from_stage: Optional[str] = None) -> Dict[str, Any]:
+    def run(self, from_stage: Optional[str] = None, *,\n            initial_input: Any = None) -> Dict[str, Any]:
         """Executes the full pipeline or resumes from a specific stage."""
         t_start = time.perf_counter()
         effective_from_stage = from_stage or self.config.from_stage
@@ -118,7 +118,7 @@ class Pipeline:
             for s_name in self.stage_names:
                 self.context.cache.invalidate(s_name)
 
-        current_output: Any = None
+        current_output: Any = initial_input
         executed_stages: List[str] = []
         cached_stages: List[str] = []
         stage_outputs: Dict[str, Any] = {}
