@@ -189,8 +189,18 @@ def prepare_source(*, date: str, source: str, product: str,
         if input_dir is not None:
             raise ValueError("Do not pass input_dir for download source")
         files = []
-        for observed_date in requested_days:
-            files.extend(download_cor2(observed_date, product, output_dir / "raw" / product / observed_date))
+        if product == "d7":
+            # General, date-independent selection: download both complete
+            # archives, retain provenance, and choose Science-first d7.
+            from cme_pipeline.dual_archive import collect_dual_archive
+            files, raw_inventory_path, selected_sources_path = collect_dual_archive(
+                requested_days, output_dir
+            )
+        else:
+            for observed_date in requested_days:
+                files.extend(download_cor2(
+                    observed_date, product, output_dir / "raw" / product / observed_date
+                ))
     elif source == "local":
         if input_dir is None:
             raise ValueError("local source requires --input-dir")
@@ -302,6 +312,8 @@ def prepare_source(*, date: str, source: str, product: str,
         "n_files": len(records),
         "files": records,
         "cadence_selection": cadence,
+        "raw_inventory_manifest": str(raw_inventory_path) if source == "download" and product == "d7" else None,
+        "selected_d7_sources_manifest": str(selected_sources_path) if source == "download" and product == "d7" else None,
         "status": "INVENTORIED_NOT_PREPROCESSED",
         "next_step": "Validated COR2 calibration, north-up RD and C3 detection are required.",
     }, indent=2), encoding="utf-8")
