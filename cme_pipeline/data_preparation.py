@@ -83,17 +83,19 @@ def download_cor2(date: str, product: str, output_dir: Path,
                     target = output_dir / name
                     if not target.is_file() or target.stat().st_size != item["size"]:
                         stale_names.add(name)
-                        raise ValueError("Missing or changed raw cache file")
+                        continue
                     digest = hashlib.sha256()
                     with target.open("rb") as stream:
                         for block in iter(lambda: stream.read(1024 * 1024), b""):
                             digest.update(block)
                     if digest.hexdigest() != item["sha256"]:
                         stale_names.add(name)
-                        raise ValueError("Raw cache checksum mismatch")
+                        continue
                     verified.append(target)
-                print(f"Reused cached {product} {date}: {len(verified)} FITS", flush=True)
-                return verified
+                if not stale_names:
+                    print(f"Reused cached {product} {date}: {len(verified)} FITS", flush=True)
+                    return verified
+                print(f"Raw cache has {len(stale_names)} missing/changed FITS for {product} {date}; refreshing", flush=True)
         except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
             print(f"Raw cache incomplete/changed for {product} {date}; refreshing", flush=True)
     client = session if session is not None else requests.Session()
