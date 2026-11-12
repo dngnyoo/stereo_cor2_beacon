@@ -53,10 +53,12 @@ def parse_args() -> argparse.Namespace:
     prepare_parser.add_argument("--date", required=True, help="YYYYMMDD")
     prepare_parser.add_argument("--source", choices=("local", "download"), required=True)
     prepare_parser.add_argument(
-        "--product", default="science_raw",
-        choices=("science_raw", "science_seq", "beacon_raw", "beacon_seq"),
+        "--product", default="d7",
+        choices=("d7", "science_raw", "science_seq", "beacon_raw", "beacon_seq"),
     )
     prepare_parser.add_argument("--input-dir", default=None)
+    prepare_parser.add_argument("--phase-sec", default=None, type=float,
+                                help="30-minute phase in seconds (d7 only; May 2024 default: 1434).")
     prepare_parser.add_argument("--output-dir", default=None)
 
     # 'status' subcommand
@@ -86,6 +88,7 @@ def main() -> None:
             product=args.product,
             input_dir=args.input_dir,
             output_dir=target,
+            phase_sec=args.phase_sec,
         )
         print(f"FITS input manifest: {manifest}")
         print("Status: INVENTORIED_NOT_PREPROCESSED (RD and detector not yet integrated)")
