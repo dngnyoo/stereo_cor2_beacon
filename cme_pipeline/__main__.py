@@ -89,6 +89,28 @@ def parse_args() -> argparse.Namespace:
     track_parser.add_argument("--date", required=True, help="Analysis YYYYMMDD")
     track_parser.add_argument("--run-name", default=None)
 
+    full_parser = subparsers.add_parser(
+        "run-data", help="Run independent C0/E1 from local/downloaded FITS, RD, or Detection."
+    )
+    full_parser.add_argument("--config", required=True)
+    full_parser.add_argument("--date", required=True, help="YYYYMMDD")
+    full_parser.add_argument("--run-name", required=True)
+    full_input = full_parser.add_mutually_exclusive_group(required=True)
+    full_input.add_argument("--source", choices=("local", "download"))
+    full_input.add_argument("--preprocessed-dir")
+    full_input.add_argument("--detection-dir")
+    full_parser.add_argument("--input-dir", help="Required with --source local")
+    full_parser.add_argument("--acquisition-dir")
+    full_parser.add_argument("--warmup-days", type=int, default=2)
+    full_parser.add_argument("--phase-sec", type=float)
+    full_parser.add_argument("--mask-path")
+    full_parser.add_argument("--method", choices=("c0",), default="c0")
+    full_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
+    full_parser.add_argument(
+        "--frozen-regression", action="store_true",
+        help="Opt in to 20101212 60-pair fixture and frozen E1 numerical checks."
+    )
+
     # 'status' subcommand
     status_parser = subparsers.add_parser("status", help="Show pipeline stage cache status.")
     status_parser.add_argument(
@@ -104,6 +126,19 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.command == "run-data":
+        from cme_pipeline.live_full_pipeline import run_live_full
+        run_live_full(
+            config_path=args.config, date=args.date, run_name=args.run_name,
+            detection_dir=args.detection_dir, preprocessed_dir=args.preprocessed_dir,
+            source=args.source, input_dir=args.input_dir,
+            acquisition_dir=args.acquisition_dir, warmup_days=args.warmup_days,
+            phase_sec=args.phase_sec, mask_path=args.mask_path,
+            method=args.method, denoiser=args.denoiser,
+            frozen_regression=args.frozen_regression,
+        )
+        return
+
     if args.command == "prepare-data":
         from cme_pipeline.data_preparation import prepare_source
         from cme_pipeline.data_preparation import validate_date
