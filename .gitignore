@@ -30,12 +30,9 @@ dist/
 /one_month_pipeline/
 /one_month_preprocessing_detection_survey/
 
-# Calibration assets: binary local FITS are installed independently.
-# Code verifies the required cor2A mask by SHA-256.
-# Do not ignore Calibration/*.py or other calibration documentation.
-/Calibration/*.fts
-/Calibration/*.fits
-/Calibration/*.fit
+# Calibration FITS are intentional release assets, NOT general runtime data.
+# Do not glob-ignore Calibration/*.fts: the verified official COR2-A asset
+# must eventually be packaged or tracked separately from the old placeholder.
 
 # OS and editor files
 .vscode/
