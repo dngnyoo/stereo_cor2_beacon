@@ -1,0 +1,7 @@
+# Treat FITS calibration and scientific images as binary Git assets.
+*.fts binary
+*.fits binary
+*.fit binary
+*.fts.gz binary
+*.fits.gz binary
+*.fit.gz binary
