@@ -280,6 +280,7 @@ def run(detection_dir: Path, repo: Path, output_dir: Path):
             })
 
         pairs_data.append({"pair_index": pair_num, "timestamp": ts, "patches": f_patches})
+    tracks: dict[int, PatchMotionTrack] = {}
     next_track_id = 1
     candidate_logs = []
     track_state_rows = []
