@@ -140,7 +140,8 @@ def inspect_fits(paths: list[Path], *, expected_date: str | None = None) -> list
 def prepare_source(*, date: str, source: str, product: str,
                    input_dir: str | Path | None, output_dir: str | Path,
                    phase_sec: float | None = None,
-                   warmup_days: int = 0) -> Path:
+                   warmup_days: int = 0,
+                   frozen_reference_pairs: bool = False) -> Path:
     """Acquire the analysis date and optional preceding UTC warmup days."""
     date = validate_date(date)
     if not 0 <= warmup_days <= 7:
@@ -177,6 +178,47 @@ def prepare_source(*, date: str, source: str, product: str,
             records,
             phase_sec=DEFAULT_PHASE_SEC if phase_sec is None else phase_sec,
         )
+    if frozen_reference_pairs:
+        if date != "20101212" or product != "d7":
+            raise ValueError("Frozen reference pair selection is 20101212 d7 only")
+        import csv
+        reference = Path(__file__).resolve().parents[1] / (
+            "validation_20101212/experiments/01_d7_baseline_segmentation/"
+            "results/00_manifest/01_rd_manifest.csv"
+        )
+        with reference.open(newline="") as stream:
+            rows = list(csv.DictReader(stream))
+        if len(rows) != 60:
+            raise ValueError("Frozen reference must contain 60 pairs")
+        file_lookup = {Path(f["file"]).name: f for f in cadence["selected_frames"]}
+        exact_pairs = []
+        selected_names = set()
+        for item in rows:
+            first, second = item["prev_file"], item["curr_file"]
+            if first not in file_lookup or second not in file_lookup:
+                raise ValueError(f"Frozen reference FITS unavailable: {first}, {second}")
+            start = file_lookup[first]["date_obs"]
+            end = file_lookup[second]["date_obs"]
+            from cme_pipeline.cadence_selection import parse_timestamp
+            dt = (parse_timestamp(end) - parse_timestamp(start)).total_seconds()
+            if abs(dt - 1800.) > 2.:
+                raise ValueError("Frozen reference pair does not have 30-minute cadence")
+            exact_pairs.append({
+                "pair_index": len(exact_pairs) + 1,
+                "start_file": file_lookup[first]["file"],
+                "end_file": file_lookup[second]["file"],
+                "start_time": start, "end_time": end,
+                "delta_t_sec": dt, "delta_t_min": dt / 60.,
+            })
+            selected_names.update((first, second))
+        cadence["pairs"] = exact_pairs
+        cadence["selected_frames"] = [
+            f for f in cadence["selected_frames"]
+            if Path(f["file"]).name in selected_names
+        ]
+        cadence["n_pairs"] = len(exact_pairs)
+        cadence["n_selected"] = len(cadence["selected_frames"])
+        cadence["reference_pair_manifest"] = str(reference)
     elif phase_sec is not None:
         raise ValueError("--phase-sec is only supported with --product d7")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -185,6 +227,7 @@ def prepare_source(*, date: str, source: str, product: str,
         "schema_version": 1,
         "date": date,
         "warmup_days_requested": warmup_days,
+        "frozen_reference_pairs": frozen_reference_pairs,
         "included_dates": requested_days,
         "source": source,
         "product": product,
