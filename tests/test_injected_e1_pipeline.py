@@ -15,6 +15,8 @@ from cme_pipeline.stages.tracking.v01_baseline_tracking import E1TrackingStage
 class EchoTrackingStage(PipelineStage):
     name = "tracking"
     version = "test"
+    def compute_fingerprint(self, inputs, config, context):
+        return "independent-e1-test"
     def run(self, inputs, config, context):
         assert inputs == {"source": "independent_e1"}
         return inputs
