@@ -16,7 +16,10 @@ from astropy.io import fits
 from bs4 import BeautifulSoup
 import numpy as np
 
+D7_SOURCE_URL = "https://stereo-ssc.nascom.nasa.gov/data/ins_data/secchi/L0/a/img/cor2/"
+
 SOURCE_URLS = {
+    "d7": D7_SOURCE_URL,
     "beacon_raw": "https://stereo-ssc.nascom.nasa.gov/data/beacon/ahead/secchi/img/cor2/",
     "science_raw": "https://stereo-ssc.nascom.nasa.gov/data/ins_data/secchi/L0/a/img/cor2/",
     "beacon_seq": "https://stereo-ssc.nascom.nasa.gov/data/beacon/ahead/secchi/seq/cor2/",
@@ -68,6 +71,8 @@ def download_cor2(date: str, product: str, output_dir: Path,
     for link in soup.find_all("a", href=True):
         candidate = unquote(urlsplit(link["href"]).path).split("/")[-1]
         if candidate and candidate == link["href"] and candidate.lower().endswith(FITS_SUFFIXES):
+            if product == "d7" and "_d7c2" not in candidate.lower():
+                continue
             if candidate not in {".", ".."} and "/" not in candidate and "\\" not in candidate:
                 names.add(candidate)
     if not names:
@@ -133,7 +138,8 @@ def inspect_fits(paths: list[Path], *, expected_date: str | None = None) -> list
 
 
 def prepare_source(*, date: str, source: str, product: str,
-                   input_dir: str | Path | None, output_dir: str | Path) -> Path:
+                   input_dir: str | Path | None, output_dir: str | Path,
+                   phase_sec: float | None = None) -> Path:
     """Prepare a provenance-preserving image inventory, not a detection result."""
     date = validate_date(date)
     output_dir = Path(output_dir).resolve()
@@ -147,7 +153,20 @@ def prepare_source(*, date: str, source: str, product: str,
         files = list_fits(Path(input_dir))
     else:
         raise ValueError("source must be 'local' or 'download'")
+    if product == "d7":
+        from cme_pipeline.cadence_selection import is_d7, select_d7_pairs, DEFAULT_PHASE_SEC
+        files = [p for p in files if is_d7(p.name)]
+        if not files:
+            raise ValueError("No STEREO-A COR2 d7 (_d7c2) FITS files found")
     records = inspect_fits(files, expected_date=date)
+    cadence = None
+    if product == "d7":
+        cadence = select_d7_pairs(
+            records,
+            phase_sec=DEFAULT_PHASE_SEC if phase_sec is None else phase_sec,
+        )
+    elif phase_sec is not None:
+        raise ValueError("--phase-sec is only supported with --product d7")
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = output_dir / "input_manifest.json"
     manifest_path.write_text(json.dumps({
@@ -158,6 +177,7 @@ def prepare_source(*, date: str, source: str, product: str,
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "n_files": len(records),
         "files": records,
+        "cadence_selection": cadence,
         "status": "INVENTORIED_NOT_PREPROCESSED",
         "next_step": "Validated COR2 calibration, north-up RD and C3 detection are required.",
     }, indent=2), encoding="utf-8")
