@@ -136,6 +136,16 @@ class ComponentFirstAdaptiveROITrackingStage(PipelineStage):
         prev_time = None
 
         for step_idx in range(n_pairs):
+            # Unavailable C3/C0 observation is not a negative CME detection:
+            # do not update tracks, increment missed, or advance last valid time.
+            if ("usable_detection" in man_df.columns
+                    and not bool(man_df.iloc[step_idx]["usable_detection"])):
+                context.info(
+                    f"Pair {int(man_df.iloc[step_idx]['pair_index'])}: "
+                    f"{man_df.iloc[step_idx]['observation_status']} — "
+                    "tracking observation unavailable; no missed-frame update."
+                )
+                continue
             p_curr = int(man_df.iloc[step_idx]["pair_index"])
             ts_curr = datetime.fromisoformat(man_df.iloc[step_idx]["end_time"])
             cur_grid = grid4_all[step_idx]
