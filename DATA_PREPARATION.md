@@ -105,13 +105,20 @@ python -m cme_pipeline prepare-data --date 20240510 \
   --source download --preprocess --detect c3
 ```
 
-To compare the original C0 Dynamic-T baseline on the same input:
+To compare C0 **on exactly the same RD arrays** without downloading or
+preprocessing a second time:
 
 ```bash
-python -m cme_pipeline prepare-data --date 20240510 \
-  --source local --input-dir /path/to/three_days_of_d7 \
-  --preprocess --detect c0
+python -m cme_pipeline detect-data \
+  --preprocessed-dir runs/data_prep_20240510_d7/preprocessed \
+  --method c0 --date 20240510
 ```
+
+A separate C3 replay on the same RD is also available via
+`detect-data --method c3`, provided that detector's output directory
+does not already exist (writes are intentionally overwrite-protected).
+For local FITS, use `--source local --input-dir /path/to/three_days_of_d7`
+on the initial preparation command.
 
 The `--detect` flag defaults to **two preceding UTC dates** (configurable
 with `--warmup-days`). A local directory must include those earlier dates
