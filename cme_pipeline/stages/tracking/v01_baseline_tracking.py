@@ -37,6 +37,15 @@ class E1TrackingStage(PipelineStage):
 
     def run(self, inputs: Any, config: PipelineConfig, context: PipelineContext) -> TrackingOutput:
         effective_params = resolve_and_validate_tracking_parameters("e1", config.tracking)
+        if isinstance(inputs, TrackingOutput):
+            # E1 has already been recomputed from independent C0 detections.
+            # Do not read the historical Exp 11 state table in this path.
+            if inputs.tracking_method != "e1":
+                raise ValueError("Injected E1 tracking output must have tracking_method='e1'")
+            if not inputs.dataset_metadata or not inputs.dataset_metadata.get("replay_mode"):
+                raise ValueError("Injected tracking must include live/replay provenance")
+            context.info("Using independently recomputed E1 TrackingOutput (no Frozen CSV read).")
+            return inputs
         context.info("Running E1TrackingStage (2010-12-12 Baseline)...")
 
         # 1. Obtain shared frozen preprocessing & hierarchical detection inputs
