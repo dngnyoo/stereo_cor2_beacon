@@ -58,13 +58,14 @@ def run_live_full(*, config_path: str | Path, date: str,
     if source is not None:
         if source not in {"local", "download"}:
             raise ValueError("source must be local or download")
-        location = Path(acquisition_dir or repo / "runs" / f"acquisition_{date}_{run_name}")
+        location = Path(acquisition_dir).resolve() if acquisition_dir else run_dir / "acquisition"
         if location.resolve().exists():
             raise FileExistsError(f"Refusing to overwrite acquisition directory: {location}")
         manifest = prepare_source(
             date=date, source=source, product="d7", input_dir=input_dir,
             output_dir=location, warmup_days=warmup_days,
             phase_sec=phase_sec, frozen_reference_pairs=False,
+            raw_root=repo / "data" / "raw" / "cor2" if source == "download" else None,
         )
         # Frozen regression must retain the original mask, regardless of the
         # COR2-A official default used by general production processing.
@@ -78,11 +79,11 @@ def run_live_full(*, config_path: str | Path, date: str,
             from scripts.build_frozen_replay import build
             preprocessed_dir = build(
                 repo, Path(preprocessed_dir),
-                run_dir.parent / f"{run_name}_frozen_input" / "preprocessed"
+                run_dir / "frozen_input" / "preprocessed"
             )
         detection_dir = run_detection(
             preprocessed_dir, method=method, denoiser=denoiser, requested_date=date,
-            output_dir=run_dir.parent / f"{run_name}_detection"
+            output_dir=run_dir / "detection"
         )
     assert detection_dir is not None
     detection_dir = Path(detection_dir).resolve()
@@ -96,7 +97,7 @@ def run_live_full(*, config_path: str | Path, date: str,
     ).get("frozen_reference_pairs"):
         raise ValueError("Frozen regression requires explicit 60-pair fixture")
 
-    e1_dir = run_dir.parent / f"{run_name}_e1_recomputed"
+    e1_dir = run_dir / "tracking"
     if e1_dir.exists():
         raise FileExistsError(f"Refusing to overwrite tracking directory: {e1_dir}")
     outcome = recompute_e1(
@@ -127,9 +128,8 @@ def run_live_full(*, config_path: str | Path, date: str,
     if result["status"] != "SUCCESS":
         raise RuntimeError("Integrated pipeline failed")
     ctx = pipeline.context
-    tracking.track_states_df.to_csv(
-        ctx.stages_dir / "recomputed_e1_track_states.csv", index=False
-    )
+    # E1 states already persist in tracking/03_patch_e1_track_states.csv;
+    # do not write a second identical stages/ copy.
     seg = result["stage_outputs"]["segmentation"]
     sizes = seg.size_gate_output
     association = sizes.birth_gate_output.association_output
@@ -143,6 +143,8 @@ def run_live_full(*, config_path: str | Path, date: str,
         "e1_numeric_regression": "PASS" if frozen_regression else "NOT_APPLICABLE",
         "tracking_input": str((e1_dir / "03_patch_e1_track_states.csv").resolve()),
         "detection_input": str(detection_dir),
+        "raw_data_root": str(repo / "data" / "raw" / "cor2") if source == "download" else None,
+        "run_layout_version": 2,
         "input_pairs": int(json.loads((Path(metadata["input_dir"]) / "preprocessing_metadata.json")
                                      .read_text()).get("n_rd_pairs", -1)),
         "evaluation_pairs": len(tracking.manifest_df),
