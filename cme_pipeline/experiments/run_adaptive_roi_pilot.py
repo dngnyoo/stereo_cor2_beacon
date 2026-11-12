@@ -163,12 +163,12 @@ def run_full_pilot(repo_root: Path) -> Dict[str, Any]:
     # ---------------------------------------------------------------------
     print("\n--- Phase 4: Generating Qualitative Checkpoint A (Before Recovery) ---")
     # Load raw science images for background
-    exp01_dir = repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation"
+    exp01_dir = repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation"
     rd_all = np.load(exp01_dir / "results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
     val_all = np.load(exp01_dir / "results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 
     # Load Baseline E1 tracking outputs for side-by-side comparison
-    exp11_dir = repo_root / "validation_20101212/experiments/11_d7_patch_first_tracking_feasibility"
+    exp11_dir = repo_root / "validation/frozen/20101212/experiments/11_d7_patch_first_tracking_feasibility"
     df_states_e1 = pd.read_csv(exp11_dir / "results/tables/03_patch_e1_track_states.csv")
     lbls_e1_all = np.load(exp11_dir / "results/science_arrays/patch_component_labels.npy")
 

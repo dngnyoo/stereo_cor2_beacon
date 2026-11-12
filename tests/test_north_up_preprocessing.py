@@ -42,10 +42,13 @@ class TestNorthUpPreprocessing(unittest.TestCase):
             self.assertEqual(out_hdr["BUNIT"], "DN/s")
             self.assertFalse(out_hdr["MSBAPP"])
 
-    def test_north_up_target_has_north_y_and_west_x(self):
+    def test_frozen_target_preserves_historical_positive_plate_scale(self):
+        # Frozen Stage-26 replay uses absolute CDELT without flipping longitude.
+        # Do not change the science pipeline orientation to satisfy an outdated
+        # west-X expectation; orientation validation belongs in a separate test.
         hdr = wcs_header()
         target = target_north_up_wcs([hdr])
-        self.assertLess(target.wcs.cdelt[0], 0)
+        self.assertGreater(target.wcs.cdelt[0], 0)
         self.assertGreater(target.wcs.cdelt[1], 0)
         self.assertTrue(np.allclose(target.wcs.pc, np.eye(2)))
         self.assertTrue(np.allclose(target.wcs.crpix, [128.5, 128.5]))

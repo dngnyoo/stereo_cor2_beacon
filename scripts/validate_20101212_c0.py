@@ -35,7 +35,7 @@ def _match(new: pd.DataFrame, ref: pd.DataFrame, *, tolerance_s=.05):
 
 
 def run(repo: Path, science: Path, detection: Path, output: Path):
-    val = repo / "validation_20101212/experiments"
+    val = repo / "validation/frozen/20101212/experiments"
     frozen_pre = val / "01_d7_baseline_segmentation/results"
     frozen_det = val / "11_d7_patch_first_tracking_feasibility/results"
     ref_manifest = pd.read_csv(frozen_pre / "00_manifest/01_rd_manifest.csv")

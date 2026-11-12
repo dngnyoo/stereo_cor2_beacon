@@ -346,7 +346,7 @@ print("Saved case_diagnostics_summary.csv.")
 # -------------------------------------------------------------------------
 print("\n--- Generating Canonical Visualizations (A0 vs A2 vs A3) ---")
 
-exp01_dir = repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation"
+exp01_dir = repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation"
 rd_all = np.load(exp01_dir / "results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
 val_all = np.load(exp01_dir / "results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 

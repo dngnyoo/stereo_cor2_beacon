@@ -7,7 +7,7 @@ from pathlib import Path
 
 class TestSegmentationReproducibility(unittest.TestCase):
     def test_recovered_patch_masks_reproducibility(self):
-        hist_file = Path("validation_20101212/full_day_pipeline_validation/01_full_day_pipeline/results/science_arrays/recovered_patch_masks_pipeline_b_full_day.npy")
+        hist_file = Path("validation/frozen/20101212/full_day_pipeline_validation/01_full_day_pipeline/results/science_arrays/recovered_patch_masks_pipeline_b_full_day.npy")
         run_file = Path("runs/baseline_rule_b/arrays/recovered_patch_masks_pipeline_b_full_day.npy")
 
         self.assertTrue(hist_file.is_file(), f"Historical file missing: {hist_file}")
@@ -24,7 +24,7 @@ class TestSegmentationReproducibility(unittest.TestCase):
         )
 
     def test_final_pixel_segmentation_reproducibility(self):
-        hist_file = Path("validation_20101212/full_day_pipeline_validation/01_full_day_pipeline/results/science_arrays/final_pixel_segmentation_union.npy")
+        hist_file = Path("validation/frozen/20101212/full_day_pipeline_validation/01_full_day_pipeline/results/science_arrays/final_pixel_segmentation_union.npy")
         run_file = Path("runs/baseline_rule_b/arrays/final_pixel_segmentation_union.npy")
 
         self.assertTrue(hist_file.is_file(), f"Historical file missing: {hist_file}")

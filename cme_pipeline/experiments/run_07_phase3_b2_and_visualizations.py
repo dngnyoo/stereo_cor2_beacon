@@ -188,7 +188,7 @@ def main():
     # 3. Load Datasets for Visualization (Raw RD DNs, WCS Geometry)
     # -------------------------------------------------------------------------
     print("\n>>> [3/5] Loading Raw RD Data & Geometry for Full-Day Visualizations <<<")
-    val_root = repo_root / "validation_20101212"
+    val_root = repo_root / "validation/frozen/20101212"
     exp01_dir = val_root / "experiments/01_d7_baseline_segmentation"
     rd_all = np.load(exp01_dir / "results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
     val_all = np.load(exp01_dir / "results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")

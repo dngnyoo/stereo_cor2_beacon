@@ -58,7 +58,7 @@ def load_frozen_detection_inputs(
     if use_memory_cache and cache_key in _DETECTION_CACHE:
         return _DETECTION_CACHE[cache_key]
 
-    val_root = repo_root / "validation_20101212"
+    val_root = repo_root / "validation/frozen/20101212"
     exp01_dir = val_root / "experiments/01_d7_baseline_segmentation"
     exp11_dir = val_root / "experiments/11_d7_patch_first_tracking_feasibility"
 

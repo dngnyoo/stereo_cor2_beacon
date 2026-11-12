@@ -21,7 +21,7 @@ def pair_key(start, end):
 
 def run(new_root: Path, repo: Path, output: Path):
     new_root, repo, output = new_root.resolve(), repo.resolve(), output.resolve()
-    frozen = repo / "validation_20101212/experiments/01_d7_baseline_segmentation/results"
+    frozen = repo / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation/results"
     old_manifest = pd.read_csv(frozen / "00_manifest/01_rd_manifest.csv")
     fresh = pd.read_csv(new_root / "preprocessed/01_rd_manifest.csv")
     old_keys = [pair_key(a, b) for a, b in zip(old_manifest["prev_file"], old_manifest["curr_file"])]

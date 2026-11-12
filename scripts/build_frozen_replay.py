@@ -27,7 +27,7 @@ def read_rows(path):
 
 def build(repo: Path, source: Path, destination: Path):
     repo, source, destination = repo.resolve(), source.resolve(), destination.resolve()
-    reference = (repo / "validation_20101212/experiments/"
+    reference = (repo / "validation/frozen/20101212/experiments/"
                  "01_d7_baseline_segmentation/results/00_manifest/01_rd_manifest.csv")
     frozen, _ = read_rows(reference)
     current, fields = read_rows(source / "01_rd_manifest.csv")

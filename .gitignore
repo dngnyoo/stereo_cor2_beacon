@@ -26,7 +26,7 @@ dist/
 *.migrating
 
 # Historic local-only research snapshots (not production source)
-/validation_20101212/
+# Tracked frozen references now live under /validation/frozen/20101212/.
 /one_month_pipeline/
 /one_month_preprocessing_detection_survey/
 

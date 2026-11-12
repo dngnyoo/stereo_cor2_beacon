@@ -217,11 +217,11 @@ print(f"Saved a0_vs_a2_track_comparison.csv ({len(df_track_comp)} rows).")
 # Step 4: Fix Diagnostic Visualizations (Part 4)
 # -------------------------------------------------------------------------
 print("\n--- Fixing and Validating Diagnostic Visualizations (Part 4) ---")
-exp01_dir = repo_root / "validation_20101212/experiments/01_d7_baseline_segmentation"
+exp01_dir = repo_root / "validation/frozen/20101212/experiments/01_d7_baseline_segmentation"
 rd_all = np.load(exp01_dir / "results/science_arrays/north_up_RD_DNs.npy", mmap_mode="r")
 val_all = np.load(exp01_dir / "results/science_arrays/north_up_pair_valid_masks.npy", mmap_mode="r")
 
-exp11_dir = repo_root / "validation_20101212/experiments/11_d7_patch_first_tracking_feasibility"
+exp11_dir = repo_root / "validation/frozen/20101212/experiments/11_d7_patch_first_tracking_feasibility"
 lbls_e1_all = np.load(exp11_dir / "results/science_arrays/patch_component_labels.npy")
 
 cmap_rd = get_rd_cmap()
