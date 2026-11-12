@@ -212,3 +212,47 @@ Unit test:
 ```bash
 python -m pytest -q tests/test_parse_seeds_monthly.py
 ```
+
+## Official SEEDS detail TXT parser and end-to-end CSV output
+
+An authentic COR2-A detailed record has `#KEY: VALUE` event metadata
+followed by a `#DATE TIME HMLEAD HMHEIGHT HMFOLLOW TEL PASTART PAEND BPA`
+frame table. The parser verifies the filename tokens against the header,
+enforces `NUM_FRAMES`, rejects unexpected detector names or malformed tables,
+and preserves original TXT files.
+
+```bash
+# Reuse details already downloaded; no network access
+python -m scripts.parse_seeds_details --date 20101212
+
+# Or download details (when needed) AND parse automatically:
+python -m scripts.fetch_seeds_details --date 20101212
+```
+
+The normalized outputs are:
+- `data/catalogs/seeds/20101212/seeds_events.csv`
+- `data/catalogs/seeds/20101212/seeds_frames.csv`
+
+Both source-native files can be passed directly to the existing validator
+and PNG overlay (the latter uses `HMHEIGHT`, `PASTART/PAEND`, and
+`BPA`; the validator uses `HMLEAD`). This avoids historical matching
+scores or inferred per-frame measurements:
+
+```bash
+python -m scripts.validate_seeds --run-dir runs/clean_cor2a_verify \
+  --seeds-csv data/catalogs/seeds/20101212/seeds_frames.csv
+
+python -m scripts.visualize_seeds_overlay \
+  --run-dir runs/clean_cor2a_verify \
+  --seeds-csv data/catalogs/seeds/20101212/seeds_frames.csv --gif
+```
+
+Source-native frame records are observations in SEEDS, not a declaration
+that the Beacon run observed the frame; the comparison's time gate still
+determines whether a detector observation is available. Unobserved SEEDS
+frames should be excluded by a documented Beacon observation-window policy
+before using conditional Recall as a scientific result.
+
+```bash
+python -m pytest -q tests/test_parse_seeds_details.py
+```
