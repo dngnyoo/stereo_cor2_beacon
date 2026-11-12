@@ -249,6 +249,8 @@ def run_no_msb_north_up(manifest_path: str | Path, *,
         writer.writerows(rows)
     (output_dir / "preprocessing_metadata.json").write_text(json.dumps({
         "source_manifest": str(manifest_path),
+        "requested_date": data["date"],
+        "frozen_reference_pairs": bool(data.get("frozen_reference_pairs", False)),
         "n_selected_frames": len(frames),
         "n_rd_pairs": len(rows),
         "shape": list(shape),
