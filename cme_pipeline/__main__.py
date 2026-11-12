@@ -57,6 +57,10 @@ def parse_args() -> argparse.Namespace:
         choices=("d7", "science_raw", "science_seq", "beacon_raw", "beacon_seq"),
     )
     prepare_parser.add_argument("--input-dir", default=None)
+    prepare_parser.add_argument("--preprocess", action="store_true",
+                                help="Run No-MSB + North-up + 30-minute RD after input selection.")
+    prepare_parser.add_argument("--mask-path", default=None,
+                                help="Override COR2 static occulter mask FITS.")
     prepare_parser.add_argument("--phase-sec", default=None, type=float,
                                 help="30-minute phase in seconds (d7 only; May 2024 default: 1434).")
     prepare_parser.add_argument("--output-dir", default=None)
@@ -91,7 +95,13 @@ def main() -> None:
             phase_sec=args.phase_sec,
         )
         print(f"FITS input manifest: {manifest}")
-        print("Status: INVENTORIED_NOT_PREPROCESSED (RD and detector not yet integrated)")
+        if args.preprocess:
+            from cme_pipeline.north_up_preprocessing import run_no_msb_north_up
+            result = run_no_msb_north_up(manifest, mask_path=args.mask_path)
+            print(f"North-up No-MSB RD arrays: {result}")
+            print("Status: RD_READY_DETECTION_NOT_RUN")
+        else:
+            print("Status: INVENTORIED_NOT_PREPROCESSED (use --preprocess for RD)")
         return
 
     config_path = Path(args.config)
