@@ -20,7 +20,7 @@ python -m cme_pipeline run-data \
   --frozen-regression
 ```
 
-This opt-in mode uses historical E1 geometry and checks recomputed state keys
+This opt-in mode uses historical E1 geometry and checks recomputed state keys and numeric Track State fields
 against the Frozen E1 reference. The resulting output is isolated under
 `runs/integrated_frozen_c0_e1/`, with independent recomputed track files in
 `runs/integrated_frozen_c0_e1_e1_recomputed/`. It also writes
@@ -38,20 +38,22 @@ test before that result is attributed to it.
 python -m cme_pipeline run-data \
   --config configs/baseline_rule_b.yaml \
   --date 20101212 \
-  --run-name integrated_full_63   --preprocessed-dir runs/dual_archive_20101212/preprocessed
+  --run-name integrated_full_63 \
+  --preprocessed-dir runs/dual_archive_20101212/preprocessed
 ```
 
 This **does not trim the input to the historical 60 pairs**. C0 uses all
 available RD history; E1 tracks valid evaluation-date observations only.
 The 63-pair processing is not expected to match the Frozen 60-pair benchmark.
 
-## Run from raw FITS
+If the RD folder already has a C0 output directory, use the existing\n`--detection-dir` instead. The detector deliberately refuses to overwrite\nexisting results.\n\n## Run from raw FITS
 
 ```bash
 python -m cme_pipeline run-data \
   --config configs/baseline_rule_b.yaml \
   --date 20240512 \
-  --run-name cor2_20240512   --source local \
+  --run-name cor2_20240512 \
+  --source local \
   --input-dir /path/to/cor2_d7_fits \
   --warmup-days 2 \
   --phase-sec 1434
