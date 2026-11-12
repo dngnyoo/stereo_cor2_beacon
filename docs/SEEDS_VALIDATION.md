@@ -166,3 +166,49 @@ is the direct official-TXT downloader.
 ```bash
 python -m pytest -q tests/test_fetch_seeds_monthly.py
 ```
+
+## Parser verified against authentic 2010-12-12 monthly rows
+
+Actual `monthly.txt` rows supplied from the GMU COR2-A archive have the
+whitespace-delimited structure:
+
+```text
+2010/12/12 04:54:00   8  91 138   499     5.7
+```
+
+Known event-level columns used by the parser: timestamp UTC, observation
+count, central position angle, angular width, and speed. The trailing
+numeric/placeholder field is preserved as unverified auxiliary metadata
+and is NOT used to calculate any CME metric. The parser constructs the
+same stable event identifiers already present in the frozen reference
+(e.g. `SEEDS_COR2A_20101212T045400_W138_V0499_P091`).
+
+Because this monthly file contains **event summaries**, it does not
+provide individual image timestamps, per-frame varying angular width, or
+height. The validated event CSV is not a drop-in replacement for the
+curated frame-measurement table and cannot truthfully produce the existing
+sector-per-frame overlay by itself.
+
+The normal downloader now also parses the selected date:
+
+```bash
+python -m scripts.fetch_seeds_monthly --date 20101212
+```
+
+If the raw monthly file has already been fetched, parse it **without
+redownloading**:
+
+```bash
+python -m scripts.parse_seeds_monthly --date 20101212 \
+  --input data/catalogs/seeds/raw/2010/12/monthly.txt \
+  --output data/catalogs/seeds/raw/2010/12/seeds_events_20101212.csv
+```
+
+The output of the downloader is
+`data/catalogs/seeds/raw/YYYY/MM/seeds_events_YYYYMMDD.csv`;
+the standalone parser also allows a custom output path.
+
+Unit test:
+```bash
+python -m pytest -q tests/test_parse_seeds_monthly.py
+```
