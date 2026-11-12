@@ -102,3 +102,13 @@ def test_resume_rejects_partial_stage(tmp_path):
         stage_ready(folder, ("detection_metadata.json",))
     (folder / "detection_metadata.json").write_text("{}")
     assert stage_ready(folder, ("detection_metadata.json",)) is True
+
+
+def test_raw_pipeline_has_no_legacy_cor2_mask_dependency():
+    from pathlib import Path
+    from cme_pipeline import live_full_pipeline
+    import inspect
+
+    source = inspect.getsource(live_full_pipeline.run_live_full)
+    assert '"cor2_mask.fts"' not in source
+    assert 'load_cor2_mask(mask_path)' in source
