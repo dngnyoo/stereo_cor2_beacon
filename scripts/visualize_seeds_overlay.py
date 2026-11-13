@@ -46,6 +46,26 @@ def sector_points(bpa, width, r_inner, r_outer, sx, sy, bounds):
                 for a in theta]
     return arc(r_outer, angles) + arc(r_inner, angles[::-1])
 
+def sector_points_from_bounds(pa_start, pa_end, r_inner, r_outer, sx, sy, bounds):
+    """Use SEEDS reported PASTART and PAEND, not BPA +/- width/2."""
+    pa_start, pa_end = float(pa_start), float(pa_end)
+    if not np.isfinite([pa_start, pa_end]).all():
+        raise ValueError("Non-finite PA boundaries")
+    span = (pa_end - pa_start) % 360.0
+    if span <= 0:
+        raise ValueError("Zero or ambiguous SEEDS angular sector")
+    return sector_points((pa_start + span / 2) % 360, span,
+                         r_inner, r_outer, sx, sy, bounds)
+
+
+def select_nearest_observations(seeds, timestamp, max_delta):
+    """At most one observation per parent event, always nearest in time."""
+    candidates = seeds.copy()
+    candidates["delta_sec"] = (candidates["time"] - timestamp).abs().dt.total_seconds()
+    candidates = candidates[candidates["delta_sec"] <= max_delta]
+    return (candidates.sort_values(["delta_sec", "parent_event_id"])
+            .drop_duplicates("parent_event_id", keep="first"))
+
 
 def load_seeds(path):
     df = pd.read_csv(path)
@@ -63,6 +83,8 @@ def load_seeds(path):
             "is_evaluable": True,
             "seeds_bpa": df["BPA"],
             "seeds_width": widths,
+            "seeds_pa_start": starts,
+            "seeds_pa_end": ends,
             "seeds_height": df["HMHEIGHT"],
         })
     keys = {"parent_event_id", "seeds_timestamp", "is_evaluable", "seeds_bpa",
@@ -83,7 +105,7 @@ def overlay_frame(source, destination, seeds, *, max_delta=900.,
     if not name:
         raise ValueError(f"Unexpected PNG name: {source.name}")
     stamp = pd.to_datetime(name.group(2), utc=True, format="%Y%m%dT%H%M%SZ")
-    active = seeds[(seeds["time"] - stamp).abs().dt.total_seconds() <= max_delta]
+    active = select_nearest_observations(seeds, stamp, max_delta)
     with Image.open(source) as original:
         base = original.convert("RGBA")
     bounds = axes_bounds(base.size)
@@ -95,7 +117,11 @@ def overlay_frame(source, destination, seeds, *, max_delta=900.,
         if not np.isfinite(radius) or radius <= inner_px:
             continue
         bpa, width = float(ev["seeds_bpa"]), float(ev["seeds_width"])
-        vertices = sector_points(bpa, width, inner_px, radius, sx, sy, bounds)
+        if {"seeds_pa_start", "seeds_pa_end"}.issubset(active.columns):
+            vertices = sector_points_from_bounds(ev["seeds_pa_start"], ev["seeds_pa_end"],
+                                                 inner_px, radius, sx, sy, bounds)
+        else:
+            vertices = sector_points(bpa, width, inner_px, radius, sx, sy, bounds)
         painter.polygon(vertices, fill=(224, 64, 251, 38))
         painter.line(vertices + [vertices[0]], fill=(240, 70, 255, 225), width=3)
         a = np.deg2rad(bpa)
@@ -120,7 +146,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--run-dir", type=Path, required=True)
     ap.add_argument("--seeds-csv", type=Path, default=DEFAULT_SEEDS)
-    ap.add_argument("--max-time-delta-sec", type=float, default=900.)
+    ap.add_argument("--max-time-delta-sec", type=float, default=60.)
     ap.add_argument("--sx", type=float, default=126.618)
     ap.add_argument("--sy", type=float, default=127.503)
     ap.add_argument("--rsun-px", type=float, default=8.163)
