@@ -256,3 +256,24 @@ before using conditional Recall as a scientific result.
 ```bash
 python -m pytest -q tests/test_parse_seeds_details.py
 ```
+
+## Overlay geometry: source boundaries, not matching scores
+
+The visual-only overlay now uses detailed SEEDS `PASTART` and `PAEND`
+as the **actual angular boundaries**. `BPA` is rendered as a separate
+direction ray, **not** used as the midpoint of those boundaries. This
+matters for the 2010-12-12 06:54 frame:
+`PASTART=27°, PAEND=156°, BPA=33°`. A BPA-centered wedge would be wrong.
+
+For visual overlays, observation timestamps are matched to the **nearest
+SEEDS observation per parent event within 60 seconds** by default;
+frames outside that window show no SEEDS sector. No interpolation,
+extrapolation or catalog matching assignment is performed. The radial
+sector cap is `HMHEIGHT` (the SEEDS source measurement), not HMLEAD.
+These are geometric visual aids, not SEEDS pixel segmentation.
+
+Important limitation: the image-to-solar-geometry mapping still uses the
+2010-12-12 north-up defaults (solar center, Rsun pixels, and occulter
+radius) and the current PNG renderer's fixed 864x840 pixel layout.
+The geometry must be independently checked against the specific run's
+WCS before claiming exact spatial registration for another date.
