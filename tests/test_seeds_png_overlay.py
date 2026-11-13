@@ -7,7 +7,7 @@ import pandas as pd
 from PIL import Image
 
 from scripts.visualize_seeds_overlay import (
-    axes_bounds, png_xy, sector_points, overlay_frame,
+    axes_bounds, png_xy, sector_points, sector_points_from_bounds,\n    select_nearest_observations, load_seeds, overlay_frame,
 )
 
 
@@ -30,6 +30,26 @@ class TestSeedsPngOverlay(unittest.TestCase):
         east = sector_points(90, 2, 22, 60, 128, 128, b)
         self.assertLess(min(p[1] for p in north), cy)
         self.assertLess(min(p[0] for p in east), cx)
+
+    def test_source_pa_boundaries_not_bpa_center(self):
+        b = axes_bounds((864, 840))
+        exact = sector_points_from_bounds(27, 156, 22, 60, 128, 128, b)
+        wrong = sector_points(33, 129, 22, 60, 128, 128, b)
+        self.assertNotEqual(exact[0], wrong[0])
+        self.assertAlmostEqual(exact[0][0], png_xy(128 - 60 * __import__("math").sin(
+            __import__("math").radians(27)), 128 + 60 * __import__("math").cos(
+            __import__("math").radians(27)), b)[0])
+
+    def test_select_nearest_per_event_and_time_gate(self):
+        df = pd.DataFrame([
+            {"parent_event_id":"A", "time":pd.Timestamp("2010-12-12T06:54:00Z")},
+            {"parent_event_id":"A", "time":pd.Timestamp("2010-12-12T07:24:00Z")},
+            {"parent_event_id":"B", "time":pd.Timestamp("2010-12-12T06:54:00Z")},
+        ])
+        chosen = select_nearest_observations(df, pd.Timestamp("2010-12-12T06:54:24Z"), 60)
+        self.assertEqual(len(chosen), 2)
+        missing = select_nearest_observations(df, pd.Timestamp("2010-12-12T07:09:00Z"), 60)
+        self.assertTrue(missing.empty)
 
     def test_preserves_original_png(self):
         with tempfile.TemporaryDirectory() as tmp:
