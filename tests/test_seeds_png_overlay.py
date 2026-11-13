@@ -7,7 +7,8 @@ import pandas as pd
 from PIL import Image
 
 from scripts.visualize_seeds_overlay import (
-    axes_bounds, png_xy, sector_points, sector_points_from_bounds,\n    select_nearest_observations, load_seeds, overlay_frame,
+    axes_bounds, png_xy, sector_points, sector_points_from_bounds,
+    select_nearest_observations, load_seeds, overlay_frame,
 )
 
 
