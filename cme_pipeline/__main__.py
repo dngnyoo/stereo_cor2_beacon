@@ -95,8 +95,10 @@ def parse_args() -> argparse.Namespace:
     detect_parser.add_argument("--method", choices=("c0", "c3"), default="c3")
     detect_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
     detect_parser.add_argument("--date", default=None, help="Analysis YYYYMMDD; infer from RD metadata if omitted")
-    detect_parser.add_argument("--floor-mode", choices=("frame_median", "outer_background"),
+    detect_parser.add_argument("--floor-mode", choices=("frame_median", "outer_background", "outer_background_mad"),
                                default="frame_median", help="C3 P04 floor strategy")
+    detect_parser.add_argument("--outer-floor-k", type=float, default=0.0,
+                               help="MAD multiplier for outer_background_mad")
     detect_parser.add_argument("--outer-floor-inner-px", type=float, default=88.0)
     detect_parser.add_argument("--outer-floor-outer-px", type=float, default=116.0)
     detect_parser.add_argument("--output-dir", default=None,
@@ -263,6 +265,7 @@ def main() -> None:
                                  denoiser=args.denoiser,
                                  requested_date=validate_date(args.date) if args.date else None,
                                  floor_mode=args.floor_mode,
+                                 outer_floor_k=args.outer_floor_k,
                                  outer_floor_inner_px=args.outer_floor_inner_px,
                                  outer_floor_outer_px=args.outer_floor_outer_px,
                                  output_dir=args.output_dir)
