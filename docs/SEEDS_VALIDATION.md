@@ -277,3 +277,43 @@ Important limitation: the image-to-solar-geometry mapping still uses the
 radius) and the current PNG renderer's fixed 864x840 pixel layout.
 The geometry must be independently checked against the specific run's
 WCS before claiming exact spatial registration for another date.
+
+
+## WCS-registered SEEDS three-height visual overlay
+
+The image-only overlay now reads THIS run's
+\`acquisition/preprocessed/target_wcs_header.txt\` for solar center,
+plate scale, and north-up/PA orientation. For every frame with a SEEDS
+observation, it reads the nearest STEREO-A COR2 raw FITS header
+from \`data/raw/cor2/beacon/YYYYMMDD\` (maximum 20 min difference)
+and converts \`RSUN\` from arcseconds into **target-image pixels**.
+Missing FITS, missing \`RSUN\`, unexpected detector, or mismatched WCS
+fails loudly instead of reverting to the historical 8.163 px/Rsun.
+
+SEEDS frame detail values are shown without treating either catalog as truth:
+
+- Magenta semi-transparent sector: \`PASTART\` to \`PAEND\` and \`HMHEIGHT\`
+- Yellow outer arc: \`HMLEAD\`
+- Magenta arc: \`HMHEIGHT\`
+- Cyan inner arc: \`HMFOLLOW\`
+- White radial line: \`BPA\` (brightest position angle)
+
+The three arcs are separate measurements; they are NOT an original SEEDS
+pixel segmentation mask. Geometry beyond the configured 120px
+FOV limit is clipped for display.
+
+To regenerate the PNGs/GIF using physical solar scale:
+
+\`\`\`bash
+python -m pytest -q \
+  tests/test_seeds_png_overlay.py tests/test_seeds_physical_overlay.py
+
+python -m scripts.visualize_seeds_overlay \
+  --run-dir runs/clean_cor2a_verify \
+  --seeds-csv data/catalogs/seeds/20101212/seeds_frames.csv \
+  --raw-fits-root data/raw/cor2/beacon \
+  --gif
+\`\`\`
+
+This does NOT alter existing detection masks, CME catalog values, or
+event matching scores. The pixel overlay is a visual geometry comparison.
