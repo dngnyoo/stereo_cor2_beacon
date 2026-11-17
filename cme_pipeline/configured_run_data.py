@@ -155,6 +155,9 @@ def run_configured_data(
         fov_r_max_px=cfg.segmentation.fov_r_max_px,
     )
     detected.geometry.rsun_px = float(rsun_px)
+    # The legacy recovery operator requires the physical 2-R_sun inner
+    # occulter boundary; the live loader leaves this field unspecified.
+    detected.geometry.occulter_inner_radius_px = 2.0 * float(rsun_px)
     if not detected.manifest_df["warmup_or_eval"].eq("EVALUATION").any():
         raise ValueError("No requested-date evaluation frames")
 
@@ -195,6 +198,7 @@ def run_configured_data(
         "tracking_method": cfg.tracking.method,
         "association_method": cfg.association.method,
         "rsun_px": float(rsun_px),
+        "occulter_inner_radius_px": 2.0 * float(rsun_px),
         "input_pairs": len(detected.manifest_df),
         "evaluation_pairs": int(detected.manifest_df["warmup_or_eval"].eq("EVALUATION").sum()),
         "tracks": tracking.total_tracks,
