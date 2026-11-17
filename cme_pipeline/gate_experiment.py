@@ -28,6 +28,7 @@ def run_saved_a5b_gates(
     recovery_inner_radius_px: float,
     birth_max_radius_px: float = 30.0,
     min_detected_patches: int = 5,
+    min_observed_pairs: int = 1,
 ) -> Path:
     """Reconstruct saved A5b TrackingOutput then run four downstream stages."""
     run = Path(tracking_run).expanduser().resolve()
@@ -41,6 +42,8 @@ def run_saved_a5b_gates(
         raise ValueError("Invalid birth maximum radius")
     if min_detected_patches < 1:
         raise ValueError("min_detected_patches must be >=1")
+    if min_observed_pairs < 1:
+        raise ValueError("min_observed_pairs must be >=1")
     detdir = Path(meta["detection_dir"]).resolve()
     detected = load_live_tracking_input(detdir)
     observed = pd.read_csv(run / "tables" / "live_tracking_states.csv")
@@ -60,6 +63,7 @@ def run_saved_a5b_gates(
     cfg.association.method = "identity"
     cfg.birth_gate.max_birth_radius_px = birth_max_radius_px
     cfg.size_gate.min_detected_patches = int(min_detected_patches)
+    cfg.size_gate.min_observed_pairs = int(min_observed_pairs)
     cfg.run_name = run_name
     # This is a user-specified *operational pixel cutoff*, not an inferred 2 R_sun.
     detected.geometry.occulter_inner_radius_px = float(recovery_inner_radius_px)
@@ -96,6 +100,7 @@ def run_saved_a5b_gates(
         "recovery_inner_radius_interpretation": "explicit operational cutoff; not calibrated to 2 solar radii",
         "birth_max_radius_px": float(birth_max_radius_px),
         "min_detected_patches": int(min_detected_patches),
+        "min_observed_pairs": int(min_observed_pairs),
         "tracks": int(meta["total_tracks"]),
         "candidate_families": int(assoc.candidate_family_count),
         "birth_gate_pass": len(birth.birth_gated_family_ids),
