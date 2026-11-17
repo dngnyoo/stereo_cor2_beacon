@@ -107,7 +107,6 @@ class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
         min_pa_width_deg = float(effective_params["min_pa_width_deg"])
         ema_alpha = float(effective_params["ema_alpha"])
         max_cadence_gap_sec = float(effective_params["max_cadence_gap_sec"])
-        birth_gate_px = float(effective_params["birth_gate_threshold_px"])
         default_roi_half = float(effective_params["default_roi_half_width_deg"])
         roi_padding = float(effective_params["roi_padding_deg"])
         max_missed_frames = int(effective_params["max_missed_frames"])
@@ -611,107 +610,106 @@ class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
                 c_pas = patch_pa[c_mask]
                 min_r = float(np.min(c_rads))
 
-                if min_r <= birth_gate_px:
-                    tid = next_track_id
-                    next_track_id += 1
-                    raw_birth_cid = int(lbl_img[c_mask][0])
-                    orig_birth_cpa = float(circular_mean_deg(c_pas))
-                    arc_birth = minimal_circular_enclosing_arc(c_pas)
-                    init_extent = float(arc_birth["arc_span"])
-                    init_roi_half = max(default_roi_half, init_extent / 2.0 + roi_padding)
-                    init_roi = (orig_birth_cpa, init_roi_half)
+                tid = next_track_id
+                next_track_id += 1
+                raw_birth_cid = int(lbl_img[c_mask][0])
+                orig_birth_cpa = float(circular_mean_deg(c_pas))
+                arc_birth = minimal_circular_enclosing_arc(c_pas)
+                init_extent = float(arc_birth["arc_span"])
+                init_roi_half = max(default_roi_half, init_extent / 2.0 + roi_padding)
+                init_roi = (orig_birth_cpa, init_roi_half)
 
-                    new_track = AdaptiveTrack(
-                        track_id=tid,
-                        birth_pair_id=p_curr,
-                        birth_time=ts_curr,
-                        birth_r_min_px=min_r,
-                        is_anchor=True,
-                        original_birth_pa=float(c_pas[int(np.argmin(c_rads))]),
-                        original_birth_cpa=orig_birth_cpa,
-                        initial_angular_extent=init_extent,
-                        initial_birth_roi=init_roi,
-                        adaptive_active_roi=init_roi,
-                        tracked_cpa=orig_birth_cpa,
-                        observed_cpa=orig_birth_cpa,
-                    )
-                    obs_front = float(np.max(c_rads))
-                    n_pts = int(c_mask.sum())
-                    c_rec = A4ComponentRecord(
-                        pair_index=p_curr,
-                        track_id=tid,
-                        component_id=raw_birth_cid,
-                        num_patches=n_pts,
-                        cpa=orig_birth_cpa,
-                        r_front=obs_front,
-                        r_min=min_r,
-                        do_cnt=0,
-                        adj_cnt=0,
-                        match_score=1.0,
-                        mask=c_mask,
-                        is_leading_front=True,
-                    )
-                    h_rec = A4TrackHistory(
-                        pair_index=p_curr,
-                        timestamp=ts_curr,
-                        state="OBSERVED",
-                        union_mask=c_mask,
-                        central_pa=orig_birth_cpa,
-                        tracked_cpa=orig_birth_cpa,
-                        num_components=1,
-                        total_patches=n_pts,
-                        leading_front_radius=obs_front,
-                        leading_front_state="OBSERVED",
-                        leading_front_comp_id=raw_birth_cid,
-                        components=[c_rec],
-                    )
-                    new_track.history.append(h_rec)
-                    tracks[tid] = new_track
+                new_track = AdaptiveTrack(
+                    track_id=tid,
+                    birth_pair_id=p_curr,
+                    birth_time=ts_curr,
+                    birth_r_min_px=min_r,
+                    is_anchor=True,
+                    original_birth_pa=float(c_pas[int(np.argmin(c_rads))]),
+                    original_birth_cpa=orig_birth_cpa,
+                    initial_angular_extent=init_extent,
+                    initial_birth_roi=init_roi,
+                    adaptive_active_roi=init_roi,
+                    tracked_cpa=orig_birth_cpa,
+                    observed_cpa=orig_birth_cpa,
+                )
+                obs_front = float(np.max(c_rads))
+                n_pts = int(c_mask.sum())
+                c_rec = A4ComponentRecord(
+                    pair_index=p_curr,
+                    track_id=tid,
+                    component_id=raw_birth_cid,
+                    num_patches=n_pts,
+                    cpa=orig_birth_cpa,
+                    r_front=obs_front,
+                    r_min=min_r,
+                    do_cnt=0,
+                    adj_cnt=0,
+                    match_score=1.0,
+                    mask=c_mask,
+                    is_leading_front=True,
+                )
+                h_rec = A4TrackHistory(
+                    pair_index=p_curr,
+                    timestamp=ts_curr,
+                    state="OBSERVED",
+                    union_mask=c_mask,
+                    central_pa=orig_birth_cpa,
+                    tracked_cpa=orig_birth_cpa,
+                    num_components=1,
+                    total_patches=n_pts,
+                    leading_front_radius=obs_front,
+                    leading_front_state="OBSERVED",
+                    leading_front_comp_id=raw_birth_cid,
+                    components=[c_rec],
+                )
+                new_track.history.append(h_rec)
+                tracks[tid] = new_track
 
-                    track_ownership_masks[step_idx][c_mask] = tid
+                track_ownership_masks[step_idx][c_mask] = tid
 
-                    track_state_rows.append({
-                        "experiment": "A5b_PA_Width_Weighted_CPA",
-                        "track_id": tid,
-                        "pair_index": p_curr,
-                        "timestamp": ts_curr.isoformat(),
-                        "state": "OBSERVED",
-                        "central_pa": orig_birth_cpa,
-                        "tracked_cpa": orig_birth_cpa,
-                        "roi_center_pa": init_roi[0],
-                        "roi_half_width": init_roi[1],
-                        "front_radius": obs_front,
-                        "leading_front_state": "OBSERVED",
-                        "leading_front_comp_id": raw_birth_cid,
-                        "num_patches": n_pts,
-                        "num_components": 1,
-                        "radial_displacement": 0.0,
-                    })
+                track_state_rows.append({
+                    "experiment": "A5b_PA_Width_Weighted_CPA",
+                    "track_id": tid,
+                    "pair_index": p_curr,
+                    "timestamp": ts_curr.isoformat(),
+                    "state": "OBSERVED",
+                    "central_pa": orig_birth_cpa,
+                    "tracked_cpa": orig_birth_cpa,
+                    "roi_center_pa": init_roi[0],
+                    "roi_half_width": init_roi[1],
+                    "front_radius": obs_front,
+                    "leading_front_state": "OBSERVED",
+                    "leading_front_comp_id": raw_birth_cid,
+                    "num_patches": n_pts,
+                    "num_components": 1,
+                    "radial_displacement": 0.0,
+                })
 
-                    leading_front_rows.append({
-                        "pair_index": p_curr,
-                        "timestamp": ts_curr.isoformat(),
-                        "track_id": tid,
-                        "leading_front_state": "OBSERVED",
-                        "leading_front_radius": obs_front,
-                        "responsible_comp_id": raw_birth_cid,
-                        "radial_displacement": 0.0,
-                    })
+                leading_front_rows.append({
+                    "pair_index": p_curr,
+                    "timestamp": ts_curr.isoformat(),
+                    "track_id": tid,
+                    "leading_front_state": "OBSERVED",
+                    "leading_front_radius": obs_front,
+                    "responsible_comp_id": raw_birth_cid,
+                    "radial_displacement": 0.0,
+                })
 
-                    comp_state_rows.append({
-                        "pair_index": p_curr,
-                        "timestamp": ts_curr.isoformat(),
-                        "track_id": tid,
-                        "component_id": raw_birth_cid,
-                        "num_patches": n_pts,
-                        "cpa": orig_birth_cpa,
-                        "r_min": min_r,
-                        "r_front": obs_front,
-                        "do_cnt": 0,
-                        "adj_cnt": 0,
-                        "match_score": 1.0,
-                        "is_leading_front": True,
-                    })
+                comp_state_rows.append({
+                    "pair_index": p_curr,
+                    "timestamp": ts_curr.isoformat(),
+                    "track_id": tid,
+                    "component_id": raw_birth_cid,
+                    "num_patches": n_pts,
+                    "cpa": orig_birth_cpa,
+                    "r_min": min_r,
+                    "r_front": obs_front,
+                    "do_cnt": 0,
+                    "adj_cnt": 0,
+                    "match_score": 1.0,
+                    "is_leading_front": True,
+                })
 
         context.info(
             f"A5b PA-Width-Weighted CPA Tracking complete. Total tracks: {len(tracks)}, "
@@ -732,7 +730,7 @@ class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
             frame_cache=det_out.frame_cache,
             geometry=geom,
             total_tracks=len(tracks),
-            anchor_tracks=[t.track_id for t in tracks.values() if t.is_anchor],
+            anchor_tracks=[],  # A5b creates all observed tracks; Birth Gate filters later.
             birth_direction_references={},
             track_ownership_masks=track_ownership_masks,
             component_states_df=df_comp_states,
@@ -746,5 +744,5 @@ class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
         setattr(out, "decisions_df", df_decisions)
         setattr(out, "contested_allocation_df", df_contested)
 
-        return adapt_tracking_output(out, max_birth_radius_px=birth_gate_px)
+        return adapt_tracking_output(out)
 
