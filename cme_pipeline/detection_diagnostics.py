@@ -65,7 +65,8 @@ def save_detection_diagnostics(
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.patches import Circle
+    from matplotlib.patches import Circle, Rectangle
+    from matplotlib.collections import PatchCollection
     from cme_pipeline.stages.segmentation.visualization import get_rd_cmap
 
     dest.mkdir(parents=True, exist_ok=True)
@@ -101,9 +102,14 @@ def save_detection_diagnostics(
         axes[1].set_title("P04 patch activity score")
         axes[2].imshow(masked, origin="lower", cmap=get_rd_cmap(),
                        vmin=-600, vmax=600)
-        overlay = np.ma.masked_where(~active, active.astype(float))
-        axes[2].imshow(overlay, origin="lower", extent=(-.5, 255.5, -.5, 255.5),
-                       interpolation="nearest", cmap="autumn", alpha=.55, vmin=0, vmax=1)
+        yy, xx = np.nonzero(active)
+        if len(yy):
+            axes[2].add_collection(PatchCollection(
+                [Rectangle((int(x) * 4 - .5, int(y) * 4 - .5), 4, 4)
+                 for y, x in zip(yy, xx)],
+                facecolor="none", edgecolor="red",
+                linewidth=.65, alpha=.9,
+            ))
         axes[2].set_title(f"Activated P04: {int(active.sum())} patches")
         if meta.get("floor_mode") in ("outer_background", "outer_background_mad", "outer_p95"):
             inner = meta.get("outer_floor_inner_px")
