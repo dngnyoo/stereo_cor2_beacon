@@ -95,6 +95,12 @@ def parse_args() -> argparse.Namespace:
     detect_parser.add_argument("--method", choices=("c0", "c3"), default="c3")
     detect_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
     detect_parser.add_argument("--date", default=None, help="Analysis YYYYMMDD; infer from RD metadata if omitted")
+    detect_parser.add_argument("--floor-mode", choices=("frame_median", "outer_background"),
+                               default="frame_median", help="C3 P04 floor strategy")
+    detect_parser.add_argument("--outer-floor-inner-px", type=float, default=88.0)
+    detect_parser.add_argument("--outer-floor-outer-px", type=float, default=116.0)
+    detect_parser.add_argument("--output-dir", default=None,
+                               help="Unique output path for side-by-side experiments")
 
     track_parser = subparsers.add_parser(
         "track-data", help="Run availability-aware A3/A4/A5b tracking on live C0/C3 detection."
@@ -240,7 +246,11 @@ def main() -> None:
         from cme_pipeline.data_preparation import validate_date
         detected = run_detection(args.preprocessed_dir, method=args.method,
                                  denoiser=args.denoiser,
-                                 requested_date=validate_date(args.date) if args.date else None)
+                                 requested_date=validate_date(args.date) if args.date else None,
+                                 floor_mode=args.floor_mode,
+                                 outer_floor_inner_px=args.outer_floor_inner_px,
+                                 outer_floor_outer_px=args.outer_floor_outer_px,
+                                 output_dir=args.output_dir)
         print(f"Detector outputs: {detected}")
         return
 
