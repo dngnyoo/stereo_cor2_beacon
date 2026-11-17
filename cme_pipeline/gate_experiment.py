@@ -46,6 +46,29 @@ def run_saved_a5b_gates(
         raise ValueError("min_observed_pairs must be >=1")
     detdir = Path(meta["detection_dir"]).resolve()
     detected = load_live_tracking_input(detdir)
+    # Replay the exact A5b input, including optional Pre-size filtering.
+    act_path = run / "arrays" / "tracking_input_activation_p04.npy"
+    labels_path = run / "arrays" / "tracking_input_component_labels.npy"
+    if act_path.exists() != labels_path.exists():
+        raise ValueError("Incomplete saved tracking input: activation/labels must coexist")
+    if act_path.exists():
+        from dataclasses import replace
+        filtered_active = np.load(act_path)
+        filtered_labels = np.load(labels_path)
+        if filtered_active.shape != detected.patch_activation_grid4.shape or filtered_labels.shape != detected.raw_component_labels.shape:
+            raise ValueError("Saved A5b input shape differs from C3 detection")
+        usable = detected.manifest_df["usable_detection"].astype(bool).to_numpy()
+        if np.any(filtered_active & ~detected.patch_activation_grid4):
+            raise ValueError("Saved A5b input introduced patches absent from C3")
+        if np.any((filtered_labels[usable] > 0) != filtered_active[usable]):
+            raise ValueError("Saved A5b input component labels disagree with active grid")
+        if np.any(filtered_active[~usable]) or np.any(filtered_labels[~usable] != -1):
+            raise ValueError("Unavailable observations changed in saved A5b input")
+        detected = replace(
+            detected,
+            patch_activation_grid4=filtered_active.astype(bool),
+            raw_component_labels=filtered_labels.astype(np.int32),
+        )
     observed = pd.read_csv(run / "tables" / "live_tracking_states.csv")
     own = np.load(run / "arrays" / "track_ownership_masks.npy")
     if own.shape != detected.raw_component_labels.shape:
