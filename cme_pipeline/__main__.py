@@ -136,6 +136,8 @@ def parse_args() -> argparse.Namespace:
     gates_parser.add_argument("--recovery-inner-radius-px", type=float, required=True)
     gates_parser.add_argument("--birth-max-radius-px", type=float, default=30.0)
     gates_parser.add_argument("--min-detected-patches", type=int, default=5)
+    gates_parser.add_argument("--min-observed-pairs", type=int, default=1,
+                              help="Minimum unique OBSERVED frames for family admission")
 
     compare_gates_parser = subparsers.add_parser(
         "compare-gates", help="Full-day baseline/outer P95 recovery and gates comparison."
@@ -349,6 +351,7 @@ def main() -> None:
             recovery_inner_radius_px=args.recovery_inner_radius_px,
             birth_max_radius_px=args.birth_max_radius_px,
             min_detected_patches=args.min_detected_patches,
+            min_observed_pairs=args.min_observed_pairs,
         )
         print(f"Recovery / Identity / Gates: {out}")
         return
