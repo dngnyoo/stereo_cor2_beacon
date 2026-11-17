@@ -59,7 +59,7 @@ def parse_args() -> argparse.Namespace:
     prepare_parser.add_argument("--input-dir", default=None)
     prepare_parser.add_argument("--preprocess", action="store_true",
                                 help="Run No-MSB + North-up + 30-minute RD after input selection.")
-    prepare_parser.add_argument("--detect", choices=("c0", "c3"), default=None,
+    prepare_parser.add_argument("--detect", choices=("c0", "c3", "d4"), default=None,
                                 help="Run C0 baseline or C3 default detector (requires --preprocess).")
     prepare_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
     prepare_parser.add_argument("--warmup-days", type=int, default=None,
@@ -89,14 +89,16 @@ def parse_args() -> argparse.Namespace:
 
     # Run an alternative detector on the same RD arrays without recalibrating.
     detect_parser = subparsers.add_parser(
-        "detect-data", help="Replay C0 or C3 on existing North-up No-MSB RD arrays."
+        "detect-data", help="Replay C0, C3 or D4 on existing North-up No-MSB RD arrays."
     )
     detect_parser.add_argument("--preprocessed-dir", required=True)
-    detect_parser.add_argument("--method", choices=("c0", "c3"), default="c3")
+    detect_parser.add_argument("--method", choices=("c0", "c3", "d4"), default="c3")
     detect_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
     detect_parser.add_argument("--date", default=None, help="Analysis YYYYMMDD; infer from RD metadata if omitted")
     detect_parser.add_argument("--floor-mode", choices=("frame_median", "outer_background", "outer_background_mad", "outer_p95"),
                                default="frame_median", help="C3 P04 floor strategy")
+    detect_parser.add_argument("--absolute-p04-floor", type=float, default=None,
+                               help="D4-only minimum P04 P95(abs(Z)) score; e.g. 0.5")
     detect_parser.add_argument("--t24-mad-multiplier", type=float, default=3.0,
                                help="T24 median + k * 1.4826 * MAD (default 3)")
     detect_parser.add_argument("--outer-floor-k", type=float, default=0.0,
@@ -203,7 +205,7 @@ def parse_args() -> argparse.Namespace:
                              help="Resume an interrupted v2 run after verifying inputs and finished stages.")
     full_parser.add_argument("--phase-sec", type=float)
     full_parser.add_argument("--mask-path")
-    full_parser.add_argument("--method", choices=("c0", "c3"), default=None,
+    full_parser.add_argument("--method", choices=("c0", "c3", "d4"), default=None,
                              help="Optional override check; detector is selected in YAML")
     full_parser.add_argument("--denoiser", choices=("gaussian", "median"), default=None,
                              help="Optional override check; denoiser is selected in YAML")
@@ -328,6 +330,7 @@ def main() -> None:
                                  outer_floor_k=args.outer_floor_k,
                                  outer_floor_inner_px=args.outer_floor_inner_px,
                                  outer_floor_outer_px=args.outer_floor_outer_px,
+                                 absolute_p04_floor=args.absolute_p04_floor,
                                  output_dir=args.output_dir)
         print(f"Detector outputs: {detected}")
         if args.visualize:
@@ -412,7 +415,7 @@ def main() -> None:
 
         date = validate_date(args.date)
         detected = load_live_tracking_input(args.detection_dir)
-        if detected.dataset_metadata["detector"] not in ("c0", "c3"):
+        if detected.dataset_metadata["detector"] not in ("c0", "c3", "d4"):
             raise ValueError("Live tracking requires a C0/C3 detection directory")
         if not detected.manifest_df["warmup_or_eval"].eq("EVALUATION").any():
             raise ValueError("No frames on requested analysis date")
