@@ -114,9 +114,15 @@ contours of 8-connected *track-owned* P04 regions. Labels have
 `T<track-ID>/C<raw-component-ID>.<owned-subregion-index>`,
 the leading owned-patch's WCS PA, the connected region's circular-mean CPA,
 PA span, and its outermost radius in pixels. Yellow stars denote the
-outermost **observed owned patch** of each region; the footer includes
-A5b's stored track-level `tracked_cpa`, `front_radius`, and
-`leading_front_state`. Those may be predicted rather than observed.
+outermost **observed owned patch** of each region. To avoid covering image
+features, the labels no longer use dark callout boxes: solid rays show
+front PA, dashed rays show observed component mean CPA, and outer arcs
+show each component's front at its minimal enclosing PA interval. Short
+labels sit next to those geometric elements; very small regions omit
+the angular labels. Stored track-level `tracked_cpa`, `front_radius`,
+and `leading_front_state` remain available in
+`tables/live_tracking_states.csv` rather than an overlaid box.
+Track-level fronts may be predicted rather than observed.
 `component_geometry.csv` records these measured owned-region geometries
 separately from original A5b component tables. Ownership subregions can
 split an original C3 component during contested-track allocation.
