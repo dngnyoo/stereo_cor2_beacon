@@ -16,6 +16,8 @@ def compare_detection(
     base, exp = Path(baseline_dir).resolve(), Path(experiment_dir).resolve()
     bmeta = json.loads((base / "detection_metadata.json").read_text())
     emeta = json.loads((exp / "detection_metadata.json").read_text())
+    if bmeta["detector"] != emeta["detector"] or bmeta["denoiser"] != emeta["denoiser"]:
+        raise ValueError("Detector and denoiser must match for controlled comparison")
     if Path(bmeta["input_dir"]).resolve() != Path(emeta["input_dir"]).resolve():
         raise ValueError("Both detectors must use exactly the same preprocessed directory")
     pre = Path(bmeta["input_dir"]).resolve()
@@ -57,6 +59,8 @@ def compare_detection(
 
     frames.mkdir(parents=True, exist_ok=False)
     rows = []
+    baseline_label = f"Baseline (T24 {bmeta.get('t24_mad_multiplier', 3):g}MAD)"
+    experiment_label = f"Experiment (T24 {emeta.get('t24_mad_multiplier', 3):g}MAD)"
 
     def fmt(val):
         return "N/A" if pd.isna(val) else f"{float(val):.3f}"
@@ -76,6 +80,10 @@ def compare_detection(
             "removed": int(np.count_nonzero(bmask & ~emask)),
             "added": int(np.count_nonzero(emask & ~bmask)),
             "delta_experiment_minus_base": nexp - nbase,
+            "T24_p04_base": b["T24_p04"],
+            "T24_p04_experiment": e["T24_p04"],
+            "floor_p04_base": b["floor_p04"],
+            "effective_threshold_p04_base": b["effective_threshold_p04"],
             "T24_p04": e["T24_p04"],
             "floor_p04_experiment": e["floor_p04"],
             "effective_threshold_p04_experiment": e["effective_threshold_p04"],
@@ -85,8 +93,8 @@ def compare_detection(
         image = np.ma.masked_where(~usable, raw)
         fig, axes = plt.subplots(1, 2, figsize=(13.5, 6.7), constrained_layout=True)
         for ax, mask, label, summary, count in (
-            (axes[0], bmask, "Baseline", b, nbase),
-            (axes[1], emask, "Outer P95", e, nexp),
+            (axes[0], bmask, baseline_label, b, nbase),
+            (axes[1], emask, experiment_label, e, nexp),
         ):
             im = ax.imshow(image, origin="lower", cmap=get_rd_cmap(),
                            vmin=-600, vmax=600, interpolation="nearest")
@@ -122,7 +130,7 @@ def compare_detection(
     df = pd.DataFrame(rows)
     df.to_csv(out / "comparison_summary.csv", index=False)
     print(f"Frames: {len(df)}; baseline active: {df.n_active_base.sum()}; "
-          f"outer active: {df.n_active_experiment.sum()}; "
+          f"experiment active: {df.n_active_experiment.sum()}; "
           f"removed patches: {df.removed.sum()}; added patches: {df.added.sum()}")
     print(df.sort_values("delta_experiment_minus_base").head(10).to_string(index=False))
     return out
