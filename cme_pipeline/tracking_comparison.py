@@ -1,32 +1,76 @@
-"""Read-only full-day side-by-side A5b tracking diagnostics."""
+"""Full-day read-only A5b tracking diagnostics with observed track/component geometry.
+
+A component here means an 8-connected region of P04 patches *owned by one track*.
+This is not necessarily the original C3 raw component after contested allocation.
+"""
 from __future__ import annotations
 
-from pathlib import Path
 import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+from scipy.ndimage import label
+
+from cme_pipeline.utils.geometry import circular_mean_deg, minimal_circular_enclosing_arc
+
+
+def _frame_components(owners: np.ndarray, patch_pa: np.ndarray,
+                      patch_rad: np.ndarray, sx: float, sy: float):
+    """Compute visually connected components of individual ownership masks."""
+    components = []
+    for tid in np.unique(owners):
+        if tid <= 0:
+            continue
+        labels, n = label(owners == tid, structure=np.ones((3, 3), bool))
+        for cid in range(1, n + 1):
+            mask = labels == cid
+            ys, xs = np.where(mask)
+            pa = np.asarray(patch_pa[mask], dtype=float)
+            radial = np.asarray(patch_rad[mask], dtype=float)
+            if not len(pa):
+                continue
+            front_i = int(np.nanargmax(radial))
+            center_pa = float(circular_mean_deg(pa))
+            arc = minimal_circular_enclosing_arc(pa)
+            front_y = float(ys[front_i] * 4 + 1.5)
+            front_x = float(xs[front_i] * 4 + 1.5)
+            components.append({
+                "track_id": int(tid),
+                "component_index": cid,
+                "mask": mask,
+                "n_patches": int(len(xs)),
+                "center_x": float(np.mean(xs) * 4 + 1.5),
+                "center_y": float(np.mean(ys) * 4 + 1.5),
+                "cpa_deg": center_pa,
+                "pa_span_deg": float(arc["arc_span"]),
+                "front_radius_px": float(radial[front_i]),
+                "front_x": front_x,
+                "front_y": front_y,
+            })
+    return components
 
 
 def compare_tracking(
     baseline_run: str | Path, experiment_run: str | Path, *,
     date: str, output_dir: str | Path | None = None,
 ) -> Path:
-    """Compare P04 detection outlines and track ownership IDs on identical RD."""
+    """Render every date frame, with track/component labels and measured fronts."""
     if len(date) != 8 or not date.isascii() or not date.isdigit():
         raise ValueError("date must be YYYYMMDD")
     base, exp = Path(baseline_run).resolve(), Path(experiment_run).resolve()
     btrack = json.loads((base / "tracking_metadata.json").read_text())
     etrack = json.loads((exp / "tracking_metadata.json").read_text())
     if btrack["method"] != etrack["method"] or btrack["method"] != "a5b":
-        raise ValueError("Both tracking runs must use A5b")
+        raise ValueError("Both runs must use A5b")
     bdet, edet = Path(btrack["detection_dir"]), Path(etrack["detection_dir"])
     bm = json.loads((bdet / "detection_metadata.json").read_text())
     em = json.loads((edet / "detection_metadata.json").read_text())
     pre = Path(bm["input_dir"]).resolve()
     if pre != Path(em["input_dir"]).resolve():
-        raise ValueError("Both tracking runs must refer to the same preprocessed RD")
+        raise ValueError("Both runs must use the same preprocessed RD")
     if btrack["requested_date"] != date or etrack["requested_date"] != date:
-        raise ValueError("Tracking run dates differ from requested date")
+        raise ValueError("Tracking dates do not match")
 
     manifest = pd.read_csv(pre / "01_rd_manifest.csv")
     bs = pd.read_csv(bdet / "frame_detection_summary.csv")
@@ -37,97 +81,160 @@ def compare_tracking(
     estate = np.load(edet / "patch_state_p04.npy", mmap_mode="r")
     bown = np.load(base / "arrays" / "track_ownership_masks.npy", mmap_mode="r")
     eown = np.load(exp / "arrays" / "track_ownership_masks.npy", mmap_mode="r")
+    bt = pd.read_csv(base / "tables" / "live_tracking_states.csv")
+    et = pd.read_csv(exp / "tables" / "live_tracking_states.csv")
     n = len(manifest)
     if (rd.shape != valid.shape or rd.shape != (n, 256, 256)
         or any(a.shape != (n, 64, 64) for a in (bstate, estate, bown, eown))
         or len(bs) != n or len(es) != n):
-        raise ValueError("RD, detection and tracking frame dimensions must match")
+        raise ValueError("Input/detection/tracking frame shape mismatch")
     for summary in (bs, es):
         if not np.array_equal(summary["pair_index"].astype(int), manifest["pair_index"].astype(int)):
-            raise ValueError("Frame pair index mismatch")
+            raise ValueError("Pair indices do not align")
         if not np.array_equal(
             pd.to_datetime(summary["end_time"], utc=True).to_numpy(),
             pd.to_datetime(manifest["end_time"], utc=True).to_numpy()
         ):
-            raise ValueError("Frame timestamp mismatch")
+            raise ValueError("Timestamps do not align")
     times = pd.to_datetime(manifest["end_time"], utc=True)
     indices = np.flatnonzero(times.dt.strftime("%Y%m%d").eq(date).to_numpy())
     if len(indices) == 0:
-        raise ValueError(f"No frames on {date}")
-    out = Path(output_dir).resolve() if output_dir else exp / "comparison_tracking_full_day"
+        raise ValueError(f"No frames ending on {date}")
+
+    from astropy.io import fits
+    from astropy.wcs import WCS
+    from cme_pipeline.utils.geometry import compute_wcs_rasters
+
+    hdr = fits.Header.fromstring(
+        (pre / "target_wcs_header.txt").read_text(encoding="utf-8"), sep="\n"
+    )
+    wcs = WCS(hdr)
+    sx, sy = wcs.world_to_pixel_values(0.0, 0.0)
+    if not np.isfinite([sx, sy]).all():
+        raise ValueError("Invalid WCS solar center")
+    rasters = compute_wcs_rasters(wcs=wcs, center_xy=(sx, sy), patch_size=4)
+    patch_pa, patch_rad = rasters["patch_pa"], rasters["patch_rad"]
+
+    out = (Path(output_dir).resolve() if output_dir else
+           exp / "visualizations" / "comparison_tracking_full_day")
     if out.exists():
-        raise FileExistsError(f"Refusing to overwrite comparison directory: {out}")
+        raise FileExistsError(
+            f"Existing comparison at {out}; choose --output-dir or rename it before regeneration"
+        )
 
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.patches import Rectangle
-    from matplotlib.collections import PatchCollection
+    from matplotlib.colors import to_hex
     from cme_pipeline.stages.segmentation.visualization import get_rd_cmap
 
-    frame_dir = out / "frames"
-    frame_dir.mkdir(parents=True)
-    rows = []
-    for i0 in indices:
-        i = int(i0)
-        image = np.asarray(rd[i], dtype=float)
-        usable = np.asarray(valid[i], dtype=bool) & np.isfinite(image)
-        image = np.ma.masked_where(~usable, image)
+    frames = out / "frames"
+    frames.mkdir(parents=True, exist_ok=False)
+    component_rows, summaries = [], []
+    for idx in indices:
+        i = int(idx)
         pair = int(manifest.iloc[i]["pair_index"])
-        frame_rows = []
-        fig, axes = plt.subplots(1, 2, figsize=(14, 7), constrained_layout=True)
-        for ax, label, det, own, summary in (
-            (axes[0], "Baseline + A5b", bstate[i], bown[i], bs.iloc[i]),
-            (axes[1], "Outer P95 + A5b", estate[i], eown[i], es.iloc[i])
+        raw = np.asarray(rd[i], dtype=float)
+        usable = np.asarray(valid[i], dtype=bool) & np.isfinite(raw)
+        image = np.ma.masked_where(~usable, raw)
+        fig, axes = plt.subplots(1, 2, figsize=(16, 8), constrained_layout=True)
+        details = []
+        for ax, run_name, det, owners, summary, track_df in (
+            (axes[0], "Baseline + A5b", bstate[i], bown[i], bs.iloc[i], bt),
+            (axes[1], "Outer P95 + A5b", estate[i], eown[i], es.iloc[i], et)
         ):
-            det = np.asarray(det) == 1
-            own = np.asarray(own, dtype=np.int32)
-            if np.any((own > 0) & ~det):
-                raise ValueError(f"Track-owned patch absent from detection: pair {pair}")
+            grid = np.asarray(det) == 1
+            ownership = np.asarray(owners, dtype=np.int32)
+            if np.any((ownership > 0) & ~grid):
+                raise ValueError(f"Owned patch not detected: pair {pair} ({run_name})")
             im = ax.imshow(image, origin="lower", cmap=get_rd_cmap(),
                            vmin=-600, vmax=600, interpolation="nearest")
-            yy, xx = np.nonzero(det)
-            if len(yy):
-                ax.add_collection(PatchCollection([
-                    Rectangle((int(x) * 4 - .5, int(y) * 4 - .5), 4, 4)
-                    for y, x in zip(yy, xx)
-                ], facecolor="none", edgecolor="red", linewidth=.6, alpha=.9))
-            # Colored ownership centers; color determined by numeric track ID.
-            yo, xo = np.nonzero(own > 0)
-            if len(yo):
-                ax.scatter(xo * 4 + 1.5, yo * 4 + 1.5, c=own[yo, xo],
-                           s=9, cmap="tab20", vmin=0.5, vmax=20.5,
-                           marker="s", edgecolors="none", alpha=.95)
-            tids = np.unique(own[own > 0])
+            components = _frame_components(ownership, patch_pa, patch_rad, sx, sy)
+            matched = track_df.loc[
+                (track_df["pair_index"] == pair) & (track_df["state"] == "OBSERVED")
+            ]
+            by_track = {
+                int(r["track_id"]): r for _, r in matched.iterrows()
+            }
+            for c in components:
+                tid = c["track_id"]
+                # Connected contours separate islands even within one track.
+                colour = to_hex(plt.get_cmap("tab20")(int(tid) % 20))
+                mask = c["mask"].astype(float)
+                ax.contour(np.arange(64) * 4 + 1.5, np.arange(64) * 4 + 1.5,
+                           mask, levels=[0.5], colors=[colour], linewidths=1.6)
+                ax.scatter([c["front_x"]], [c["front_y"]], marker="*",
+                           s=60, facecolor="yellow", edgecolor="black", linewidth=.5,
+                           zorder=5)
+                c["run"] = run_name
+                c["pair_index"] = pair
+                state = by_track.get(tid)
+                c["tracked_cpa_deg"] = (
+                    float(state["tracked_cpa"]) if state is not None else float("nan")
+                )
+                c["track_front_radius_px"] = (
+                    float(state["front_radius"]) if state is not None else float("nan")
+                )
+                component_rows.append({k: v for k, v in c.items() if k != "mask"})
+                label_text = (f"T{tid}/C{c['component_index']}\n"
+                              f"PA {c['cpa_deg']:.0f}° "
+                              f"span {c['pa_span_deg']:.0f}°\n"
+                              f"front {c['front_radius_px']:.0f}px")
+                ax.annotate(label_text, (c["center_x"], c["center_y"]),
+                            fontsize=6.5, color="white", ha="center", va="center",
+                            bbox=dict(facecolor="#111111", alpha=.72,
+                                      boxstyle="round,pad=.15", edgecolor=colour))
+            active_ids = np.unique(ownership[ownership > 0])
+            # A5b track-level CPA and front are the actual stored tracking states.
+            lines = []
+            for tid in active_ids:
+                record = by_track.get(int(tid))
+                if record is not None:
+                    lines.append(
+                        f"T{tid} CPA={float(record['tracked_cpa']):.1f}° "
+                        f"front={float(record['front_radius']):.1f}px "
+                        f"({record['leading_front_state']})"
+                    )
             ax.set_title(
-                f"{label} | {summary['status']}\n"
-                f"Active: {int(det.sum())}, owned: {len(yo)}, IDs: {len(tids)}",
+                f"{run_name} | {summary['status']}\n"
+                f"Detection={int(grid.sum())}  Owned={int((ownership > 0).sum())} "
+                f"Tracks={len(active_ids)}  Components={len(components)}",
                 fontsize=10
             )
+            if lines:
+                ax.text(0.01, 0.01, "\n".join(lines[:10]) +
+                        (f"\n+{len(lines)-10} tracks (see CSV)" if len(lines) > 10 else ""),
+                        transform=ax.transAxes, fontsize=7.5, ha="left", va="bottom",
+                        color="white", bbox=dict(facecolor="black", alpha=.75))
             ax.set_xlim(-.5, 255.5)
             ax.set_ylim(-.5, 255.5)
             ax.set_aspect("equal")
             ax.set_xlabel("X (pixel)")
             ax.set_ylabel("Y (pixel)")
-            frame_rows.append((int(det.sum()), len(yo), len(tids)))
-        fig.colorbar(im, ax=axes, label="RD (DN/s)", shrink=.75)
-        fig.suptitle(f"2024-05-10 A5b | Pair {pair} | {times.iloc[i].strftime('%H:%M UTC')}")
-        fig.savefig(frame_dir / f"pair_{pair:03d}_{times.iloc[i].strftime('%Y%m%dT%H%M%SZ')}.png",
-                    dpi=140)
+            details.append((int(grid.sum()), int((ownership > 0).sum()),
+                            len(active_ids), len(components)))
+        fig.colorbar(im, ax=axes, label="RD (DN/s)", shrink=.77)
+        fig.suptitle(
+            f"A5b track/component geometry | Pair {pair} | "
+            f"{times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')}\n"
+            "Contours: connected owned components | Star: outermost observed patch "
+            "| PA: component mean/span | CPA: stored track estimate",
+            fontsize=10
+        )
+        fig.savefig(frames / f"pair_{pair:03d}_{times.iloc[i].strftime('%Y%m%dT%H%M%SZ')}.png",
+                    dpi=145)
         plt.close(fig)
-        rows.append({
-            "pair_index": pair,
-            "end_time": manifest.iloc[i]["end_time"],
+        summaries.append({
+            "pair_index": pair, "end_time": manifest.iloc[i]["end_time"],
             "baseline_status": bs.iloc[i]["status"],
             "outer_status": es.iloc[i]["status"],
-            "baseline_active": frame_rows[0][0],
-            "outer_active": frame_rows[1][0],
-            "baseline_owned": frame_rows[0][1],
-            "outer_owned": frame_rows[1][1],
-            "baseline_track_ids": frame_rows[0][2],
-            "outer_track_ids": frame_rows[1][2],
+            "baseline_active": details[0][0], "outer_active": details[1][0],
+            "baseline_owned": details[0][1], "outer_owned": details[1][1],
+            "baseline_track_ids": details[0][2], "outer_track_ids": details[1][2],
+            "baseline_components": details[0][3], "outer_components": details[1][3],
         })
-    pd.DataFrame(rows).to_csv(out / "comparison_summary.csv", index=False)
-    print(f"Compared {len(rows)} frames | Baseline total tracks={btrack['total_tracks']} "
-          f"| Outer P95 total tracks={etrack['total_tracks']}")
+    pd.DataFrame(summaries).to_csv(out / "comparison_summary.csv", index=False)
+    pd.DataFrame(component_rows).to_csv(out / "component_geometry.csv", index=False)
+    print(f"Rendered {len(summaries)} frames. Baseline tracks={btrack['total_tracks']}; "
+          f"Outer P95 tracks={etrack['total_tracks']}.")
     return out
