@@ -119,6 +119,23 @@ def parse_args() -> argparse.Namespace:
     viz_detection.add_argument("--output-dir", default=None)
     viz_detection.add_argument("--overwrite", action="store_true")
 
+    gates_parser = subparsers.add_parser(
+        "run-gates-data", help="Continue saved A5b through recovery, identity and gates."
+    )
+    gates_parser.add_argument("--tracking-run", required=True)
+    gates_parser.add_argument("--run-name", required=True)
+    gates_parser.add_argument("--recovery-inner-radius-px", type=float, required=True)
+    gates_parser.add_argument("--birth-max-radius-px", type=float, default=30.0)
+    gates_parser.add_argument("--min-detected-patches", type=int, default=5)
+
+    compare_gates_parser = subparsers.add_parser(
+        "compare-gates", help="Full-day baseline/outer P95 recovery and gates comparison."
+    )
+    compare_gates_parser.add_argument("--baseline-run", required=True)
+    compare_gates_parser.add_argument("--experiment-run", required=True)
+    compare_gates_parser.add_argument("--date", required=True)
+    compare_gates_parser.add_argument("--output-dir", default=None)
+
     tc_parser = subparsers.add_parser(
         "compare-tracking",
         help="Render full-day side-by-side A5b track ownership over identical RD frames."
@@ -305,6 +322,26 @@ def main() -> None:
             output_dir=args.output_dir, overwrite=args.overwrite,
         )
         print(f"Detection diagnostic images: {len(paths)} saved to {paths[0].parent}")
+        return
+
+    if args.command == "run-gates-data":
+        from cme_pipeline.gate_experiment import run_saved_a5b_gates
+        out = run_saved_a5b_gates(
+            args.tracking_run, run_name=args.run_name,
+            recovery_inner_radius_px=args.recovery_inner_radius_px,
+            birth_max_radius_px=args.birth_max_radius_px,
+            min_detected_patches=args.min_detected_patches,
+        )
+        print(f"Recovery / Identity / Gates: {out}")
+        return
+
+    if args.command == "compare-gates":
+        from cme_pipeline.gate_comparison import compare_gates
+        out = compare_gates(
+            args.baseline_run, args.experiment_run,
+            date=args.date, output_dir=args.output_dir,
+        )
+        print(f"Gate comparison: {out}")
         return
 
     if args.command == "compare-tracking":
