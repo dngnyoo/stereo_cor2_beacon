@@ -143,8 +143,9 @@ class SizeGateOutput:
     admitted_track_ids: List[int]
     family_summary_df: pd.DataFrame
     size_gate_decisions_df: pd.DataFrame
-    recovered_patch_masks: np.ndarray            # (N, 64, 64) bool (sum = 5,174 on baseline)
-    family_recovered_patch_masks: Dict[str, np.ndarray]
+    # Recovery is optional and executed by a separate stage after Gate decisions.
+    recovered_patch_masks: Optional[np.ndarray] = None
+    family_recovered_patch_masks: Dict[str, np.ndarray] = field(default_factory=dict)
     min_detected_patches: int = 5
     total_recovered_patches: int = 0
 
