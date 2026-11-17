@@ -439,6 +439,8 @@ def main() -> None:
             raise RuntimeError("A5b tracking must provide patch ownership masks for diagnostics")
         import numpy as np
         np.save(ctx.arrays_dir / "track_ownership_masks.npy", output.track_ownership_masks)
+        np.save(ctx.arrays_dir / "tracking_input_activation_p04.npy", detected.patch_activation_grid4)
+        np.save(ctx.arrays_dir / "tracking_input_component_labels.npy", detected.raw_component_labels)
         import json
         (ctx.run_dir / "tracking_metadata.json").write_text(json.dumps({
             "requested_date": date,
