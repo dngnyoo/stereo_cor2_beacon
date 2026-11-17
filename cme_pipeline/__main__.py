@@ -84,6 +84,8 @@ def parse_args() -> argparse.Namespace:
     rd_parser.add_argument("--all-frames", action="store_true")
     rd_parser.add_argument("--max-frames", type=int, default=3)
     rd_parser.add_argument("--output-dir", default=None)
+    rd_parser.add_argument("--overwrite", action="store_true",
+                           help="Explicitly replace existing RD diagnostic PNGs.")
 
     # Run an alternative detector on the same RD arrays without recalibrating.
     detect_parser = subparsers.add_parser(
@@ -159,6 +161,7 @@ def main() -> None:
         paths = save_rd_diagnostics(
             args.preprocessed_dir, date=args.date, all_frames=args.all_frames,
             max_frames=args.max_frames, output_dir=args.output_dir,
+            overwrite=args.overwrite,
         )
         print(f"RD diagnostic images: {len(paths)} saved to {paths[0].parent}")
         return
