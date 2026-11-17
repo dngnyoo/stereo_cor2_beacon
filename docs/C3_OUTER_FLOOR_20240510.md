@@ -45,3 +45,32 @@ status, T24, floor, effective threshold, and whether floor binds.
 Use `--max-frames 6` (default) for a small sample instead of
 `--all-frames`. The command only reads persisted outputs; it never
 recomputes or modifies detection arrays.
+
+
+## Robust outer floor sweep (k=1, 2, 3)
+
+Use existing **2024-05-10** preprocessed input at
+`runs/may20240510_c3_test/preprocessed`. Never overwrite the original
+`runs/may20240510_c3_test/detection_c3_gaussian` baseline.
+
+`outer_background_mad` computes `median + k * 1.4826 * MAD` on the lower
+80% of valid P04 activity scores in the same 88–116 px annulus, then uses
+`max(T24_p04, outer_floor)`. The exclusion rule is fixed for this sweep.
+
+```bash
+for k in 1 2 3; do
+  python -m cme_pipeline detect-data \
+    --preprocessed-dir runs/may20240510_c3_test/preprocessed \
+    --method c3 --date 20240510 \
+    --floor-mode outer_background_mad --outer-floor-k "$k" \
+    --outer-floor-inner-px 88 --outer-floor-outer-px 116 \
+    --output-dir "runs/20240510_c3_outer_mad_k${k}" \
+    --visualize --visualize-all-frames
+done
+```
+
+Compare per-frame `status`, `T24_p04`, `floor_p04`,
+`effective_threshold_p04`, `n_active_p04`, and full P04 patch masks.
+Ensure baselines use the **same RD input and VALID frame set** before
+interpreting active-patch differences. Larger k increases the threshold
+for a fixed frame, but actual CME retention is not guaranteed.
