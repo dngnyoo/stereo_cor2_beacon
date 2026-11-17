@@ -9,13 +9,33 @@ from pathlib import Path
 import numpy as np
 
 from cme_pipeline.live_detection import (
-    _c0_hierarchy, _pure_hierarchy, _threshold, run_detection,
+    _c0_hierarchy, _pure_hierarchy, _threshold, _outer_background_floor, run_detection,
 )
 
 
 class TestDetectorCore(unittest.TestCase):
     def test_robust_threshold(self):
         self.assertAlmostEqual(_threshold(np.ones(10)), 1.0)
+
+    def test_outer_background_floor_uses_outer_ring_not_cme_core(self):
+        scores = np.ones((64, 64), dtype=float)
+        accepted = np.ones((64, 64), dtype=bool)
+        scores[20:44, 20:44] = 120.0  # bright central CME must not affect floor
+        floor, count = _outer_background_floor(scores, accepted)
+        self.assertGreater(count, 3)
+        self.assertAlmostEqual(floor, 1.0)
+
+    def test_outer_background_floor_ignores_upper_tail_and_sparse_ring(self):
+        scores = np.full((64, 64), 2.0)
+        accepted = np.ones((64, 64), dtype=bool)
+        scores[:10, 25:40] = 100.0
+        floor, count = _outer_background_floor(scores, accepted)
+        self.assertGreater(count, 3)
+        self.assertAlmostEqual(floor, 2.0)
+        empty_floor, empty_count = _outer_background_floor(
+            scores, np.zeros((64, 64), dtype=bool))
+        self.assertTrue(np.isnan(empty_floor))
+        self.assertEqual(empty_count, 0)
 
     def test_hierarchy_is_intentionally_different(self):
         flat = {16: np.zeros((16, 16), bool),
