@@ -86,7 +86,6 @@ def compare_gates(
             detection = np.asarray(detection_all[idx], bool)
             selected = np.isin(owners, list(admitted)) & (owners > 0)
             excluded = np.isin(owners, list(rejected)) & (owners > 0)
-            admitted_recovery = recovery & (selected | ~np.isin(owners, list(rejected)))
             im = ax.imshow(image, origin="lower", cmap=get_rd_cmap(),
                            vmin=-600, vmax=600, interpolation="nearest")
             def contour(mask, color, width):
