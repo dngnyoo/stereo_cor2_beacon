@@ -75,6 +75,32 @@ def _threshold(values: np.ndarray) -> float:
     return m + 3.0 * 1.4826 * mad
 
 
+def _outer_background_floor(
+    scores: np.ndarray, accepted: np.ndarray, *,
+    inner_radius_px: float = 88.0,
+    outer_radius_px: float = 116.0,
+    min_patches: int = 3,
+) -> tuple[float, int]:
+    """P04 score floor from an outer annulus, excluding the brightest tail.
+
+    Patch centers are in north-up 256x256 image coordinates. The lower 80%
+    of outer-ring P95 scores provide a robust estimate of quiet background;
+    CME/stray-light structures at the rim should not set the threshold.
+    """
+    if scores.shape != (64, 64) or accepted.shape != scores.shape:
+        raise ValueError("Outer floor requires 64x64 P04 scores and validity")
+    if not (0 <= inner_radius_px < outer_radius_px):
+        raise ValueError("Invalid outer-background radial bounds")
+    y, x = np.indices(scores.shape, dtype=float)
+    r = np.hypot((x + 0.5) * 4 - 128.0, (y + 0.5) * 4 - 128.0)
+    ring = accepted & np.isfinite(scores) & (r >= inner_radius_px) & (r <= outer_radius_px)
+    values = np.sort(scores[ring])
+    if len(values) < min_patches:
+        return float("nan"), int(len(values))
+    quiet_count = max(min_patches, int(np.ceil(0.8 * len(values))))
+    return float(np.median(values[:quiet_count])), int(len(values))
+
+
 def _expand_neighbors(grid: np.ndarray) -> np.ndarray:
     from scipy.ndimage import maximum_filter
     return maximum_filter(grid.astype(np.uint8), size=3, mode="constant").astype(bool)
@@ -100,6 +126,9 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
                   denoiser: str = "gaussian", requested_date: str | None = None,
                   qc_max_active_fraction: float = .70,
                   min_floor_patches: int = 3,
+                  floor_mode: str = "frame_median",
+                  outer_floor_inner_px: float = 88.0,
+                  outer_floor_outer_px: float = 116.0,
                   output_dir: str | Path | None = None) -> Path:
     """Compute C0 or C3 on all available RD, save explicit detection statuses.
 
@@ -112,6 +141,10 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         raise ValueError("QC active fraction must be within (0, 1]")
     if min_floor_patches < 1:
         raise ValueError("min_floor_patches must be positive")
+    if floor_mode not in {"frame_median", "outer_background"}:
+        raise ValueError("floor_mode must be frame_median or outer_background")
+    if not (0 <= outer_floor_inner_px < outer_floor_outer_px <= 128):
+        raise ValueError("Invalid outer floor annulus")
     folder = Path(preprocessed_dir).resolve()
     metadata = json.loads((folder / "preprocessing_metadata.json").read_text())
     if metadata.get("unit") != "DN/s" or metadata.get("msb_applied") is not False:
@@ -194,14 +227,24 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         active_fraction_pre = float((pre[4] & accepted[4]).sum() / denom) if denom else float("nan")
         floor = effective = float("nan")
         floor_bound = False
+        floor_sample_count = 0
         if method == "c3" and status == "VALID":
             if active_fraction_pre >= qc_max_active_fraction:
                 status = "GLOBAL_ACTIVATION"
             else:
                 valid_scores = scores[4][accepted[4]]
                 effective = float(thresholds[4])
-                if len(valid_scores) >= min_floor_patches:
+                if floor_mode == "outer_background":
+                    floor, floor_sample_count = _outer_background_floor(
+                        scores[4], accepted[4],
+                        inner_radius_px=outer_floor_inner_px,
+                        outer_radius_px=outer_floor_outer_px,
+                        min_patches=min_floor_patches,
+                    )
+                elif len(valid_scores) >= min_floor_patches:
                     floor = float(np.median(valid_scores))
+                    floor_sample_count = len(valid_scores)
+                if np.isfinite(floor):
                     effective = max(effective, floor)
                     floor_bound = bool(floor > thresholds[4])
                 pre[4] = accepted[4] & (scores[4] > effective) & np.repeat(
@@ -226,6 +269,8 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
             "T24_p16": thresholds[16], "T24_p08": thresholds[8],
             "T24_p04": thresholds[4], "floor_p04": floor,
             "effective_threshold_p04": effective, "floor_bound_p04": floor_bound,
+            "floor_mode_p04": floor_mode if method == "c3" else "none",
+            "floor_sample_count_p04": floor_sample_count,
             "frame_z_mean": mean, "frame_z_std": std,
             "n_active_p04": int(state.sum()) if status == "VALID" else "",
         })
@@ -250,6 +295,9 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         "valid_requested_frames": sum(r["status"] == "VALID" and r["in_requested_date"] for r in rows),
         "warmup_frames": sum(r["status"] == "WARMUP" for r in rows),
         "qc_max_active_fraction": qc_max_active_fraction if method == "c3" else None,
+        "floor_mode": floor_mode if method == "c3" else None,
+        "outer_floor_inner_px": outer_floor_inner_px if floor_mode == "outer_background" and method == "c3" else None,
+        "outer_floor_outer_px": outer_floor_outer_px if floor_mode == "outer_background" and method == "c3" else None,
         "history_rule": "strictly earlier observations within trailing 24h",
         "status": "DETECTION_READY_TRACKING_NOT_RUN",
     }, indent=2), encoding="utf-8")
