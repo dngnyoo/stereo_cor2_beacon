@@ -105,7 +105,7 @@ def save_detection_diagnostics(
         axes[2].imshow(overlay, origin="lower", extent=(-.5, 255.5, -.5, 255.5),
                        interpolation="nearest", cmap="autumn", alpha=.55, vmin=0, vmax=1)
         axes[2].set_title(f"Activated P04: {int(active.sum())} patches")
-        if meta.get("floor_mode") == "outer_background":
+        if meta.get("floor_mode") in ("outer_background", "outer_background_mad"):
             inner = meta.get("outer_floor_inner_px")
             outer = meta.get("outer_floor_outer_px")
             if inner is not None and outer is not None:
@@ -122,7 +122,8 @@ def save_detection_diagnostics(
                 return "N/A"
         fig.suptitle(
             f"Pair {int(row['pair_index'])} | {times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')} "
-            f"| {meta['detector']} / {meta.get('floor_mode', 'legacy')} | {row['status']}\n"
+            f"| {meta['detector']} / {meta.get('floor_mode', 'legacy')}"
+            f" (k={meta.get('outer_floor_k')}) | {row['status']}\n"
             f"T24={fmt(row['T24_p04'])} | Floor={fmt(row['floor_p04'])} "
             f"| Effective={fmt(row['effective_threshold_p04'])} "
             f"| Floor bound={row['floor_bound_p04']}",
