@@ -21,7 +21,8 @@ def compare_gates(
     if bm["recovery_inner_radius_px"] != em["recovery_inner_radius_px"]:
         raise ValueError("Recovery inner radius differs between experiments")
     if (bm["birth_max_radius_px"] != em["birth_max_radius_px"]
-            or bm["min_detected_patches"] != em["min_detected_patches"]):
+            or bm["min_detected_patches"] != em["min_detected_patches"]
+            or bm.get("min_observed_pairs", 1) != em.get("min_observed_pairs", 1)):
         raise ValueError("Birth/size gate parameters differ")
     bd = json.loads((Path(bm["source_detection_dir"]) / "detection_metadata.json").read_text())
     ed = json.loads((Path(em["source_detection_dir"]) / "detection_metadata.json").read_text())
