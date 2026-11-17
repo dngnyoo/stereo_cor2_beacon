@@ -6,6 +6,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from cme_pipeline.tracking_comparison import _frame_tracks
+
 
 def compare_gates(
     baseline_run: str | Path, experiment_run: str | Path, *,
@@ -40,6 +42,24 @@ def compare_gates(
     if not len(indices):
         raise ValueError("No frame on date")
 
+    # Family geometry uses the same WCS and patch centers as tracking plots.
+    from astropy.io import fits
+    from astropy.wcs import WCS
+    from cme_pipeline.utils.geometry import compute_wcs_rasters
+    header = fits.Header.fromstring(
+        (pre / "target_wcs_header.txt").read_text(encoding="utf-8"), sep="\\n"
+    )
+    wcs = WCS(header)
+    sx, sy = wcs.world_to_pixel_values(0.0, 0.0)
+    if not np.isfinite([sx, sy]).all():
+        raise ValueError("Invalid WCS solar center")
+    rasters = compute_wcs_rasters(wcs=wcs, center_xy=(sx, sy), patch_size=4)
+    patch_pa, patch_rad = rasters["patch_pa"], rasters["patch_rad"]
+
+    def pa_xy(radius, pa_deg):
+        theta = np.deg2rad(pa_deg)
+        return sx - radius * np.sin(theta), sy + radius * np.cos(theta)
+
     data = []
     for run, meta in ((base, bm), (exp, em)):
         summary = pd.read_csv(run / "stages" / "size_gate" / "family_summary.csv")
@@ -50,16 +70,18 @@ def compare_gates(
             raise ValueError("Gate input arrays mismatch")
         admitted = set()
         rejected = set()
+        family_ids = {}
         for _, row in summary.iterrows():
             fid = str(row["family_id"])
             if not fid.startswith("FAM_T"):
                 raise ValueError(f"Unexpected family mapping: {fid}")
             tid = int(fid.removeprefix("FAM_T"))
+            family_ids[tid] = fid
             if row["status"] == "ADMITTED":
                 admitted.add(tid)
             else:
                 rejected.add(tid)
-        data.append((meta, ownership, recovery, detection, admitted, rejected))
+        data.append((meta, ownership, recovery, detection, admitted, rejected, family_ids))
 
     output = (Path(output_dir).resolve() if output_dir else
               exp / "visualizations" / "comparison_gates_full_day")
@@ -73,6 +95,7 @@ def compare_gates(
     frames = output / "frames"
     frames.mkdir(parents=True)
     summaries = []
+    geometry_rows = []
     for idx in indices:
         idx = int(idx)
         pair = int(manifest.iloc[idx]["pair_index"])
@@ -81,7 +104,7 @@ def compare_gates(
         fig, axes = plt.subplots(1, 2, figsize=(14, 7), constrained_layout=True)
         row = {"pair_index": pair, "end_time": manifest.iloc[idx]["end_time"]}
         for ax, group, name in zip(axes, data, ("baseline", "outer_p95")):
-            meta, ownership_all, recovery_all, detection_all, admitted, rejected = group
+            meta, ownership_all, recovery_all, detection_all, admitted, rejected, family_ids = group
             owners = np.asarray(ownership_all[idx])
             recovery = np.asarray(recovery_all[idx], bool)
             detection = np.asarray(detection_all[idx], bool)
@@ -98,12 +121,48 @@ def compare_gates(
             contour(selected, "#20c997", 1.9)
             contour(excluded, "#ff4757", 1.5)
             contour(recovery, "#00ccff", 1.1)
-            ids = np.unique(owners[owners > 0])
-            for tid in ids:
-                yy, xx = np.where(owners == tid)
-                ax.text(float(np.mean(xx)*4+1.5), float(np.mean(yy)*4+1.5),
-                        f"T{tid}", fontsize=7, ha="center", va="center",
-                        color="white", bbox=dict(facecolor="#121212", alpha=.55, pad=.4))
+            # Identity Association: one A5b Track = one Family. Aggregate
+            # all disconnected P04 components, drawing geometry once per Family.
+            for family in _frame_tracks(owners, patch_pa, patch_rad):
+                tid = family["track_id"]
+                fid = family_ids.get(tid)
+                if fid is None:
+                    raise ValueError(f"Missing Family for Track {tid}")
+                admitted_family = tid in admitted
+                color = "#20c997" if admitted_family else "#ff4757"
+                radius = family["observed_front_radius_px"]
+                start = family["pa_arc_start_deg"]
+                end = family["pa_arc_end_deg"]
+                cpa = family["observed_cpa_deg"]
+                angles = start + np.linspace(
+                    0.0, family["pa_span_deg"],
+                    max(20, int(family["pa_span_deg"] * 2) + 1),
+                )
+                ax.plot(*pa_xy(radius, angles), color=color,
+                        linewidth=2.0, zorder=5)
+                for bound in (start, end):
+                    bx, by = pa_xy(radius, bound)
+                    ax.plot([sx, bx], [sy, by], color=color,
+                            linestyle="-", linewidth=1.2, zorder=4)
+                cx, cy = pa_xy(radius, cpa)
+                ax.plot([sx, cx], [sy, cy], color=color,
+                        linestyle="--", linewidth=1.4, zorder=4)
+                ax.scatter([family["front_x"]], [family["front_y"]],
+                           marker="*", s=50, c=[color], edgecolors="black",
+                           linewidths=.5, zorder=6)
+                tx, ty = pa_xy(min(123., radius + 7.), cpa)
+                ax.text(tx, ty, fid, fontsize=7, ha="center", va="center",
+                        color="white", bbox=dict(facecolor=color, alpha=.8, pad=1),
+                        zorder=7)
+                geometry_rows.append({
+                    "run": name, "pair_index": pair, "family_id": fid,
+                    "gate_status": "ADMITTED" if admitted_family else "REJECTED",
+                    "observed_patches": family["n_patches"],
+                    "pa_start_deg": start, "pa_end_deg": end,
+                    "pa_span_deg": family["pa_span_deg"],
+                    "observed_cpa_deg": cpa,
+                    "observed_front_radius_px": radius,
+                })
             ax.set_title(
                 f"{name} | admitted families {meta['size_gate_admitted']}\n"
                 f"Detected {int(detection.sum())} | owned {int((owners>0).sum())} "
@@ -122,13 +181,19 @@ def compare_gates(
         fig.suptitle(
             f"Recovery + Identity + Birth/Size Gates | Pair {pair} | "
             f"{times.iloc[idx].strftime('%Y-%m-%d %H:%M UTC')}\n"
-            "Gray: detection | Green: admitted track | Red: rejected track | Cyan: admitted recovery",
+            "Gray: detection | Green: admitted Family | Red: rejected Family | Cyan: recovery\\n"
+            "Solid: PA start/end | Dashed: observed CPA | Arc: observed front",
             fontsize=10,
         )
         fig.savefig(frames / f"pair_{pair:03d}_{times.iloc[idx].strftime('%Y%m%dT%H%M%SZ')}.png", dpi=140)
         plt.close(fig)
         summaries.append(row)
     pd.DataFrame(summaries).to_csv(output / "comparison_summary.csv", index=False)
+    pd.DataFrame(geometry_rows, columns=[
+        "run", "pair_index", "family_id", "gate_status", "observed_patches",
+        "pa_start_deg", "pa_end_deg", "pa_span_deg", "observed_cpa_deg",
+        "observed_front_radius_px",
+    ]).to_csv(output / "family_geometry.csv", index=False)
     (output / "gate_counts.json").write_text(json.dumps({
         name: {key: meta[key] for key in ("tracks", "candidate_families",
                 "birth_gate_pass", "size_gate_admitted", "total_recovered_patches_all_frames")}
