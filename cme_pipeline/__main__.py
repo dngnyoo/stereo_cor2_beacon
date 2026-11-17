@@ -119,6 +119,15 @@ def parse_args() -> argparse.Namespace:
     viz_detection.add_argument("--output-dir", default=None)
     viz_detection.add_argument("--overwrite", action="store_true")
 
+    tc_parser = subparsers.add_parser(
+        "compare-tracking",
+        help="Render full-day side-by-side A5b track ownership over identical RD frames."
+    )
+    tc_parser.add_argument("--baseline-run", required=True)
+    tc_parser.add_argument("--experiment-run", required=True)
+    tc_parser.add_argument("--date", required=True)
+    tc_parser.add_argument("--output-dir", default=None)
+
     compare_parser = subparsers.add_parser(
         "compare-detection", help="Full-day baseline vs experiment P04 outlined comparison."
     )
@@ -298,6 +307,15 @@ def main() -> None:
         print(f"Detection diagnostic images: {len(paths)} saved to {paths[0].parent}")
         return
 
+    if args.command == "compare-tracking":
+        from cme_pipeline.tracking_comparison import compare_tracking
+        result = compare_tracking(
+            args.baseline_run, args.experiment_run,
+            date=args.date, output_dir=args.output_dir
+        )
+        print(f"Tracking comparison saved to {result}")
+        return
+
     if args.command == "compare-detection":
         from cme_pipeline.detection_comparison import compare_detection
         result = compare_detection(
@@ -341,6 +359,10 @@ def main() -> None:
                 raise RuntimeError("Unavailable detector observations appeared as tracking states")
         output.manifest_df.to_csv(ctx.tables_dir / "live_observation_manifest.csv", index=False)
         output.track_states_df.to_csv(ctx.tables_dir / "live_tracking_states.csv", index=False)
+        if output.track_ownership_masks is None:
+            raise RuntimeError("A5b tracking must provide patch ownership masks for diagnostics")
+        import numpy as np
+        np.save(ctx.arrays_dir / "track_ownership_masks.npy", output.track_ownership_masks)
         import json
         (ctx.run_dir / "tracking_metadata.json").write_text(json.dumps({
             "requested_date": date,
