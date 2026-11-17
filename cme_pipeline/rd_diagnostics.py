@@ -11,7 +11,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from cme_pipeline.stages.segmentation.visualization import draw_rd_background
+from cme_pipeline.stages.segmentation.visualization import get_rd_cmap
 
 
 def save_rd_diagnostics(
@@ -21,6 +21,7 @@ def save_rd_diagnostics(
     all_frames: bool = False,
     max_frames: int = 3,
     output_dir: str | Path | None = None,
+    overwrite: bool = False,
 ) -> list[Path]:
     """Render sampled (or all) RD frames for the requested UTC date.
 
@@ -60,35 +61,34 @@ def save_rd_diagnostics(
         outputs.append(target / f"pair_{pair:03d}_{stamp}_rd.png")
     # Do not silently overwrite existing diagnostic images.
     existing = [p for p in outputs if p.exists()]
-    if existing:
+    if existing and not overwrite:
         raise FileExistsError(f"RD diagnostic already exists: {existing[0]}")
-    from matplotlib.backends.backend_agg import FigureCanvasAgg
-    from matplotlib.figure import Figure
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
 
     target.mkdir(parents=True, exist_ok=True)
     for i, path in zip(indices, outputs):
         i = int(i)
-        fig = Figure(figsize=(7.2, 7.0), dpi=120, facecolor="#0e0e0e")
-        FigureCanvasAgg(fig)
-        ax = fig.add_subplot(111)
-        fig.subplots_adjust(left=.08, right=.94, bottom=.15, top=.88)
-        im = draw_rd_background(ax, rd[i], valid[i])
-        ax.set_xlim(0, 256)
-        ax.set_ylim(0, 256)
-        ax.set_aspect("equal")
-        ax.set_facecolor("black")
-        ax.set_xlabel("X (pixel)", color="white")
-        ax.set_ylabel("Y (pixel)", color="white")
-        ax.tick_params(colors="white", labelsize=8)
-        fig.suptitle(
-            f"COR2-A RD | Pair {int(manifest.iloc[i]['pair_index'])} | "
-            f"{times.iloc[i].strftime('%Y-%m-%d %H:%M:%S')} UTC",
-            color="white", fontsize=10, y=.96,
+        pair = manifest.iloc[i]
+        image = np.ma.masked_where(
+            ~np.asarray(valid[i], dtype=bool) | ~np.isfinite(rd[i]), rd[i]
         )
-        cb = fig.colorbar(im, ax=ax, orientation="horizontal",
-                          pad=.10, fraction=.045)
-        cb.set_label("RD (DN/s) | Fixed [-600, +600]", color="white", fontsize=8)
-        cb.ax.tick_params(colors="white", labelsize=7)
-        fig.savefig(path, facecolor=fig.get_facecolor())
-        fig.clear()
+
+        fig, ax = plt.subplots(figsize=(7, 7))
+        im = ax.imshow(
+            image,
+            origin="lower",
+            cmap=get_rd_cmap(),
+            vmin=-600,
+            vmax=600,
+            interpolation="nearest",
+        )
+        ax.set_title(f"Pair {pair['pair_index']} | {pair['end_time']} UTC")
+        ax.set_xlabel("X (pixel)")
+        ax.set_ylabel("Y (pixel)")
+        fig.colorbar(im, ax=ax, label="RD (DN/s)")
+        fig.tight_layout()
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
     return outputs
