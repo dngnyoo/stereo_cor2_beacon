@@ -170,6 +170,8 @@ def parse_args() -> argparse.Namespace:
         "track-data", help="Run availability-aware A3/A4/A5b tracking on live C0/C3 detection."
     )
     track_parser.add_argument("--detection-dir", required=True)
+    track_parser.add_argument("--config", default=None,
+                              help="Optional YAML with tracking and pre-size settings")
     track_parser.add_argument("--method", choices=("a3", "a4", "a5b"), default="a5b")
     track_parser.add_argument("--date", required=True, help="Analysis YYYYMMDD")
     track_parser.add_argument("--run-name", default=None)
@@ -401,10 +403,23 @@ def main() -> None:
             raise ValueError("No frames on requested analysis date")
         if detected.dataset_metadata["dataset_id"].split("_")[0] != date:
             raise ValueError("Requested date and detector run date disagree")
-        cfg = PipelineConfig()
+        cfg = PipelineConfig.from_yaml(args.config) if args.config else PipelineConfig()
         cfg.date_str = int(date)
+        if args.config and cfg.tracking.method != args.method:
+            raise ValueError("YAML tracking.method must match --method")
         cfg.tracking.method = args.method
+        if args.config and cfg.detection.method != detected.dataset_metadata["detector"]:
+            raise ValueError("YAML detection.method must match saved detection")
+        if args.config and cfg.detection.denoiser != detected.dataset_metadata["denoiser"]:
+            raise ValueError("YAML detection.denoiser must match saved detection")
         cfg.run_name = args.run_name or f"live_{date}_{detected.dataset_metadata['detector']}_{args.method}"
+        if cfg.pre_size_gate.enabled:
+            if cfg.pre_size_gate.connectivity != 8:
+                raise ValueError("Pre-size gate currently supports only 8-connectivity")
+            from cme_pipeline.stages.gates.pre_tracking_component_size import filter_small_components
+            detected = filter_small_components(
+                detected, min_component_patches=cfg.pre_size_gate.min_component_patches
+            )
         ctx = PipelineContext(cfg)
         tracker = get_tracking_stage(args.method)
         output = tracker.run(detected, cfg, ctx)
@@ -432,6 +447,9 @@ def main() -> None:
             "detection_dir": str(Path(args.detection_dir).resolve()),
             "total_tracks": output.total_tracks,
             "n_unavailable": len(unavailable_pairs),
+            "pre_size_gate": detected.dataset_metadata.get("pre_tracking_component_gate", {"enabled": False}),
+            "effective_tracking_parameters": output.tracking_parameters,
+            "config_path": str(Path(args.config).resolve()) if args.config else None,
             "status": "TRACKING_READY_DOWNSTREAM_NOT_RUN",
         }, indent=2))
         print(f"Tracking outputs: {ctx.run_dir}")
