@@ -95,6 +95,13 @@ class BirthGateConfig:
 
 
 @dataclass
+class PreSizeGateConfig:
+    enabled: bool = False
+    connectivity: int = 8
+    min_component_patches: int = 2
+
+
+@dataclass
 class SizeGateConfig:
     min_detected_patches: int = 5
     min_observed_pairs: int = 1
@@ -139,6 +146,7 @@ class PipelineConfig:
     recovery: RecoveryConfig = field(default_factory=RecoveryConfig)
     association: AssociationConfig = field(default_factory=AssociationConfig)
     birth_gate: BirthGateConfig = field(default_factory=BirthGateConfig)
+    pre_size_gate: PreSizeGateConfig = field(default_factory=PreSizeGateConfig)
     size_gate: SizeGateConfig = field(default_factory=SizeGateConfig)
     segmentation: SegmentationConfig = field(default_factory=SegmentationConfig)
     products: ProductsConfig = field(default_factory=ProductsConfig)
@@ -179,6 +187,8 @@ class PipelineConfig:
                 cfg.association = AssociationConfig(**v)
             elif k == "birth_gate" and isinstance(v, dict):
                 cfg.birth_gate = BirthGateConfig(**v)
+            elif k == "pre_size_gate" and isinstance(v, dict):
+                cfg.pre_size_gate = PreSizeGateConfig(**v)
             elif k == "size_gate" and isinstance(v, dict):
                 cfg.size_gate = SizeGateConfig(**v)
             elif k == "segmentation" and isinstance(v, dict):
