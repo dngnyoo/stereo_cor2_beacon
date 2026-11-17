@@ -114,8 +114,8 @@ def _ensure_defaults_registered() -> None:
             canonical_name="a5b",
             stage_cls=PAWidthWeightedCPAAdaptiveROITrackingStage,
             aliases=("pa_width_weighted_cpa", "weighted_cpa", "v07_pa_width_weighted_cpa"),
-            supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
-            default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
+            supported_parameters=(a3_a4_params - {"birth_gate_threshold_px"}) | frozenset({"min_pa_width_deg"}),
+            default_parameters={**{k: v for k, v in a3_a4_defaults.items() if k != "birth_gate_threshold_px"}, "min_pa_width_deg": 8.0},
             description="A5b PA-Width-Normalized CPA Distance Multi-Component Tracking (20 tracks w/ outward_gate=True).",
         )
     )
