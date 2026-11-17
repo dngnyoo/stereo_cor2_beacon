@@ -129,3 +129,45 @@ split an original C3 component during contested-track allocation.
 Re-run only `compare-tracking`; no need to rerun A5b for the changed
 visualization. Existing earlier comparison folders under the run root
 remain untouched.
+
+## Recovery / Identity / Birth Gate / Size Gate (May 10, 2024)
+
+Continue from existing A5b track products; **no new download, preprocessing,
+detection, or tracking**. Outputs are separate from the original tracking runs.
+
+**Important physical caveat:** a 2024-specific solar-radius-to-pixels
+calibration has not been confirmed. The following `22.0` is an explicit,
+**exploratory operational recovery minimum radius in pixels**, not a
+verified equivalent of the intended physical 2-Rsun inner boundary.
+Use the same specified pixel cutoff in both runs and do not interpret
+recovered areas or kinematics as final calibrated measurements.
+
+```bash
+python -m cme_pipeline run-gates-data \
+  --tracking-run runs/may10_a5b_baseline \
+  --run-name may10_gates_baseline_r22 \
+  --recovery-inner-radius-px 22 \
+  --birth-max-radius-px 30 --min-detected-patches 5
+
+python -m cme_pipeline run-gates-data \
+  --tracking-run runs/may10_a5b_outer_p95 \
+  --run-name may10_gates_outer_p95_r22 \
+  --recovery-inner-radius-px 22 \
+  --birth-max-radius-px 30 --min-detected-patches 5
+
+python -m cme_pipeline compare-gates \
+  --baseline-run runs/may10_gates_baseline_r22 \
+  --experiment-run runs/may10_gates_outer_p95_r22 \
+  --date 20240510
+```
+
+Stage files include `stages/size_gate/family_summary.csv`, `stages/size_gate/size_gate_decisions.csv`,
+`arrays/recovered_patch_masks_pipeline_b_full_day.npy`,
+`arrays/family_recovered_patch_masks.npz`, and `gates_summary.json`.
+The comparative PNGs and frame CSV are in
+`runs/may10_gates_outer_p95_r22/visualizations/comparison_gates_full_day/`.
+Gray contour = detected patch, green = admitted tracked patch, red = rejected,
+cyan = recovery of admitted families. Predicted-only observations are not
+represented as detected patches. A5b's multiple components are preserved under
+a single identity Family per Track ID; this experiment does not run Rule B.
+No segmentation or CME catalog is executed.
