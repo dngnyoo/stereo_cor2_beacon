@@ -102,3 +102,24 @@ including unavailable-status frames. Red outlines denote detected active P04
 patches; colored small squares indicate patch owner (track ID) **within each
 run**, not corresponding track identity across runs. Tracking uses default A5b
 parameters and is exploratory until track continuity is reviewed.
+
+
+### Enhanced tracking visualization (existing tracking runs reused)
+
+`compare-tracking` now writes to:
+`runs/may10_a5b_outer_p95/visualizations/comparison_tracking_full_day/`.
+
+For each May 10 evaluation-date RD pair, the left/right panels draw distinct
+contours of 8-connected *track-owned* P04 regions. Labels have
+`T<track-ID>/C<raw-component-ID>.<owned-subregion-index>`,
+the leading owned-patch's WCS PA, the connected region's circular-mean CPA,
+PA span, and its outermost radius in pixels. Yellow stars denote the
+outermost **observed owned patch** of each region; the footer includes
+A5b's stored track-level `tracked_cpa`, `front_radius`, and
+`leading_front_state`. Those may be predicted rather than observed.
+`component_geometry.csv` records these measured owned-region geometries
+separately from original A5b component tables. Ownership subregions can
+split an original C3 component during contested-track allocation.
+Re-run only `compare-tracking`; no need to rerun A5b for the changed
+visualization. Existing earlier comparison folders under the run root
+remain untouched.
