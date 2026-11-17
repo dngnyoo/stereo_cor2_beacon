@@ -301,3 +301,29 @@ publication. Original Frozen 2010 benchmark remains unchanged.
 5. Make external validation optional when date-specific catalogs have not been provided. Run a controlled end-to-end new-date experiment, check provenance, and document exact data requirements.
 
 No numbers from the frozen 2010 benchmark are claimed for new dates. Installation, the local-input tests and the download HTTP path still require runtime verification.
+
+
+## Optional RD diagnostic PNGs (read-only)
+
+Preprocessing continues to save the unchanged RD and validity mask arrays by
+default. To request diagnostic PNGs **during a new preparation run**, add
+`--visualize-rd` alongside `--preprocess`; this saves three evenly spaced
+frames from the requested UTC date (warmup excluded). Add
+`--rd-all-frames` to render every requested-date RD pair.
+
+For **existing preprocessed data**, such as the May 2024 raw-replay test,
+do not rerun preprocessing:
+
+```bash
+python -m cme_pipeline visualize-rd \
+  --preprocessed-dir runs/may2024_raw_test/preprocessed \
+  --date 20240509
+```
+
+To choose another sampling density, pass `--max-frames 5`; to render all
+requested-date RD frames, pass `--all-frames`. Optional
+`--output-dir` selects a different image destination.
+
+Existing images can be explicitly replaced with `visualize-rd --overwrite` (this\nonly changes diagnostic PNG files, never the underlying science arrays).\n\nImages are stored in `<run>/visualizations/rd/` by default, outside the
+preprocessed science data. Diagnostic style follows the white-background inspection plot: square image,\nX/Y pixel axes, vertical colorbar, UTC end-time title, `coolwarm`,\ninvalid/nonfinite pixels black, fixed `[-600,+600]` DN/s scale. Saturated
+display colors are not numeric clipping of the saved arrays. Existing PNGs are not silently overwritten unless `--overwrite` is used. This functionality has no effect on C0/C3 detection or tracking.

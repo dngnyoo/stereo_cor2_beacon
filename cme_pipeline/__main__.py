@@ -71,6 +71,21 @@ def parse_args() -> argparse.Namespace:
     prepare_parser.add_argument("--phase-sec", default=None, type=float,
                                 help="30-minute phase in seconds (d7 only; inferred from DATE-OBS by default).")
     prepare_parser.add_argument("--output-dir", default=None)
+    prepare_parser.add_argument("--visualize-rd", action="store_true",
+                                help="Save 3 sampled RD diagnostic PNGs after preprocessing.")
+    prepare_parser.add_argument("--rd-all-frames", action="store_true",
+                                help="With --visualize-rd, save all evaluation-date RD frames.")
+
+    rd_parser = subparsers.add_parser(
+        "visualize-rd", help="Render diagnostic RD PNGs from existing preprocessing (no recomputation)."
+    )
+    rd_parser.add_argument("--preprocessed-dir", required=True)
+    rd_parser.add_argument("--date", default=None, help="UTC evaluation date YYYYMMDD")
+    rd_parser.add_argument("--all-frames", action="store_true")
+    rd_parser.add_argument("--max-frames", type=int, default=3)
+    rd_parser.add_argument("--output-dir", default=None)
+    rd_parser.add_argument("--overwrite", action="store_true",
+                           help="Explicitly replace existing RD diagnostic PNGs.")
 
     # Run an alternative detector on the same RD arrays without recalibrating.
     detect_parser = subparsers.add_parser(
@@ -141,12 +156,26 @@ def main() -> None:
         )
         return
 
+    if args.command == "visualize-rd":
+        from cme_pipeline.rd_diagnostics import save_rd_diagnostics
+        paths = save_rd_diagnostics(
+            args.preprocessed_dir, date=args.date, all_frames=args.all_frames,
+            max_frames=args.max_frames, output_dir=args.output_dir,
+            overwrite=args.overwrite,
+        )
+        print(f"RD diagnostic images: {len(paths)} saved to {paths[0].parent}")
+        return
+
     if args.command == "prepare-data":
         from cme_pipeline.data_preparation import prepare_source
         from cme_pipeline.data_preparation import validate_date
 
         date = validate_date(args.date)
         target = args.output_dir or f"runs/data_prep_{date}_{args.product}"
+        if args.visualize_rd and not args.preprocess:
+            raise ValueError("--visualize-rd requires --preprocess")
+        if args.rd_all_frames and not args.visualize_rd:
+            raise ValueError("--rd-all-frames requires --visualize-rd")
         if args.detect and not args.preprocess:
             raise ValueError("--detect requires --preprocess")
         if args.preprocess and args.product != "d7":
@@ -168,6 +197,11 @@ def main() -> None:
             from cme_pipeline.north_up_preprocessing import run_no_msb_north_up
             result = run_no_msb_north_up(manifest, mask_path=args.mask_path)
             print(f"North-up No-MSB RD arrays: {result}")
+            if args.visualize_rd:
+                from cme_pipeline.rd_diagnostics import save_rd_diagnostics
+                images = save_rd_diagnostics(result, date=date,
+                                             all_frames=args.rd_all_frames)
+                print(f"RD diagnostic images: {len(images)} saved to {images[0].parent}")
             if args.detect:
                 from cme_pipeline.live_detection import run_detection
                 detected = run_detection(result, method=args.detect, denoiser=args.denoiser,
