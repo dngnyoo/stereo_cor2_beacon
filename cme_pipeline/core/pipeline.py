@@ -18,6 +18,7 @@ from cme_pipeline.stages.association.v02_pure_do_rule_b import PureDOFamilyAssoc
 from cme_pipeline.stages.gates.v01_birth_radius_gate import FamilyBirthRadiusGateStage
 from cme_pipeline.stages.gates.v01_family_size_gate import FamilySizeGateStage
 from cme_pipeline.stages.recovery.v01_signed_pa_recovery import SignedPARecoveryStage
+from cme_pipeline.stages.recovery.v02_apply_after_gates import ApplyRecoveryAfterGatesStage
 from cme_pipeline.stages.segmentation.v01_island_first_segmentation import IslandFirstSegmentationStage
 from cme_pipeline.stages.tracking.registry import (
     get_tracking_stage,
@@ -54,7 +55,7 @@ def resolve_association_stage(method: str) -> PipelineStage:
 
 
 def resolve_stages(config: PipelineConfig) -> List[PipelineStage]:
-    """Resolves and instantiates the canonical 8 stages via algorithm registries."""
+    """Resolve canonical stages, separating admission decisions from Recovery execution."""
     # Validate parameters immediately on resolution so unsupported keys fail fast
     resolve_and_validate_tracking_parameters(config.tracking.method, config.tracking)
 
@@ -73,6 +74,7 @@ def resolve_stages(config: PipelineConfig) -> List[PipelineStage]:
         assoc_stage,
         birth_stage,
         size_stage,
+        ApplyRecoveryAfterGatesStage(),
         seg_stage,
         products_stage,
         val_stage,
