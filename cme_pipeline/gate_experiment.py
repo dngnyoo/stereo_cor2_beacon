@@ -51,7 +51,7 @@ def run_saved_a5b_gates(
         raise ValueError("Track ownership outside active detector mask")
     if observed.empty:
         raise ValueError("Saved tracking states empty: inspect run before continuing")
-    if observed["pair_index"].isin(detected.manifest_df["pair_index"]).all() is False:
+    if not bool(observed["pair_index"].isin(detected.manifest_df["pair_index"]).all()):
         raise ValueError("Tracking states reference unknown observations")
 
     cfg = PipelineConfig()
