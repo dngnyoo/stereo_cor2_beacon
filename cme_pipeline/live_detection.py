@@ -159,14 +159,22 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
                   outer_floor_k: float = 0.0,
                   outer_floor_inner_px: float = 88.0,
                   outer_floor_outer_px: float = 116.0,
+                  absolute_p04_floor: float | None = None,
                   output_dir: str | Path | None = None) -> Path:
-    """Compute C0 or C3 on all available RD, save explicit detection statuses.
+    """Compute C0, C3 or D4 on saved RD, preserving C3 behavior.
 
-    Historical C0 and C3 differ in parent hierarchy. Both share P95/T24 and
+    D4 shares the C3 hierarchy and adds an absolute P04 score lower bound. All methods
     process frames chronologically. Only previous frames enter T24.
     """
-    if method not in {"c0", "c3"}:
-        raise ValueError("Detector must be 'c0' or 'c3'")
+    if method not in {"c0", "c3", "d4"}:
+        raise ValueError("Detector must be c0, c3 or d4")
+    if method == "d4":
+        if absolute_p04_floor is None or not np.isfinite(absolute_p04_floor) or absolute_p04_floor < 0:
+            raise ValueError("D4 requires finite nonnegative absolute_p04_floor")
+        if floor_mode != "outer_p95":
+            raise ValueError("D4 requires floor_mode=outer_p95")
+    elif absolute_p04_floor is not None:
+        raise ValueError("absolute_p04_floor is available only for D4")
     if not 0 < qc_max_active_fraction <= 1:
         raise ValueError("QC active fraction must be within (0, 1]")
     if min_floor_patches < 1:
@@ -258,13 +266,13 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
             if status == "VALID" else np.zeros(SHAPES[size], bool)
             for size in SCALES
         }
-        pre = _pure_hierarchy(flat) if method == "c3" else _c0_hierarchy(flat)
+        pre = _pure_hierarchy(flat) if method in ("c3", "d4") else _c0_hierarchy(flat)
         denom = int(accepted[4].sum())
         active_fraction_pre = float((pre[4] & accepted[4]).sum() / denom) if denom else float("nan")
         floor = effective = float("nan")
         floor_bound = False
         floor_sample_count = 0
-        if method == "c3" and status == "VALID":
+        if method in ("c3", "d4") and status == "VALID":
             if active_fraction_pre >= qc_max_active_fraction:
                 status = "GLOBAL_ACTIVATION"
             else:
@@ -291,6 +299,8 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
                 if np.isfinite(floor):
                     effective = max(effective, floor)
                     floor_bound = bool(floor > thresholds[4])
+                if method == "d4":
+                    effective = max(effective, float(absolute_p04_floor))
                 pre[4] = accepted[4] & (scores[4] > effective) & np.repeat(
                     np.repeat(pre[8], 2, axis=0), 2, axis=1
                 )
@@ -314,8 +324,8 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
             "T24_p16": thresholds[16], "T24_p08": thresholds[8],
             "T24_p04": thresholds[4], "floor_p04": floor,
             "effective_threshold_p04": effective, "floor_bound_p04": floor_bound,
-            "floor_mode_p04": floor_mode if method == "c3" else "none",
-            "outer_floor_k_p04": outer_floor_k if method == "c3" and floor_mode == "outer_background_mad" else 0.0,
+            "floor_mode_p04": floor_mode if method in ("c3", "d4") else "none",
+            "outer_floor_k_p04": outer_floor_k if method in ("c3", "d4") and floor_mode == "outer_background_mad" else 0.0,
             "floor_sample_count_p04": floor_sample_count,
             "frame_z_mean": mean, "frame_z_std": std,
             "n_active_p04": int(state.sum()) if status == "VALID" else "",
@@ -341,11 +351,12 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         "frames": len(rows),
         "valid_requested_frames": sum(r["status"] == "VALID" and r["in_requested_date"] for r in rows),
         "warmup_frames": sum(r["status"] == "WARMUP" for r in rows),
-        "qc_max_active_fraction": qc_max_active_fraction if method == "c3" else None,
-        "floor_mode": floor_mode if method == "c3" else None,
-        "outer_floor_k": outer_floor_k if floor_mode == "outer_background_mad" and method == "c3" else None,
-        "outer_floor_inner_px": outer_floor_inner_px if floor_mode in ("outer_background", "outer_background_mad", "outer_p95") and method == "c3" else None,
-        "outer_floor_outer_px": outer_floor_outer_px if floor_mode in ("outer_background", "outer_background_mad", "outer_p95") and method == "c3" else None,
+        "qc_max_active_fraction": qc_max_active_fraction if method in ("c3", "d4") else None,
+        "floor_mode": floor_mode if method in ("c3", "d4") else None,
+        "outer_floor_k": outer_floor_k if floor_mode == "outer_background_mad" and method in ("c3", "d4") else None,
+        "outer_floor_inner_px": outer_floor_inner_px if floor_mode in ("outer_background", "outer_background_mad", "outer_p95") and method in ("c3", "d4") else None,
+        "outer_floor_outer_px": outer_floor_outer_px if floor_mode in ("outer_background", "outer_background_mad", "outer_p95") and method in ("c3", "d4") else None,
+        **({"absolute_p04_floor": float(absolute_p04_floor)} if method == "d4" else {}),
         "history_rule": "strictly earlier observations within trailing 24h",
         "status": "DETECTION_READY_TRACKING_NOT_RUN",
     }, indent=2), encoding="utf-8")
