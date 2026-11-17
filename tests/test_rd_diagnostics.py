@@ -76,10 +76,6 @@ def test_bad_date_and_missing_frames(tmp_path):
 
 def test_cli_parse_opt_in_modes():
     with patch.object(sys, "argv", [
-        "python", " -ignored"
-    ]):
-        pass
-    with patch.object(sys, "argv", [
         "cme_pipeline", "prepare-data", "--date", "20240509",
         "--source", "local", "--input-dir", "/tmp/fits",
         "--preprocess", "--visualize-rd", "--rd-all-frames",
