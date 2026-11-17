@@ -10,6 +10,18 @@ from cme_pipeline.utils.io import load_yaml, save_yaml
 
 
 @dataclass
+class DetectionConfig:
+    method: str = "c0"
+    denoiser: str = "gaussian"
+
+
+@dataclass
+class GeometryConfig:
+    # Required for live pixel-to-R_sun CME catalog conversion unless FITS geometry is resolved.
+    rsun_px: Optional[float] = None
+
+
+@dataclass
 class TrackingConfig:
     method: str = "e1"
     parameters: Dict[str, Any] = field(default_factory=dict)
@@ -116,6 +128,8 @@ class PipelineConfig:
     cache_enabled: bool = True
     force_rerun: bool = False
     from_stage: Optional[str] = None
+    detection: DetectionConfig = field(default_factory=DetectionConfig)
+    geometry: GeometryConfig = field(default_factory=GeometryConfig)
     tracking: TrackingConfig = field(default_factory=TrackingConfig)
     recovery: RecoveryConfig = field(default_factory=RecoveryConfig)
     association: AssociationConfig = field(default_factory=AssociationConfig)
@@ -130,7 +144,11 @@ class PipelineConfig:
         """Instantiates PipelineConfig from nested dictionary with strict key validation."""
         cfg = cls()
         for k, v in d.items():
-            if k == "tracking" and isinstance(v, dict):
+            if k == "detection" and isinstance(v, dict):
+                cfg.detection = DetectionConfig(**v)
+            elif k == "geometry" and isinstance(v, dict):
+                cfg.geometry = GeometryConfig(**v)
+            elif k == "tracking" and isinstance(v, dict):
                 params = v.get("parameters") or {}
                 if not isinstance(params, dict):
                     raise ValueError(f"tracking.parameters must be a dict, got {type(params).__name__}")
