@@ -131,18 +131,22 @@ def parse_args() -> argparse.Namespace:
     viz_track.add_argument("--output-dir", default=None)
 
     gates_parser = subparsers.add_parser(
-        "run-gates-data", help="Continue saved A5b through recovery, identity and gates."
+        "run-gates", aliases=["run-gates-data"],
+        help="Run Identity, Birth and Size/Persistence Gates only, no Recovery."
     )
     gates_parser.add_argument("--tracking-run", required=True)
     gates_parser.add_argument("--run-name", required=True)
-    gates_parser.add_argument("--recovery-inner-radius-px", type=float, default=None,
-                              help="Required only with --with-recovery")
-    gates_parser.add_argument("--with-recovery", action="store_true",
-                              help="Explicitly apply Recovery after Family Gates; default gates only")
     gates_parser.add_argument("--birth-max-radius-px", type=float, default=30.0)
     gates_parser.add_argument("--min-detected-patches", type=int, default=5)
     gates_parser.add_argument("--min-observed-pairs", type=int, default=1,
                               help="Minimum unique OBSERVED frames for family admission")
+
+    recovery_parser = subparsers.add_parser(
+        "run-recovery", help="Execute Recovery from saved Gate decisions; never rerun Gates."
+    )
+    recovery_parser.add_argument("--gates-run", required=True)
+    recovery_parser.add_argument("--run-name", required=True)
+    recovery_parser.add_argument("--recovery-inner-radius-px", required=True, type=float)
 
     compare_gates_parser = subparsers.add_parser(
         "compare-gates", help="Full-day baseline/outer P95 recovery and gates comparison."
@@ -352,17 +356,24 @@ def main() -> None:
         print(f"Detection diagnostic images: {len(paths)} saved to {paths[0].parent}")
         return
 
-    if args.command == "run-gates-data":
+    if args.command in ("run-gates", "run-gates-data"):
         from cme_pipeline.gate_experiment import run_saved_a5b_gates
         out = run_saved_a5b_gates(
             args.tracking_run, run_name=args.run_name,
-            recovery_inner_radius_px=args.recovery_inner_radius_px,
             birth_max_radius_px=args.birth_max_radius_px,
             min_detected_patches=args.min_detected_patches,
             min_observed_pairs=args.min_observed_pairs,
-            with_recovery=args.with_recovery,
         )
-        print(f"Identity / Gates {'+ Recovery' if args.with_recovery else '(no Recovery)'}: {out}")
+        print(f"Gate decisions (no Recovery): {out}")
+        return
+
+    if args.command == "run-recovery":
+        from cme_pipeline.run_recovery_data import run_saved_recovery
+        out = run_saved_recovery(
+            args.gates_run, run_name=args.run_name,
+            recovery_inner_radius_px=args.recovery_inner_radius_px,
+        )
+        print(f"Recovery outputs: {out}")
         return
 
     if args.command == "compare-gates":
