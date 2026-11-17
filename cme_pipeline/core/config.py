@@ -14,6 +14,7 @@ class DetectionConfig:
     method: str = "c0"
     denoiser: str = "gaussian"
     floor_mode: str = "frame_median"
+    outer_floor_k: float = 0.0
     outer_floor_inner_px: float = 88.0
     outer_floor_outer_px: float = 116.0
 
