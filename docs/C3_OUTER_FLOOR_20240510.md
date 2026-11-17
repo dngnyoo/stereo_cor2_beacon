@@ -27,3 +27,21 @@ The result may equal the baseline if T24 dominates.
 A 2024 full `run-data` CME catalog requires independently verifying the
 2024 WCS-based `geometry.rsun_px`. Only then should downstream tracking,
 catalog metrics and external references be compared.
+
+## Detection diagnostic PNGs
+
+Generate an identical set of evaluation-day frames from both outputs:
+
+```bash
+python -m cme_pipeline visualize-detection --detection-dir runs/outer_floor_20240510_frame_median --date 20240510 --all-frames
+python -m cme_pipeline visualize-detection --detection-dir runs/outer_floor_20240510_annulus --date 20240510 --all-frames
+```
+
+Images are saved separately to `<detection-dir>/visualizations/detection/`.
+Each includes: original north-up RD (DN/s), normalized P04 absolute-Z P95
+score field, and final active P04 masks over RD. The outer-floor branch
+draws the sampled radial bounds in cyan. Titles show timestamp, detector
+status, T24, floor, effective threshold, and whether floor binds.
+Use `--max-frames 6` (default) for a small sample instead of
+`--all-frames`. The command only reads persisted outputs; it never
+recomputes or modifies detection arrays.
