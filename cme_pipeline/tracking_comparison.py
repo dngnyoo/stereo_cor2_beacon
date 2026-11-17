@@ -43,6 +43,7 @@ def _frame_components(owners: np.ndarray, patch_pa: np.ndarray,
                 "center_x": float(np.mean(xs) * 4 + 1.5),
                 "center_y": float(np.mean(ys) * 4 + 1.5),
                 "cpa_deg": center_pa,
+                "front_pa_deg": float(pa[front_i]),
                 "pa_span_deg": float(arc["arc_span"]),
                 "front_radius_px": float(radial[front_i]),
                 "front_x": front_x,
@@ -183,7 +184,8 @@ def compare_tracking(
                 )
                 component_rows.append({k: v for k, v in c.items() if k != "mask"})
                 label_text = (f"T{tid}/C{raw_component_id}.{c['component_index']}\n"
-                              f"PA {c['cpa_deg']:.0f}° "
+                              f"PAfront {c['front_pa_deg']:.0f}° "
+                              f"CPA {c['cpa_deg']:.0f}° "
                               f"span {c['pa_span_deg']:.0f}°\n"
                               f"front {c['front_radius_px']:.0f}px")
                 ax.annotate(label_text, (c["center_x"], c["center_y"]),
@@ -224,7 +226,7 @@ def compare_tracking(
             f"A5b track/component geometry | Pair {pair} | "
             f"{times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')}\n"
             "Contours: connected owned components | C=raw component.subregion | Star: outermost owned patch "
-            "| PA: component mean/span | CPA: stored track estimate",
+            "| PA: front position, CPA: component mean; track CPA shown in legend",
             fontsize=10
         )
         fig.savefig(frames / f"pair_{pair:03d}_{times.iloc[i].strftime('%Y%m%dT%H%M%SZ')}.png",
