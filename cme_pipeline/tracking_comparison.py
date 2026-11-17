@@ -78,6 +78,8 @@ def compare_tracking(
     rd = np.load(pre / "north_up_RD_DNs_per_second.npy", mmap_mode="r")
     valid = np.load(pre / "north_up_pair_valid_masks.npy", mmap_mode="r")
     bstate = np.load(bdet / "patch_state_p04.npy", mmap_mode="r")
+    brawcomp = np.load(bdet / "patch_component_labels.npy", mmap_mode="r")
+    erawcomp = np.load(edet / "patch_component_labels.npy", mmap_mode="r")
     estate = np.load(edet / "patch_state_p04.npy", mmap_mode="r")
     bown = np.load(base / "arrays" / "track_ownership_masks.npy", mmap_mode="r")
     eown = np.load(exp / "arrays" / "track_ownership_masks.npy", mmap_mode="r")
@@ -85,7 +87,7 @@ def compare_tracking(
     et = pd.read_csv(exp / "tables" / "live_tracking_states.csv")
     n = len(manifest)
     if (rd.shape != valid.shape or rd.shape != (n, 256, 256)
-        or any(a.shape != (n, 64, 64) for a in (bstate, estate, bown, eown))
+        or any(a.shape != (n, 64, 64) for a in (bstate, estate, bown, eown, brawcomp, erawcomp))
         or len(bs) != n or len(es) != n):
         raise ValueError("Input/detection/tracking frame shape mismatch")
     for summary in (bs, es):
@@ -139,9 +141,9 @@ def compare_tracking(
         image = np.ma.masked_where(~usable, raw)
         fig, axes = plt.subplots(1, 2, figsize=(16, 8), constrained_layout=True)
         details = []
-        for ax, run_name, det, owners, summary, track_df in (
-            (axes[0], "Baseline + A5b", bstate[i], bown[i], bs.iloc[i], bt),
-            (axes[1], "Outer P95 + A5b", estate[i], eown[i], es.iloc[i], et)
+        for ax, run_name, det, owners, raw_components, summary, track_df in (
+            (axes[0], "Baseline + A5b", bstate[i], bown[i], brawcomp[i], bs.iloc[i], bt),
+            (axes[1], "Outer P95 + A5b", estate[i], eown[i], erawcomp[i], es.iloc[i], et)
         ):
             grid = np.asarray(det) == 1
             ownership = np.asarray(owners, dtype=np.int32)
@@ -166,6 +168,10 @@ def compare_tracking(
                 ax.scatter([c["front_x"]], [c["front_y"]], marker="*",
                            s=60, facecolor="yellow", edgecolor="black", linewidth=.5,
                            zorder=5)
+                raw_ids = np.asarray(raw_components)[c["mask"]]
+                raw_ids = raw_ids[raw_ids > 0]
+                raw_component_id = int(np.bincount(raw_ids.astype(int)).argmax()) if len(raw_ids) else -1
+                c["raw_component_id"] = raw_component_id
                 c["run"] = run_name
                 c["pair_index"] = pair
                 state = by_track.get(tid)
@@ -176,7 +182,7 @@ def compare_tracking(
                     float(state["front_radius"]) if state is not None else float("nan")
                 )
                 component_rows.append({k: v for k, v in c.items() if k != "mask"})
-                label_text = (f"T{tid}/C{c['component_index']}\n"
+                label_text = (f"T{tid}/C{raw_component_id}.{c['component_index']}\n"
                               f"PA {c['cpa_deg']:.0f}° "
                               f"span {c['pa_span_deg']:.0f}°\n"
                               f"front {c['front_radius_px']:.0f}px")
@@ -217,7 +223,7 @@ def compare_tracking(
         fig.suptitle(
             f"A5b track/component geometry | Pair {pair} | "
             f"{times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')}\n"
-            "Contours: connected owned components | Star: outermost observed patch "
+            "Contours: connected owned components | C=raw component.subregion | Star: outermost owned patch "
             "| PA: component mean/span | CPA: stored track estimate",
             fontsize=10
         )
