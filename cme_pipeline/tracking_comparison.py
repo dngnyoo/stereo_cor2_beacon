@@ -219,7 +219,7 @@ def compare_tracking(
                             zorder=7)
             active_ids = np.unique(ownership[ownership > 0])
             ax.set_title(
-                f"{run_name} | {summary['status']}\\n"
+                f"{run_name} | {summary['status']}\n"
                 f"Detection={int(grid.sum())}  Owned={int((ownership > 0).sum())} "
                 f"Tracks={len(active_ids)}",
                 fontsize=10
@@ -249,7 +249,7 @@ def compare_tracking(
             "baseline_active": details[0][0], "outer_active": details[1][0],
             "baseline_owned": details[0][1], "outer_owned": details[1][1],
             "baseline_track_ids": details[0][2], "outer_track_ids": details[1][2],
-                    })
+        })
     pd.DataFrame(summaries).to_csv(out / "comparison_summary.csv", index=False)
     pd.DataFrame(track_rows).to_csv(out / "track_geometry.csv", index=False)
     print(f"Rendered {len(summaries)} frames. Baseline tracks={btrack['total_tracks']}; "
