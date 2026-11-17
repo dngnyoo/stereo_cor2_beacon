@@ -324,10 +324,6 @@ To choose another sampling density, pass `--max-frames 5`; to render all
 requested-date RD frames, pass `--all-frames`. Optional
 `--output-dir` selects a different image destination.
 
-Images are stored in `<run>/visualizations/rd/` by default, outside the
-preprocessed science data. Scientific display convention reuses the
-segmentation RD renderer: north-up, `coolwarm`, invalid/nonfinite pixels
-black, fixed `[-600,+600]` scale, **DN/s** for this pipeline. Saturated
-display colors are not numeric clipping of the saved arrays. Existing PNGs
-are not silently overwritten; re-running with identical image names fails
-closed. This functionality has no effect on C0/C3 detection or tracking.
+Existing images can be explicitly replaced with `visualize-rd --overwrite` (this\nonly changes diagnostic PNG files, never the underlying science arrays).\n\nImages are stored in `<run>/visualizations/rd/` by default, outside the
+preprocessed science data. Diagnostic style follows the white-background inspection plot: square image,\nX/Y pixel axes, vertical colorbar, UTC end-time title, `coolwarm`,\ninvalid/nonfinite pixels black, fixed `[-600,+600]` DN/s scale. Saturated
+display colors are not numeric clipping of the saved arrays. Existing PNGs are not silently overwritten unless `--overwrite` is used. This functionality has no effect on C0/C3 detection or tracking.
