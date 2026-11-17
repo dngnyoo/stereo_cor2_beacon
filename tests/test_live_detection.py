@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from cme_pipeline.live_detection import (
-    _c0_hierarchy, _pure_hierarchy, _threshold, _outer_background_floor, run_detection,
+    _c0_hierarchy, _pure_hierarchy, _threshold, _outer_background_floor, _outer_background_p95, run_detection,
 )
 
 
@@ -56,6 +56,17 @@ class TestDetectorCore(unittest.TestCase):
         scores = np.ones((64, 64), dtype=float)
         with self.assertRaisesRegex(ValueError, "nonnegative"):
             _outer_background_floor(scores, scores.astype(bool), k=-1)
+
+    def test_outer_p95_uses_full_annulus_distribution(self):
+        scores = np.ones((64, 64))
+        accepted = np.ones((64, 64), dtype=bool)
+        y, x = np.indices((64, 64), dtype=float)
+        r = np.hypot((x + .5) * 4 - 128., (y + .5) * 4 - 128.)
+        ring = (r >= 88) & (r <= 116)
+        scores[ring] = 3 + x[ring] / 10
+        floor, count = _outer_background_p95(scores, accepted)
+        self.assertEqual(count, int(ring.sum()))
+        self.assertAlmostEqual(floor, float(np.percentile(scores[ring], 95)))
 
     def test_hierarchy_is_intentionally_different(self):
         flat = {16: np.zeros((16, 16), bool),
