@@ -105,7 +105,7 @@ def save_detection_diagnostics(
         axes[2].imshow(overlay, origin="lower", extent=(-.5, 255.5, -.5, 255.5),
                        interpolation="nearest", cmap="autumn", alpha=.55, vmin=0, vmax=1)
         axes[2].set_title(f"Activated P04: {int(active.sum())} patches")
-        if meta.get("floor_mode") in ("outer_background", "outer_background_mad"):
+        if meta.get("floor_mode") in ("outer_background", "outer_background_mad", "outer_p95"):
             inner = meta.get("outer_floor_inner_px")
             outer = meta.get("outer_floor_outer_px")
             if inner is not None and outer is not None:
