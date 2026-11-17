@@ -1,0 +1,10 @@
+# Detection settings for the first D4 experiment (2024-05-10).
+# Reference only: detect-data takes equivalent CLI arguments.
+# C3 baseline remains unchanged; D4 is a separate detector method.
+detection:
+  method: d4
+  denoiser: gaussian
+  floor_mode: outer_p95
+  absolute_p04_floor: 0.5
+  outer_floor_inner_px: 88.0
+  outer_floor_outer_px: 116.0
