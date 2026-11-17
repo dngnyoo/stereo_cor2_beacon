@@ -1,8 +1,6 @@
-"""Apply Identity -> Birth Gate -> Size Gate to saved A5b runs, with optional Recovery.
+"""Apply Identity -> Birth -> Size/Persistence Gates to a saved A5b run.
 
-No acquisition, RD preprocessing, detection or tracking is recomputed.
-The recovery inner radius (pixels) is mandatory: 2024 solar-radius calibration
-is not assumed from a 2010 reference.
+No Recovery, acquisition, RD preprocessing, detection or tracking is computed.
 """
 from __future__ import annotations
 
@@ -17,7 +15,6 @@ from cme_pipeline.core.context import PipelineContext
 from cme_pipeline.core.stage import TrackingOutput
 from cme_pipeline.live_tracking_input import load_live_tracking_input
 from cme_pipeline.stages.tracking.adapter import adapt_tracking_output
-from cme_pipeline.stages.recovery.v01_signed_pa_recovery import SignedPARecoveryStage
 from cme_pipeline.stages.association.v01_identity_association import IdentityAssociationStage
 from cme_pipeline.stages.gates.v01_birth_radius_gate import FamilyBirthRadiusGateStage
 from cme_pipeline.stages.gates.v01_family_size_gate import FamilySizeGateStage
@@ -25,20 +22,15 @@ from cme_pipeline.stages.gates.v01_family_size_gate import FamilySizeGateStage
 
 def run_saved_a5b_gates(
     tracking_run: str | Path, *, run_name: str,
-    recovery_inner_radius_px: float | None = None,
     birth_max_radius_px: float = 30.0,
     min_detected_patches: int = 5,
     min_observed_pairs: int = 1,
-    with_recovery: bool = False,
 ) -> Path:
-    """Reconstruct saved A5b TrackingOutput; run pure Gates and optionally Recovery."""
+    """Reconstruct saved A5b TrackingOutput and execute only the pure Gates."""
     run = Path(tracking_run).expanduser().resolve()
     meta = json.loads((run / "tracking_metadata.json").read_text())
     if meta.get("method") != "a5b":
         raise ValueError("Only saved A5b runs are supported")
-    if with_recovery and (not np.isfinite(recovery_inner_radius_px)
-                          or recovery_inner_radius_px <= 0):
-        raise ValueError("Recovery requires a positive --recovery-inner-radius-px")
     if not (np.isfinite(birth_max_radius_px) and birth_max_radius_px > 0):
         raise ValueError("Invalid birth maximum radius")
     if min_detected_patches < 1:
@@ -89,9 +81,6 @@ def run_saved_a5b_gates(
     cfg.size_gate.min_detected_patches = int(min_detected_patches)
     cfg.size_gate.min_observed_pairs = int(min_observed_pairs)
     cfg.run_name = run_name
-    # This is a user-specified *operational pixel cutoff*, not an inferred 2 R_sun.
-    if with_recovery:
-        detected.geometry.occulter_inner_radius_px = float(recovery_inner_radius_px)
     tracking = TrackingOutput(
         manifest_df=detected.manifest_df,
         track_states_df=observed,
@@ -114,20 +103,14 @@ def run_saved_a5b_gates(
     assoc = IdentityAssociationStage().run(tracking, cfg, ctx)
     birth = FamilyBirthRadiusGateStage().run(assoc, cfg, ctx)
     gated = FamilySizeGateStage().run(birth, cfg, ctx)
-    if with_recovery:
-        from cme_pipeline.stages.recovery.v02_apply_after_gates import ApplyRecoveryAfterGatesStage
-        size = ApplyRecoveryAfterGatesStage().run(gated, cfg, ctx)
-    else:
-        size = gated
+    size = gated
     np.save(ctx.arrays_dir / "saved_track_ownership.npy", own)
     np.save(ctx.arrays_dir / "saved_detection_p04.npy", detected.patch_activation_grid4)
     summary = {
         "date": str(meta["requested_date"]),
         "source_tracking_run": str(run),
         "source_detection_dir": str(detdir),
-        "processing": ["identity", "birth_gate", "size_gate"] + (["recovery_apply"] if with_recovery else []),
-        "recovery_inner_radius_px": float(recovery_inner_radius_px) if with_recovery else None,
-        "recovery_inner_radius_interpretation": "explicit operational cutoff; not calibrated to 2 solar radii",
+        "processing": ["identity", "birth_gate", "size_gate"],
         "birth_max_radius_px": float(birth_max_radius_px),
         "min_detected_patches": int(min_detected_patches),
         "min_observed_pairs": int(min_observed_pairs),
@@ -135,9 +118,9 @@ def run_saved_a5b_gates(
         "candidate_families": int(assoc.candidate_family_count),
         "birth_gate_pass": len(birth.birth_gated_family_ids),
         "size_gate_admitted": len(size.admitted_family_ids),
-        "total_recovered_patches_all_frames": int(size.total_recovered_patches) if with_recovery else None,
-        "recovery_executed": with_recovery,
-        "status": "GATES_AND_RECOVERY_READY" if with_recovery else "GATES_ONLY_NO_RECOVERY",
+        "total_recovered_patches_all_frames": None,
+        "recovery_executed": False,
+        "status": "GATES_ONLY_NO_RECOVERY",
     }
     (ctx.run_dir / "gates_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
