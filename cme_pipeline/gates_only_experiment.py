@@ -141,3 +141,30 @@ def compare_gate_only_runs(baseline: str | Path, experiment: str | Path, *, outp
     (dest / "gate_only_comparison.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
     return report
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="action", required=True)
+    ev = sub.add_parser("evaluate", help="Evaluate saved A5b observed tracks without Recovery")
+    ev.add_argument("--tracking-run", required=True)
+    ev.add_argument("--output-dir", required=True)
+    ev.add_argument("--birth-radius", type=float, default=30.0)
+    ev.add_argument("--min-detected-patches", type=int, default=10)
+    ev.add_argument("--min-observed-pairs", type=int, default=3)
+    co = sub.add_parser("compare", help="Compare two observed-only gate results")
+    co.add_argument("--baseline-run", required=True)
+    co.add_argument("--experiment-run", required=True)
+    co.add_argument("--output-dir", required=True)
+    args = parser.parse_args()
+    if args.action == "evaluate":
+        evaluate_saved_gates(
+            args.tracking_run, output_dir=args.output_dir,
+            max_birth_radius_px=args.birth_radius,
+            min_detected_patches=args.min_detected_patches,
+            min_observed_pairs=args.min_observed_pairs,
+        )
+    else:
+        compare_gate_only_runs(
+            args.baseline_run, args.experiment_run, output_dir=args.output_dir
+        )
