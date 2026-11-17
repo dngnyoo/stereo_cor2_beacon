@@ -74,3 +74,31 @@ Compare per-frame `status`, `T24_p04`, `floor_p04`,
 Ensure baselines use the **same RD input and VALID frame set** before
 interpreting active-patch differences. Larger k increases the threshold
 for a fixed frame, but actual CME retention is not guaranteed.
+
+
+## A5b tracking-only comparison on 2024-05-10
+
+Both runs reuse existing detection outputs (no download, preprocessing or detection
+rerun). The `track-data` command persists ownership masks to
+`runs/<run_name>/arrays/track_ownership_masks.npy`; this does not require
+`geometry.rsun_px` or run downstream CME catalog stages.
+
+```bash
+python -m cme_pipeline track-data \
+  --detection-dir runs/may20240510_c3_test/detection_c3_gaussian \
+  --date 20240510 --method a5b --run-name may10_a5b_baseline
+python -m cme_pipeline track-data \
+  --detection-dir runs/20240510_c3_outer_p95 \
+  --date 20240510 --method a5b --run-name may10_a5b_outer_p95
+python -m cme_pipeline compare-tracking \
+  --baseline-run runs/may10_a5b_baseline \
+  --experiment-run runs/may10_a5b_outer_p95 \
+  --date 20240510
+```
+
+Output: `runs/may10_a5b_outer_p95/comparison_tracking_full_day/frames/`
+plus `comparison_summary.csv`. All frames ending on May 10 are rendered,
+including unavailable-status frames. Red outlines denote detected active P04
+patches; colored small squares indicate patch owner (track ID) **within each
+run**, not corresponding track identity across runs. Tracking uses default A5b
+parameters and is exploratory until track continuity is reviewed.
