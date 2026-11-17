@@ -101,6 +101,10 @@ def parse_args() -> argparse.Namespace:
     detect_parser.add_argument("--outer-floor-outer-px", type=float, default=116.0)
     detect_parser.add_argument("--output-dir", default=None,
                                help="Unique output path for side-by-side experiments")
+    detect_parser.add_argument("--visualize", action="store_true",
+                               help="Write sampled diagnostic PNGs after detection")
+    detect_parser.add_argument("--visualize-all-frames", action="store_true",
+                               help="With --visualize, write all evaluation-date frames")
 
     viz_detection = subparsers.add_parser(
         "visualize-detection",
@@ -263,6 +267,14 @@ def main() -> None:
                                  outer_floor_outer_px=args.outer_floor_outer_px,
                                  output_dir=args.output_dir)
         print(f"Detector outputs: {detected}")
+        if args.visualize_all_frames and not args.visualize:
+            raise ValueError("--visualize-all-frames requires --visualize")
+        if args.visualize:
+            from cme_pipeline.detection_diagnostics import save_detection_diagnostics
+            paths = save_detection_diagnostics(
+                detected, date=args.date, all_frames=args.visualize_all_frames
+            )
+            print(f"Detection diagnostic images: {len(paths)} saved to {paths[0].parent}")
         return
 
     if args.command == "visualize-detection":
