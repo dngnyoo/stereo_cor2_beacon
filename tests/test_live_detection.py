@@ -37,6 +37,26 @@ class TestDetectorCore(unittest.TestCase):
         self.assertTrue(np.isnan(empty_floor))
         self.assertEqual(empty_count, 0)
 
+    def test_outer_background_mad_k_values(self):
+        y, x = np.indices((64, 64), dtype=float)
+        r = np.hypot((x + .5) * 4 - 128.0, (y + .5) * 4 - 128.0)
+        ring = (r >= 88) & (r <= 116)
+        scores = np.ones((64, 64), dtype=float)
+        scores[ring] = 1 + (x[ring] % 9) * 0.2
+        accepted = np.ones((64, 64), dtype=bool)
+        vals = [_outer_background_floor(scores, accepted, k=k)[0]
+                for k in (0, 1, 2, 3)]
+        self.assertTrue(all(np.isfinite(v) for v in vals))
+        self.assertLess(vals[0], vals[1])
+        self.assertLess(vals[1], vals[2])
+        self.assertLess(vals[2], vals[3])
+        self.assertAlmostEqual(vals[3] - vals[2], vals[2] - vals[1])
+
+    def test_outer_background_mad_rejects_invalid_k(self):
+        scores = np.ones((64, 64), dtype=float)
+        with self.assertRaisesRegex(ValueError, "nonnegative"):
+            _outer_background_floor(scores, scores.astype(bool), k=-1)
+
     def test_hierarchy_is_intentionally_different(self):
         flat = {16: np.zeros((16, 16), bool),
                 8: np.zeros((32, 32), bool),
