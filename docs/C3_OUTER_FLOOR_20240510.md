@@ -171,3 +171,36 @@ cyan = recovery of admitted families. Predicted-only observations are not
 represented as detected patches. A5b's multiple components are preserved under
 a single identity Family per Track ID; this experiment does not run Rule B.
 No segmentation or CME catalog is executed.
+
+## Canonical visualizations for new single runs
+
+The latest single-run outputs are now standard (default on):
+- `detect-data` automatically writes **all evaluation-day** diagnostic PNGs
+  to `<detection-run>/visualizations/detection/`. Final active P04 patches
+  are **red outlines with no opaque yellow fill**; the RD and patch-score
+  diagnostic panels are retained.
+- `track-data --method a5b` automatically writes all evaluation-day frames
+  to `<tracking-run>/visualizations/tracking/`. Each Track ID receives **one**
+  PA Start line, PA End line, A5b tracked CPA dashed line, observed outer-front
+  arc and concise labels. Disconnected owned regions remain one Track geometry.
+  Geometry values are also saved to `track_geometry.csv`.
+
+Use `--no-visualize` to skip PNG creation for faster batch experiments.
+These defaults change only the visualization; C3 floor computation and A5b
+tracking remain unchanged. Side-by-side comparisons remain **explicit**
+commands, `compare-detection` and `compare-tracking`, because they need
+two separate runs. Existing run outputs are never overwritten.
+
+For a previously completed run, render only the missing standard diagnostic
+without rerunning any algorithm:
+
+```bash
+python -m cme_pipeline visualize-tracking \
+  --tracking-run runs/may10_a5b_outer_p95 --date 20240510 \
+  --output-dir runs/may10_a5b_outer_p95/visualizations/tracking_standard_v1
+
+python -m cme_pipeline visualize-detection \
+  --detection-dir runs/20240510_c3_outer_p95 --date 20240510 \
+  --all-frames \
+  --output-dir runs/20240510_c3_outer_p95/visualizations/detection_standard_v1
+```
