@@ -49,6 +49,15 @@ def run_configured_data(
         raise ValueError("CLI --denoiser conflicts with detection.denoiser in YAML")
     if detector not in ("c0", "c3", "d4") or smooth not in ("gaussian", "median"):
         raise ValueError(f"Unsupported detection configuration: {detector}/{smooth}")
+    if detector == "d4":
+        import math
+        val = cfg.detection.absolute_p04_floor
+        if val is None or not math.isfinite(float(val)) or float(val) < 0:
+            raise ValueError("D4 requires a finite nonnegative detection.absolute_p04_floor")
+        if cfg.detection.floor_mode != "outer_p95":
+            raise ValueError("D4 requires detection.floor_mode=outer_p95")
+    elif cfg.detection.absolute_p04_floor is not None:
+        raise ValueError("detection.absolute_p04_floor is D4-only")
     if cfg.tracking.method.lower() == "e1":
         raise ValueError(
             "Live E1 still requires the separate independent recomputation adapter; "
