@@ -125,7 +125,7 @@ def load_target_geometry(run_dir):
     header = fits.Header.fromstring(header_path.read_text(), sep="\n")
     wcs = WCS(header)
     center = wcs.world_to_pixel_values(0., 0.)
-    scales = wcs.proj_plane_pixel_scales().to("arcsec").value
+    scales = np.asarray([scale.to_value("arcsec") for scale in wcs.proj_plane_pixel_scales()], dtype=float)
     if not np.isfinite([*center, *scales]).all() or min(scales) <= 0:
         raise ValueError("Invalid target WCS geometry")
     if not np.isclose(scales[0], scales[1], rtol=1e-4):
