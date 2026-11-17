@@ -21,9 +21,8 @@ def compare_detection(
     if (not (same_detector or c3_d4) or
             bmeta["denoiser"] != emeta["denoiser"]):
         raise ValueError("Comparison requires same denoiser and same detector or C3/D4")
-    if c3_d4 and (bmeta.get("floor_mode") != emeta.get("floor_mode") or
-                  bmeta.get("t24_mad_multiplier") != emeta.get("t24_mad_multiplier")):
-        raise ValueError("C3/D4 comparison requires identical Outer P95 and T24 settings")
+    # Older C3 outputs may record different or incomplete configuration metadata.
+    # Verify numerical thresholds from the saved summaries instead.
     if Path(bmeta["input_dir"]).resolve() != Path(emeta["input_dir"]).resolve():
         raise ValueError("Both detectors must use exactly the same preprocessed directory")
     pre = Path(bmeta["input_dir"]).resolve()
@@ -47,6 +46,28 @@ def compare_detection(
             pd.to_datetime(manifest["end_time"], utc=True).to_numpy()
         ):
             raise ValueError("Manifest and detection summary are not frame-aligned")
+    if c3_d4:
+        for col in ("T24_p16", "T24_p08", "T24_p04", "floor_p04"):
+            if col not in bs.columns or col not in es.columns:
+                raise ValueError(f"Cannot verify controlled C3/D4 comparison: missing {col}")
+            va = pd.to_numeric(bs[col], errors="coerce").to_numpy(float)
+            vb = pd.to_numeric(es[col], errors="coerce").to_numpy(float)
+            consistent = np.isclose(va, vb, rtol=1e-8, atol=1e-10, equal_nan=True)
+            if not bool(np.all(consistent)):
+                first = int(np.flatnonzero(~consistent)[0])
+                raise ValueError(
+                    f"C3/D4 {col} differs at pair {int(manifest.iloc[first]['pair_index'])}: "
+                    f"C3={va[first]:.8g}, D4={vb[first]:.8g}. "
+                    "Check the actual detector settings; these are not controlled runs."
+                )
+        bs_status = bs["status"].astype(str).to_numpy()
+        es_status = es["status"].astype(str).to_numpy()
+        if not np.array_equal(bs_status, es_status):
+            first = int(np.flatnonzero(bs_status != es_status)[0])
+            raise ValueError(
+                f"C3/D4 observation status differs at pair {int(manifest.iloc[first]['pair_index'])}: "
+                f"C3={bs_status[first]}, D4={es_status[first]}; comparison is not controlled."
+            )
     times = pd.to_datetime(manifest["end_time"], utc=True, errors="raise")
     indices = np.flatnonzero(times.dt.strftime("%Y%m%d").eq(date).to_numpy())
     if not indices.size:
