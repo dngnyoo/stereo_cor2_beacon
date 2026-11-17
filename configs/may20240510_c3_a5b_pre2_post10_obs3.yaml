@@ -1,0 +1,33 @@
+# 2024-05-10 controlled experiment (saved C3 + 3MAD + Outer P95).
+# Keep the legacy A5b track-initialization birth radius <=30 px.
+# --config is passed to track-data using the *existing* detection directory.
+# Post tracking gates are run separately with run-gates-data.
+run_name: may10_a5b_outer_p95_pre2
+date_str: 20240510
+repo_root: .
+output_base_dir: runs
+cache_enabled: true
+
+detection:
+  method: c3
+  denoiser: gaussian
+  floor_mode: outer_p95
+
+pre_size_gate:
+  enabled: true
+  connectivity: 8
+  min_component_patches: 2
+
+tracking:
+  method: a5b
+  # No custom parameters: same track-data defaults as the existing baseline.
+
+association:
+  method: identity
+
+birth_gate:
+  max_birth_radius_px: 30.0
+
+size_gate:
+  min_detected_patches: 10
+  min_observed_pairs: 3
