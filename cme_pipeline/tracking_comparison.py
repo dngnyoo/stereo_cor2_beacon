@@ -45,6 +45,7 @@ def _frame_components(owners: np.ndarray, patch_pa: np.ndarray,
                 "cpa_deg": center_pa,
                 "front_pa_deg": float(pa[front_i]),
                 "pa_span_deg": float(arc["arc_span"]),
+                "pa_arc_start_deg": float(arc["arc_start"]),
                 "front_radius_px": float(radial[front_i]),
                 "front_x": front_x,
                 "front_y": front_y,
@@ -128,8 +129,16 @@ def compare_tracking(
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from matplotlib import patheffects
     from matplotlib.colors import to_hex
     from cme_pipeline.stages.segmentation.visualization import get_rd_cmap
+
+    def pa_xy(radius_px, pa_deg):
+        """North-up WCS convention: PA=0 north, 90 west, measured clockwise from N."""
+        angle = np.deg2rad(pa_deg)
+        return sx - radius_px * np.sin(angle), sy + radius_px * np.cos(angle)
+
+    stroke = [patheffects.withStroke(linewidth=2.2, foreground="black")]
 
     frames = out / "frames"
     frames.mkdir(parents=True, exist_ok=False)
@@ -183,15 +192,45 @@ def compare_tracking(
                     float(state["front_radius"]) if state is not None else float("nan")
                 )
                 component_rows.append({k: v for k, v in c.items() if k != "mask"})
-                label_text = (f"T{tid}/C{raw_component_id}.{c['component_index']}\n"
-                              f"PAfront {c['front_pa_deg']:.0f}° "
-                              f"CPA {c['cpa_deg']:.0f}° "
-                              f"span {c['pa_span_deg']:.0f}°\n"
-                              f"front {c['front_radius_px']:.0f}px")
-                ax.annotate(label_text, (c["center_x"], c["center_y"]),
-                            fontsize=6.5, color="white", ha="center", va="center",
-                            bbox=dict(facecolor="#111111", alpha=.72,
-                                      boxstyle="round,pad=.15", edgecolor=colour))
+                # Geometry drawn as lines, not opaque text boxes obscuring the image.
+                # Arc starts at the actual minimal circular enclosing PA interval,
+                # not at mean CPA +/- span/2 (those are not generally identical).
+                front_r = c["front_radius_px"]
+                front_pa = c["front_pa_deg"]
+                cpa = c["cpa_deg"]
+                arc_angles = c["pa_arc_start_deg"] + np.linspace(
+                    0., c["pa_span_deg"], max(20, int(c["pa_span_deg"] * 2) + 1)
+                )
+                arc_x, arc_y = pa_xy(front_r, arc_angles)
+                pa_x, pa_y = pa_xy(front_r, front_pa)
+                cpa_x, cpa_y = pa_xy(front_r, cpa)
+                ax.plot([sx, pa_x], [sy, pa_y], color=colour,
+                        linewidth=1.25, linestyle="-", alpha=.85, zorder=4)
+                ax.plot([sx, cpa_x], [sy, cpa_y], color=colour,
+                        linewidth=1.25, linestyle="--", alpha=.95, zorder=4)
+                ax.plot(arc_x, arc_y, color=colour,
+                        linewidth=2.4, alpha=.95, zorder=5)
+                # Component identity is kept near its boundary, rather than
+                # covering the component with a multiline callout.
+                id_x, id_y = pa_xy(min(123., front_r + 7.), cpa)
+                ax.text(id_x, id_y, f"T{tid}/C{raw_component_id}.{c['component_index']}",
+                        fontsize=7, color=colour, fontweight="bold",
+                        ha="center", va="center", path_effects=stroke, zorder=6)
+                # Very small islands keep only the contour and ID; showing
+                # three angular labels on a tiny component would be illegible.
+                if c["n_patches"] >= 4:
+                    pa_label_x, pa_label_y = pa_xy(max(12., front_r * .56), front_pa)
+                    cpa_label_x, cpa_label_y = pa_xy(max(12., front_r * .82), cpa)
+                    front_label_angle = c["pa_arc_start_deg"] + c["pa_span_deg"] / 2.
+                    f_label_x, f_label_y = pa_xy(min(123., front_r + 4.), front_label_angle)
+                    for x, y, text_value in (
+                        (pa_label_x, pa_label_y, f"PA {front_pa:.0f}°"),
+                        (cpa_label_x, cpa_label_y, f"CPA {cpa:.0f}°"),
+                        (f_label_x, f_label_y, f"F {front_r:.0f}px"),
+                    ):
+                        ax.text(x, y, text_value, fontsize=7, color=colour,
+                                ha="center", va="center", path_effects=stroke,
+                                zorder=6)
             active_ids = np.unique(ownership[ownership > 0])
             # A5b track-level CPA and front are the actual stored tracking states.
             lines = []
@@ -209,11 +248,8 @@ def compare_tracking(
                 f"Tracks={len(active_ids)}  Components={len(components)}",
                 fontsize=10
             )
-            if lines:
-                ax.text(0.01, 0.01, "\n".join(lines[:10]) +
-                        (f"\n+{len(lines)-10} tracks (see CSV)" if len(lines) > 10 else ""),
-                        transform=ax.transAxes, fontsize=7.5, ha="left", va="bottom",
-                        color="white", bbox=dict(facecolor="black", alpha=.75))
+            # All per-track numerical state is preserved in the CSV rather
+            # than an opaque legend covering the lower-left image region.
             ax.set_xlim(-.5, 255.5)
             ax.set_ylim(-.5, 255.5)
             ax.set_aspect("equal")
@@ -225,8 +261,8 @@ def compare_tracking(
         fig.suptitle(
             f"A5b track/component geometry | Pair {pair} | "
             f"{times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')}\n"
-            "Contours: connected owned components | C=raw component.subregion | Star: outermost owned patch "
-            "| PA: front position, CPA: component mean; track CPA shown in legend",
+            "Contours: track-owned components | Solid: PA | Dashed: CPA | Arc: outer front "
+            "| Labels: front PA, component CPA, front radius (px)",
             fontsize=10
         )
         fig.savefig(frames / f"pair_{pair:03d}_{times.iloc[i].strftime('%Y%m%dT%H%M%SZ')}.png",
