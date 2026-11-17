@@ -51,10 +51,11 @@ def test_default_samples_evaluation_date_only_and_preserves_raw(tmp_path):
     for p in paths:
         assert p.is_file()
         with Image.open(p) as image:
-            assert image.size == (864, 840)
+            assert image.size == (1050, 1050)
     assert (root / "north_up_RD_DNs_per_second.npy").read_bytes() == before
     with pytest.raises(FileExistsError):
         save_rd_diagnostics(root)
+    assert save_rd_diagnostics(root, overwrite=True) == paths
 
 
 def test_all_frames_and_time_filter(tmp_path):
