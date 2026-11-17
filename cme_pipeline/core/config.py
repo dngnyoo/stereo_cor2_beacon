@@ -97,6 +97,7 @@ class BirthGateConfig:
 @dataclass
 class SizeGateConfig:
     min_detected_patches: int = 5
+    min_observed_pairs: int = 1
 
 
 @dataclass
