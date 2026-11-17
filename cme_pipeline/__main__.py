@@ -95,7 +95,7 @@ def parse_args() -> argparse.Namespace:
     detect_parser.add_argument("--method", choices=("c0", "c3"), default="c3")
     detect_parser.add_argument("--denoiser", choices=("gaussian", "median"), default="gaussian")
     detect_parser.add_argument("--date", default=None, help="Analysis YYYYMMDD; infer from RD metadata if omitted")
-    detect_parser.add_argument("--floor-mode", choices=("frame_median", "outer_background", "outer_background_mad"),
+    detect_parser.add_argument("--floor-mode", choices=("frame_median", "outer_background", "outer_background_mad", "outer_p95"),
                                default="frame_median", help="C3 P04 floor strategy")
     detect_parser.add_argument("--outer-floor-k", type=float, default=0.0,
                                help="MAD multiplier for outer_background_mad")
@@ -118,6 +118,14 @@ def parse_args() -> argparse.Namespace:
     viz_detection.add_argument("--max-frames", type=int, default=6)
     viz_detection.add_argument("--output-dir", default=None)
     viz_detection.add_argument("--overwrite", action="store_true")
+
+    compare_parser = subparsers.add_parser(
+        "compare-detection", help="Full-day baseline vs experiment P04 outlined comparison."
+    )
+    compare_parser.add_argument("--baseline-dir", required=True)
+    compare_parser.add_argument("--experiment-dir", required=True)
+    compare_parser.add_argument("--date", required=True)
+    compare_parser.add_argument("--output-dir", default=None)
 
     track_parser = subparsers.add_parser(
         "track-data", help="Run availability-aware A3/A4/A5b tracking on live C0/C3 detection."
@@ -288,6 +296,15 @@ def main() -> None:
             output_dir=args.output_dir, overwrite=args.overwrite,
         )
         print(f"Detection diagnostic images: {len(paths)} saved to {paths[0].parent}")
+        return
+
+    if args.command == "compare-detection":
+        from cme_pipeline.detection_comparison import compare_detection
+        result = compare_detection(
+            args.baseline_dir, args.experiment_dir,
+            date=args.date, output_dir=args.output_dir
+        )
+        print(f"Detection comparison saved to {result}")
         return
 
     if args.command == "track-data":
