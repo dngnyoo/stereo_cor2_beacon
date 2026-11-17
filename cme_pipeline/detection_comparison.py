@@ -16,8 +16,14 @@ def compare_detection(
     base, exp = Path(baseline_dir).resolve(), Path(experiment_dir).resolve()
     bmeta = json.loads((base / "detection_metadata.json").read_text())
     emeta = json.loads((exp / "detection_metadata.json").read_text())
-    if bmeta["detector"] != emeta["detector"] or bmeta["denoiser"] != emeta["denoiser"]:
-        raise ValueError("Detector and denoiser must match for controlled comparison")
+    same_detector = bmeta["detector"] == emeta["detector"]
+    c3_d4 = {bmeta["detector"], emeta["detector"]} == {"c3", "d4"}
+    if (not (same_detector or c3_d4) or
+            bmeta["denoiser"] != emeta["denoiser"]):
+        raise ValueError("Comparison requires same denoiser and same detector or C3/D4")
+    if c3_d4 and (bmeta.get("floor_mode") != emeta.get("floor_mode") or
+                  bmeta.get("t24_mad_multiplier") != emeta.get("t24_mad_multiplier")):
+        raise ValueError("C3/D4 comparison requires identical Outer P95 and T24 settings")
     if Path(bmeta["input_dir"]).resolve() != Path(emeta["input_dir"]).resolve():
         raise ValueError("Both detectors must use exactly the same preprocessed directory")
     pre = Path(bmeta["input_dir"]).resolve()
@@ -59,8 +65,10 @@ def compare_detection(
 
     frames.mkdir(parents=True, exist_ok=False)
     rows = []
-    baseline_label = f"Baseline (T24 {bmeta.get('t24_mad_multiplier', 3):g}MAD)"
-    experiment_label = f"Experiment (T24 {emeta.get('t24_mad_multiplier', 3):g}MAD)"
+    baseline_label = f"{bmeta['detector'].upper()} Baseline (T24 {bmeta.get('t24_mad_multiplier', 3):g}MAD)"
+    experiment_label = (f"{emeta['detector'].upper()} Experiment "
+                        f"(T24 {emeta.get('t24_mad_multiplier', 3):g}MAD, "
+                        f"abs floor {emeta.get('absolute_p04_floor', 'off')})")
 
     def fmt(val):
         return "N/A" if pd.isna(val) else f"{float(val):.3f}"
