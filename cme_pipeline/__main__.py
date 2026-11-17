@@ -102,6 +102,17 @@ def parse_args() -> argparse.Namespace:
     detect_parser.add_argument("--output-dir", default=None,
                                help="Unique output path for side-by-side experiments")
 
+    viz_detection = subparsers.add_parser(
+        "visualize-detection",
+        help="Render read-only RD, P04 score, and active-mask detection diagnostic PNGs."
+    )
+    viz_detection.add_argument("--detection-dir", required=True)
+    viz_detection.add_argument("--date", default=None)
+    viz_detection.add_argument("--all-frames", action="store_true")
+    viz_detection.add_argument("--max-frames", type=int, default=6)
+    viz_detection.add_argument("--output-dir", default=None)
+    viz_detection.add_argument("--overwrite", action="store_true")
+
     track_parser = subparsers.add_parser(
         "track-data", help="Run availability-aware A3/A4/A5b tracking on live C0/C3 detection."
     )
@@ -252,6 +263,16 @@ def main() -> None:
                                  outer_floor_outer_px=args.outer_floor_outer_px,
                                  output_dir=args.output_dir)
         print(f"Detector outputs: {detected}")
+        return
+
+    if args.command == "visualize-detection":
+        from cme_pipeline.detection_diagnostics import save_detection_diagnostics
+        paths = save_detection_diagnostics(
+            args.detection_dir, date=args.date,
+            all_frames=args.all_frames, max_frames=args.max_frames,
+            output_dir=args.output_dir, overwrite=args.overwrite,
+        )
+        print(f"Detection diagnostic images: {len(paths)} saved to {paths[0].parent}")
         return
 
     if args.command == "track-data":
