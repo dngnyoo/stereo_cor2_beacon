@@ -17,6 +17,18 @@ class TestDetectorCore(unittest.TestCase):
     def test_robust_threshold(self):
         self.assertAlmostEqual(_threshold(np.ones(10)), 1.0)
 
+    def test_t24_mad_multiplier_is_configurable_and_default_unchanged(self):
+        scores = np.array([1., 2., 3., 4., 7.])
+        median = float(np.median(scores))
+        mad = float(np.median(np.abs(scores - median)))
+        self.assertAlmostEqual(_threshold(scores), median + 3 * 1.4826 * mad)
+        self.assertAlmostEqual(_threshold(scores, 4), median + 4 * 1.4826 * mad)
+        self.assertGreater(_threshold(scores, 4), _threshold(scores, 3))
+        with self.assertRaises(ValueError):
+            _threshold(scores, -1)
+        with self.assertRaises(ValueError):
+            _threshold(scores, float("nan"))
+
     def test_outer_background_floor_uses_outer_ring_not_cme_core(self):
         scores = np.ones((64, 64), dtype=float)
         accepted = np.ones((64, 64), dtype=bool)
@@ -110,6 +122,12 @@ class TestDetectorCore(unittest.TestCase):
                 writer.writerows(rows)
             out = run_detection(inp, method="c3", requested_date="20240511")
             states = np.load(out / "patch_state_p04.npy")
+            self.assertEqual(json.loads((out / "detection_metadata.json").read_text())["t24_mad_multiplier"], 3.0)
+            second = run_detection(inp, method="c3", requested_date="20240511",
+                                   t24_mad_multiplier=4, output_dir=root / "c3_4mad")
+            self.assertEqual(json.loads((second / "detection_metadata.json").read_text())["t24_mad_multiplier"], 4.0)
+            summary = list(csv.DictReader((second / "frame_detection_summary.csv").open()))
+            self.assertTrue(all(float(row["t24_mad_multiplier"]) == 4.0 for row in summary))
             self.assertEqual(states.shape, (3, 64, 64))
             self.assertTrue(np.all(states[0] == -1))
             self.assertTrue(np.all(states[1] == -1))
