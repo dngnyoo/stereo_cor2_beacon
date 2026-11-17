@@ -137,6 +137,7 @@ def run_configured_data(
                 preprocessed_dir, method=detector, denoiser=smooth,
                 requested_date=date, output_dir=detected,
                 floor_mode=cfg.detection.floor_mode,
+                outer_floor_k=cfg.detection.outer_floor_k,
                 outer_floor_inner_px=cfg.detection.outer_floor_inner_px,
                 outer_floor_outer_px=cfg.detection.outer_floor_outer_px,
             )
@@ -148,7 +149,9 @@ def run_configured_data(
     if (str(meta.get("requested_date")) != date
             or meta.get("detector") != detector
             or meta.get("denoiser") != smooth
-            or (detector == "c3" and meta.get("floor_mode", "frame_median") != cfg.detection.floor_mode)):
+            or (detector == "c3" and meta.get("floor_mode", "frame_median") != cfg.detection.floor_mode)
+            or (detector == "c3" and cfg.detection.floor_mode == "outer_background_mad"
+                and meta.get("outer_floor_k") != cfg.detection.outer_floor_k)):
         raise ValueError("Detection metadata differs from requested date or YAML configuration")
 
     detected = load_live_tracking_input(
@@ -200,6 +203,7 @@ def run_configured_data(
         "detector": detector,
         "denoiser": smooth,
         "floor_mode": cfg.detection.floor_mode if detector == "c3" else None,
+        "outer_floor_k": cfg.detection.outer_floor_k if detector == "c3" and cfg.detection.floor_mode == "outer_background_mad" else None,
         "tracking_method": cfg.tracking.method,
         "association_method": cfg.association.method,
         "rsun_px": float(rsun_px),
