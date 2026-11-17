@@ -83,6 +83,13 @@ class TestDetectorCore(unittest.TestCase):
             self.assertTrue(np.all(states[0] == -1))
             self.assertTrue(np.all(states[1] == -1))
             self.assertEqual(json.loads((out / "detection_metadata.json").read_text())["detector"], "c3")
+            from cme_pipeline.detection_diagnostics import save_detection_diagnostics
+            images = save_detection_diagnostics(out, date="20240511", all_frames=True)
+            self.assertEqual(len(images), 1)
+            self.assertTrue(images[0].is_file())
+            with self.assertRaises(FileExistsError):
+                save_detection_diagnostics(out, date="20240511", all_frames=True)
+
 
 
 if __name__ == "__main__":
