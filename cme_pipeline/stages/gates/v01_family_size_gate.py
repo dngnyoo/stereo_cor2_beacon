@@ -26,6 +26,7 @@ class FamilySizeGateStage(PipelineStage):
             "stage": self.name,
             "version": self.version,
             "min_detected_patches": config.size_gate.min_detected_patches,
+            "min_observed_pairs": config.size_gate.min_observed_pairs,
             "upstream_birth_gated_count": len(inputs.birth_gated_family_ids),
         }
         return compute_dict_hash(desc)
@@ -46,6 +47,9 @@ class FamilySizeGateStage(PipelineStage):
         obs_all = df_states_e1[df_states_e1["state"] == "OBSERVED"].copy()
 
         min_det_threshold = config.size_gate.min_detected_patches
+        min_obs_threshold = config.size_gate.min_observed_pairs
+        if min_det_threshold < 1 or min_obs_threshold < 1:
+            raise ValueError("Gate thresholds must be positive")
         family_summary_rows = []
         admitted_fams: List[str] = []
         admitted_track_ids: List[int] = []
@@ -77,13 +81,21 @@ class FamilySizeGateStage(PipelineStage):
                         max_det = det_cnt
                         max_det_pair = p_num
 
-            is_admitted = has_anchor and (max_det >= min_det_threshold)
+            n_observed = len(set(active_pairs))
+            is_admitted = (
+                has_anchor and max_det >= min_det_threshold
+                and n_observed >= min_obs_threshold
+            )
             status = "ADMITTED" if is_admitted else "REJECTED"
             rejection_reason = "NONE"
             if not has_anchor:
                 rejection_reason = inputs.rejected_family_reasons.get(fid, "NO_SOLAR_ROOT_ANCHOR")
             elif max_det < min_det_threshold:
                 rejection_reason = f"SIZE_BELOW_{min_det_threshold}_PATCHES (max={max_det})"
+            elif n_observed < min_obs_threshold:
+                rejection_reason = (
+                    f"DURATION_BELOW_{min_obs_threshold}_OBSERVED_PAIRS (n={n_observed})"
+                )
 
             if is_admitted:
                 admitted_fams.append(fid)
@@ -99,7 +111,9 @@ class FamilySizeGateStage(PipelineStage):
                 "anchor_track_ids": str(sorted(anchors)),
                 "first_pair_index": min(active_pairs) if active_pairs else np.nan,
                 "last_pair_index": max(active_pairs) if active_pairs else np.nan,
-                "n_active_pairs": len(active_pairs),
+                "n_active_pairs": n_observed,
+                "min_required_observed_pairs": min_obs_threshold,
+                "min_required_detected_patches": min_det_threshold,
                 "max_detected_patches": max_det,
                 "max_detected_pair": max_det_pair,
             })
@@ -107,7 +121,8 @@ class FamilySizeGateStage(PipelineStage):
         admitted_track_ids = sorted(list(set(admitted_track_ids)))
         df_fam_summary = pd.DataFrame(family_summary_rows).sort_values("max_detected_patches", ascending=False)
         df_size_decisions = df_fam_summary[
-            ["family_id", "status", "rejection_reason", "member_count", "anchor_count", "max_detected_patches"]
+            ["family_id", "status", "rejection_reason", "member_count", "anchor_count",
+             "n_active_pairs", "max_detected_patches"]
         ].copy()
 
         context.info(
