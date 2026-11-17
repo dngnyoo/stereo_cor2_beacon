@@ -135,7 +135,10 @@ def parse_args() -> argparse.Namespace:
     )
     gates_parser.add_argument("--tracking-run", required=True)
     gates_parser.add_argument("--run-name", required=True)
-    gates_parser.add_argument("--recovery-inner-radius-px", type=float, required=True)
+    gates_parser.add_argument("--recovery-inner-radius-px", type=float, default=None,
+                              help="Required only with --with-recovery")
+    gates_parser.add_argument("--with-recovery", action="store_true",
+                              help="Explicitly apply Recovery after Family Gates; default gates only")
     gates_parser.add_argument("--birth-max-radius-px", type=float, default=30.0)
     gates_parser.add_argument("--min-detected-patches", type=int, default=5)
     gates_parser.add_argument("--min-observed-pairs", type=int, default=1,
@@ -357,8 +360,9 @@ def main() -> None:
             birth_max_radius_px=args.birth_max_radius_px,
             min_detected_patches=args.min_detected_patches,
             min_observed_pairs=args.min_observed_pairs,
+            with_recovery=args.with_recovery,
         )
-        print(f"Recovery / Identity / Gates: {out}")
+        print(f"Identity / Gates {'+ Recovery' if args.with_recovery else '(no Recovery)'}: {out}")
         return
 
     if args.command == "compare-gates":
