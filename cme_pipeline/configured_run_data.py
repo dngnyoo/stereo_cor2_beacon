@@ -161,6 +161,14 @@ def run_configured_data(
         occulter_r_min_px=cfg.segmentation.occulter_r_min_px,
         fov_r_max_px=cfg.segmentation.fov_r_max_px,
     )
+    # Optional pre-tracking gate is independent of C3 and A5b.
+    if cfg.pre_size_gate.enabled:
+        if cfg.pre_size_gate.connectivity != 8:
+            raise ValueError("pre_size_gate currently supports 8-connectivity only")
+        from cme_pipeline.stages.gates.pre_tracking_component_size import filter_small_components
+        detected = filter_small_components(
+            detected, min_component_patches=cfg.pre_size_gate.min_component_patches
+        )
     detected.geometry.rsun_px = float(rsun_px)
     # The legacy recovery operator requires the physical 2-R_sun inner
     # occulter boundary; the live loader leaves this field unspecified.
@@ -204,6 +212,7 @@ def run_configured_data(
         "denoiser": smooth,
         "floor_mode": cfg.detection.floor_mode if detector == "c3" else None,
         "outer_floor_k": cfg.detection.outer_floor_k if detector == "c3" and cfg.detection.floor_mode == "outer_background_mad" else None,
+        "pre_size_gate": cfg.pre_size_gate.__dict__,
         "tracking_method": cfg.tracking.method,
         "association_method": cfg.association.method,
         "rsun_px": float(rsun_px),
