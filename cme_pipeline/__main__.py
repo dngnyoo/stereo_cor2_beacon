@@ -97,6 +97,8 @@ def parse_args() -> argparse.Namespace:
     detect_parser.add_argument("--date", default=None, help="Analysis YYYYMMDD; infer from RD metadata if omitted")
     detect_parser.add_argument("--floor-mode", choices=("frame_median", "outer_background", "outer_background_mad", "outer_p95"),
                                default="frame_median", help="C3 P04 floor strategy")
+    detect_parser.add_argument("--t24-mad-multiplier", type=float, default=3.0,
+                               help="T24 median + k * 1.4826 * MAD (default 3)")
     detect_parser.add_argument("--outer-floor-k", type=float, default=0.0,
                                help="MAD multiplier for outer_background_mad")
     detect_parser.add_argument("--outer-floor-inner-px", type=float, default=88.0)
@@ -313,6 +315,7 @@ def main() -> None:
                                  denoiser=args.denoiser,
                                  requested_date=validate_date(args.date) if args.date else None,
                                  floor_mode=args.floor_mode,
+                                 t24_mad_multiplier=args.t24_mad_multiplier,
                                  outer_floor_k=args.outer_floor_k,
                                  outer_floor_inner_px=args.outer_floor_inner_px,
                                  outer_floor_outer_px=args.outer_floor_outer_px,
