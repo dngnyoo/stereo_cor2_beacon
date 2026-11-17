@@ -204,3 +204,61 @@ python -m cme_pipeline visualize-detection \
   --all-frames \
   --output-dir runs/20240510_c3_outer_p95/visualizations/detection_standard_v1
 ```
+
+
+## Duration + size gate sensitivity sweep (after A5b)
+
+A5b already applies an outward-front tolerance, but it does **not**
+guarantee monotonically positive radial motion. Do not introduce a
+second outward-motion rule in this experiment. Preserve the existing
+Family Birth Gate at 30 px and compare alternative **Size Gate**
+admission criteria:
+
+- Peak owned P04 patch count >= 10 or >= 20 in any observed frame.
+- At least 3 or 5 distinct `OBSERVED` pairs across the complete
+  processed sequence (including warmup; not necessarily consecutive).
+- Exclude `PREDICTED_ONLY` states from the observed-pair count.
+
+The original defaults (peak >=5, minimum observed pairs >=1) remain
+unchanged for backwards compatibility. Two independent A5b tracking
+runs are reused without rerunning detection or tracking. A quick
+**selection-only** sensitivity report can be generated from the
+previously saved Size Gate family summaries without recomputing
+Recovery:
+
+```bash
+python - <<'PY'
+import pandas as pd
+paths = {
+    'baseline': 'runs/may10_gates_baseline_r22/stages/size_gate/family_summary.csv',
+    'outer_p95': 'runs/may10_gates_outer_p95_r22/stages/size_gate/family_summary.csv',
+}
+for name, path in paths.items():
+    df = pd.read_csv(path)
+    print(name)
+    for duration in (3, 5):
+        for size in (10, 20):
+            passed = df[(df.anchor_count > 0) &
+                        (df.n_active_pairs >= duration) &
+                        (df.max_detected_patches >= size)]
+            print(f'duration={duration}, peak_size={size}: {len(passed)} candidate families')
+PY
+```
+
+To run full Recovery and create Gate-specific outputs for a chosen
+threshold combination, use `run-gates-data` with a **new** run name and
+`--min-observed-pairs <3 or 5>` together with
+`--min-detected-patches <10 or 20>`. For example:
+
+```bash
+python -m cme_pipeline run-gates-data \
+  --tracking-run runs/may10_a5b_outer_p95 \
+  --run-name may10_gates_outer_p95_d3_s10_r22 \
+  --recovery-inner-radius-px 22 \
+  --birth-max-radius-px 30 \
+  --min-observed-pairs 3 --min-detected-patches 10
+```
+
+Only compare gate runs with *matching thresholds* using
+`compare-gates`. Distinguish whole-sequence candidate counts from
+May-10-only visible tracks in reporting.
