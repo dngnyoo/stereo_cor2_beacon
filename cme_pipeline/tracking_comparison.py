@@ -42,6 +42,7 @@ def _frame_tracks(owners: np.ndarray, patch_pa: np.ndarray,
             "front_pa_deg": float(pas[front_idx]),
             "pa_span_deg": float(arc["arc_span"]),
             "pa_arc_start_deg": float(arc["arc_start"]),
+            "pa_arc_end_deg": float(arc["arc_end"]),
             "observed_front_radius_px": float(radii[front_idx]),
             "front_x": float(xx[front_idx] * 4 + 1.5),
             "front_y": float(yy[front_idx] * 4 + 1.5),
@@ -189,10 +190,14 @@ def compare_tracking(
                     0., t["pa_span_deg"], max(20, int(t["pa_span_deg"] * 2) + 1)
                 )
                 arc_x, arc_y = pa_xy(front_r, arc_angles)
-                pa_x, pa_y = pa_xy(front_r, front_pa)
+                pa_start = t["pa_arc_start_deg"]
+                pa_end = t["pa_arc_end_deg"]
+                start_x, start_y = pa_xy(front_r, pa_start)
+                end_x, end_y = pa_xy(front_r, pa_end)
                 cpa_x, cpa_y = pa_xy(front_r, cpa)
-                ax.plot([sx, pa_x], [sy, pa_y], color=colour,
-                        linewidth=1.5, linestyle="-", alpha=.9, zorder=4)
+                for bound_x, bound_y in ((start_x, start_y), (end_x, end_y)):
+                    ax.plot([sx, bound_x], [sy, bound_y], color=colour,
+                            linewidth=1.5, linestyle="-", alpha=.9, zorder=4)
                 ax.plot([sx, cpa_x], [sy, cpa_y], color=colour,
                         linewidth=1.5, linestyle="--", alpha=.9, zorder=4)
                 ax.plot(arc_x, arc_y, color=colour,
@@ -205,12 +210,14 @@ def compare_tracking(
                 ax.text(id_x, id_y, f"T{tid}", fontsize=8, fontweight="bold",
                         color=colour, ha="center", va="center",
                         path_effects=stroke, zorder=7)
-                pa_lx, pa_ly = pa_xy(max(12., front_r * .52), front_pa)
+                start_lx, start_ly = pa_xy(max(12., front_r * .52), pa_start)
+                end_lx, end_ly = pa_xy(max(12., front_r * .58), pa_end)
                 cpa_lx, cpa_ly = pa_xy(max(12., front_r * .81), cpa)
                 f_ang = t["pa_arc_start_deg"] + t["pa_span_deg"] / 2.
                 f_lx, f_ly = pa_xy(min(123., front_r + 3.), f_ang)
                 for tx, ty, label_text in (
-                    (pa_lx, pa_ly, f"PA {front_pa:.0f}°"),
+                    (start_lx, start_ly, f"PA {pa_start:.0f}°"),
+                    (end_lx, end_ly, f"PA {pa_end:.0f}°"),
                     (cpa_lx, cpa_ly, f"CPA {cpa:.0f}°"),
                     (f_lx, f_ly, f"F {front_r:.0f}px"),
                 ):
@@ -235,7 +242,7 @@ def compare_tracking(
         fig.suptitle(
             f"A5b track geometry | Pair {pair} | "
             f"{times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')}\n"
-            "One geometry per track | Solid: front PA | Dashed: A5b tracked CPA "
+            "One geometry per track | Solid: PA start/end | Dashed: A5b tracked CPA "
             "| Arc: observed front radius over track PA span",
             fontsize=10
         )
