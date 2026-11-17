@@ -67,12 +67,14 @@ def _smooth_and_z(rd: np.ndarray, valid: np.ndarray, *, denoiser: str):
     return z, smoothed, mean, std
 
 
-def _threshold(values: np.ndarray) -> float:
+def _threshold(values: np.ndarray, mad_multiplier: float = 3.0) -> float:
+    if not np.isfinite(mad_multiplier) or mad_multiplier < 0:
+        raise ValueError("mad_multiplier must be finite and nonnegative")
     if len(values) == 0:
         return float("nan")
     m = float(np.median(values))
     mad = float(np.median(np.abs(values - m)))
-    return m + 3.0 * 1.4826 * mad
+    return m + mad_multiplier * 1.4826 * mad
 
 
 def _outer_background_floor(
@@ -152,6 +154,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
                   denoiser: str = "gaussian", requested_date: str | None = None,
                   qc_max_active_fraction: float = .70,
                   min_floor_patches: int = 3,
+                  t24_mad_multiplier: float = 3.0,
                   floor_mode: str = "frame_median",
                   outer_floor_k: float = 0.0,
                   outer_floor_inner_px: float = 88.0,
@@ -168,6 +171,8 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         raise ValueError("QC active fraction must be within (0, 1]")
     if min_floor_patches < 1:
         raise ValueError("min_floor_patches must be positive")
+    if not np.isfinite(t24_mad_multiplier) or t24_mad_multiplier < 0:
+        raise ValueError("t24_mad_multiplier must be finite and nonnegative")
     if floor_mode not in {"frame_median", "outer_background", "outer_background_mad", "outer_p95"}:
         raise ValueError("Unknown floor_mode")
     if not np.isfinite(outer_floor_k) or outer_floor_k < 0:
@@ -230,7 +235,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
             while hist and hist[0][0] < lower:
                 hist.popleft()
             pooled = np.concatenate([values for _, values in hist]) if hist else np.array([])
-            thresholds[size] = _threshold(pooled)
+            thresholds[size] = _threshold(pooled, mad_multiplier=t24_mad_multiplier)
             has_history &= bool(len(pooled) > 0 and np.isfinite(thresholds[size]))
 
         # Status reflects observation validity; history is updated afterwards.
@@ -305,6 +310,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
             "status": status, "usable_detection": status == "VALID",
             "denoiser": denoiser, "detector": method,
             "active_fraction_pre": active_fraction_pre,
+            "t24_mad_multiplier": t24_mad_multiplier,
             "T24_p16": thresholds[16], "T24_p08": thresholds[8],
             "T24_p04": thresholds[4], "floor_p04": floor,
             "effective_threshold_p04": effective, "floor_bound_p04": floor_bound,
@@ -329,6 +335,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         writer.writerows(rows)
     (out / "detection_metadata.json").write_text(json.dumps({
         "detector": method, "denoiser": denoiser,
+        "t24_mad_multiplier": t24_mad_multiplier,
         "requested_date": requested_date,
         "input_dir": str(folder),
         "frames": len(rows),
