@@ -121,8 +121,10 @@ def parse_args() -> argparse.Namespace:
                              help="Resume an interrupted v2 run after verifying inputs and finished stages.")
     full_parser.add_argument("--phase-sec", type=float)
     full_parser.add_argument("--mask-path")
-    full_parser.add_argument("--method", choices=("c0",), default="c0")
-    full_parser.add_argument("--denoiser", choices=("gaussian",), default="gaussian")
+    full_parser.add_argument("--method", choices=("c0", "c3"), default=None,
+                             help="Optional override check; detector is selected in YAML")
+    full_parser.add_argument("--denoiser", choices=("gaussian", "median"), default=None,
+                             help="Optional override check; denoiser is selected in YAML")
     full_parser.add_argument(
         "--frozen-regression", action="store_true",
         help="Opt in to 20101212 60-pair fixture and frozen E1 numerical checks."
@@ -144,16 +146,35 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     if args.command == "run-data":
-        from cme_pipeline.live_full_pipeline import run_live_full
-        run_live_full(
-            config_path=args.config, date=args.date, run_name=args.run_name,
-            detection_dir=args.detection_dir, preprocessed_dir=args.preprocessed_dir,
-            source=args.source, input_dir=args.input_dir,
-            acquisition_dir=args.acquisition_dir, warmup_days=args.warmup_days,
-            phase_sec=args.phase_sec, mask_path=args.mask_path,
-            method=args.method, denoiser=args.denoiser,
-            frozen_regression=args.frozen_regression, resume=args.resume,
-        )
+        cfg = PipelineConfig.from_yaml(args.config)
+        if cfg.tracking.method.lower() == "e1":
+            # Preserve the independently recomputed C0/E1 regression path.
+            from cme_pipeline.live_full_pipeline import run_live_full
+            if args.method not in (None, "c0") or cfg.detection.method != "c0":
+                raise ValueError("The E1 replay adapter supports C0 only")
+            if args.denoiser not in (None, "gaussian") or cfg.detection.denoiser != "gaussian":
+                raise ValueError("The E1 replay adapter supports Gaussian only")
+            run_live_full(
+                config_path=args.config, date=args.date, run_name=args.run_name,
+                detection_dir=args.detection_dir, preprocessed_dir=args.preprocessed_dir,
+                source=args.source, input_dir=args.input_dir,
+                acquisition_dir=args.acquisition_dir, warmup_days=args.warmup_days,
+                phase_sec=args.phase_sec, mask_path=args.mask_path,
+                method="c0", denoiser="gaussian",
+                frozen_regression=args.frozen_regression, resume=args.resume,
+            )
+        else:
+            if args.frozen_regression:
+                raise ValueError("--frozen-regression is reserved for the historical C0/E1 replay")
+            from cme_pipeline.configured_run_data import run_configured_data
+            run_configured_data(
+                config_path=args.config, date=args.date, run_name=args.run_name,
+                detection_dir=args.detection_dir, preprocessed_dir=args.preprocessed_dir,
+                source=args.source, input_dir=args.input_dir,
+                acquisition_dir=args.acquisition_dir, warmup_days=args.warmup_days,
+                phase_sec=args.phase_sec, mask_path=args.mask_path,
+                method=args.method, denoiser=args.denoiser, resume=args.resume,
+            )
         return
 
     if args.command == "visualize-rd":
