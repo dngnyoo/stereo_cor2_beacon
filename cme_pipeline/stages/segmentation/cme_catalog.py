@@ -55,8 +55,13 @@ def build_cme_catalog(
         masks = np.asarray(segmentation.family_pixel_masks[fid], dtype=bool)
         if masks.shape != (len(manifest), *pa.shape):
             raise ValueError(f"Invalid family mask shape for {fid}: {masks.shape}")
+        # The input sequence can include earlier warmup days. Date the event
+        # from its first nonempty segmentation, not the first input frame.
+        first_idx = next((i for i, mask in enumerate(masks) if mask.any()), None)
+        if first_idx is None:
+            continue
+        event_id = f"{times.iloc[first_idx].strftime('%Y%m%d')}_{fid}"
         obs = []
-        event_id = f"{times.iloc[0].strftime('%Y%m%d')}_{fid}"
         for i, mask in enumerate(masks):
             count = int(mask.sum())
             if not count:
