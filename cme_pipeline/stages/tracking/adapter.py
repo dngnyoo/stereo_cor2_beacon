@@ -151,9 +151,11 @@ def adapt_tracking_output(
                 birth_r_map[int(tid)] = float(np.min(patch_rad[m])) if m.any() else np.nan
             df["birth_r_min_px"] = df["track_id"].map(birth_r_map)
 
-    # is_solar_root_anchor
+    # A5b seeds all components. Solar-root classification belongs downstream.
     if "is_solar_root_anchor" not in df.columns:
-        if tracks_dict:
+        if str(getattr(raw_output, "tracking_method", "")).lower() == "a5b":
+            df["is_solar_root_anchor"] = df["birth_r_min_px"] <= max_birth_radius_px
+        elif tracks_dict:
             anc_map = {int(tid): bool(t.is_anchor) for tid, t in tracks_dict.items()}
             df["is_solar_root_anchor"] = df["track_id"].map(anc_map)
         else:
