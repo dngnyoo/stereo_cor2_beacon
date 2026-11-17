@@ -624,7 +624,7 @@ class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
                     birth_pair_id=p_curr,
                     birth_time=ts_curr,
                     birth_r_min_px=min_r,
-                    is_anchor=True,
+                    is_anchor=False,  # No birth eligibility decision inside A5b.
                     original_birth_pa=float(c_pas[int(np.argmin(c_rads))]),
                     original_birth_cpa=orig_birth_cpa,
                     initial_angular_extent=init_extent,
