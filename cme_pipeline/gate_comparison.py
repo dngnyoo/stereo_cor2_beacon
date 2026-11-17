@@ -22,10 +22,10 @@ def compare_gates(
         raise ValueError("Date mismatch")
     if bm["recovery_inner_radius_px"] != em["recovery_inner_radius_px"]:
         raise ValueError("Recovery inner radius differs between experiments")
-    if (bm["birth_max_radius_px"] != em["birth_max_radius_px"]
-            or bm["min_detected_patches"] != em["min_detected_patches"]
-            or bm.get("min_observed_pairs", 1) != em.get("min_observed_pairs", 1)):
-        raise ValueError("Birth/size gate parameters differ")
+    if bm["birth_max_radius_px"] != em["birth_max_radius_px"]:
+        raise ValueError("Birth gate radius differs; keep it fixed for this comparison")
+    # Size and persistence thresholds are experimental variables and may differ.
+    # They are reported for both runs rather than requiring equality.
     bd = json.loads((Path(bm["source_detection_dir"]) / "detection_metadata.json").read_text())
     ed = json.loads((Path(em["source_detection_dir"]) / "detection_metadata.json").read_text())
     pre = Path(bd["input_dir"]).resolve()
@@ -108,7 +108,7 @@ def compare_gates(
         image = np.ma.masked_where(~np.asarray(valid[idx], dtype=bool) | ~np.isfinite(image), image)
         fig, axes = plt.subplots(1, 2, figsize=(14, 7), constrained_layout=True)
         row = {"pair_index": pair, "end_time": manifest.iloc[idx]["end_time"]}
-        for ax, group, name in zip(axes, data, ("baseline", "outer_p95")):
+        for ax, group, name in zip(axes, data, ("baseline", "experiment")):
             meta, ownership_all, recovery_all, detection_all, admitted, rejected, family_ids = group
             owners = np.asarray(ownership_all[idx])
             recovery = np.asarray(recovery_all[idx], bool)
@@ -169,7 +169,9 @@ def compare_gates(
                     "observed_front_radius_px": radius,
                 })
             ax.set_title(
-                f"{name} | admitted families {meta['size_gate_admitted']}\n"
+                f"{name} | size >= {meta['min_detected_patches']}, "
+                f"observed >= {meta.get('min_observed_pairs', 1)} | "
+                f"admitted families {meta['size_gate_admitted']}\n"
                 f"Detected {int(detection.sum())} | owned {int((owners>0).sum())} "
                 f"| recovered {int(recovery.sum())}", fontsize=10
             )
@@ -200,9 +202,11 @@ def compare_gates(
         "observed_front_radius_px",
     ]).to_csv(output / "family_geometry.csv", index=False)
     (output / "gate_counts.json").write_text(json.dumps({
-        name: {key: meta[key] for key in ("tracks", "candidate_families",
-                "birth_gate_pass", "size_gate_admitted", "total_recovered_patches_all_frames")}
-        for name, (meta, *_rest) in zip(("baseline", "outer_p95"), data)
+        name: {key: meta.get(key) for key in ("tracks", "candidate_families",
+                "birth_gate_pass", "size_gate_admitted", "total_recovered_patches_all_frames",
+                "min_detected_patches", "min_observed_pairs", "birth_max_radius_px",
+                "source_tracking_run", "source_detection_dir")}
+        for name, (meta, *_rest) in zip(("baseline", "experiment"), data)
     }, indent=2))
     print(f"Rendered {len(summaries)} full-day frames to {output}")
     return output
