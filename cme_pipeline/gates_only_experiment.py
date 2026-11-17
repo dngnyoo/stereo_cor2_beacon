@@ -118,7 +118,7 @@ def evaluate_saved_gates(
     return summary
 
 
-def compare_gate_only_runs(baseline: str | Path, experiment: str | Path, *, output_dir: str | Path):
+def compare_gate_only_runs(baseline: str | Path, experiment: str | Path, *, output_dir: str | Path, visualize: bool = True):
     base, exp, dest = Path(baseline).resolve(), Path(experiment).resolve(), Path(output_dir).resolve()
     if dest.exists():
         raise FileExistsError(f"Output already exists: {dest}")
@@ -139,6 +139,11 @@ def compare_gate_only_runs(baseline: str | Path, experiment: str | Path, *, outp
     dest.mkdir(parents=True)
     combined.to_csv(dest / "gate_only_frame_comparison.csv", index=False)
     (dest / "gate_only_comparison.json").write_text(json.dumps(report, indent=2) + "\n")
+    if visualize:
+        from cme_pipeline.gate_only_visualization import render_gate_only_comparison
+        render_gate_only_comparison(
+            base, exp, output_dir=dest / "visualizations"
+        )
     print(json.dumps(report, indent=2))
     return report
 
@@ -156,6 +161,8 @@ if __name__ == "__main__":
     co.add_argument("--baseline-run", required=True)
     co.add_argument("--experiment-run", required=True)
     co.add_argument("--output-dir", required=True)
+    co.add_argument("--visualize", action=argparse.BooleanOptionalAction, default=True,
+                    help="Generate per-Family-colored RD frames and index.html (default: yes)")
     args = parser.parse_args()
     if args.action == "evaluate":
         evaluate_saved_gates(
@@ -166,5 +173,6 @@ if __name__ == "__main__":
         )
     else:
         compare_gate_only_runs(
-            args.baseline_run, args.experiment_run, output_dir=args.output_dir
+            args.baseline_run, args.experiment_run,
+            output_dir=args.output_dir, visualize=args.visualize
         )
