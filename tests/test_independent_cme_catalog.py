@@ -62,6 +62,25 @@ class TestIndependentCMECatalog(unittest.TestCase):
         self.assertEqual(event["speed_quality"], "EXPLORATORY")
         self.assertGreater(event["plane_of_sky_speed_km_s"], 0)
 
+    def test_event_id_uses_first_segmented_frame_date(self):
+        seg = example_segmentation()
+        track = seg.size_gate_output.birth_gate_output.association_output.tracking_output
+        # Previous-day warmup is the first input, but it has no CME pixels.
+        track.manifest_df.loc[0, "end_time"] = "2010-12-11T23:30:00"
+        seg.family_pixel_masks["FAM_001"][0] = False
+        events, frames = build_cme_catalog(seg)
+        self.assertEqual(events.iloc[0]["event_id"], "20101212_FAM_001")
+        self.assertTrue((frames["event_id"] == "20101212_FAM_001").all())
+        self.assertEqual(events.iloc[0]["first_observed_time"][:10], "2010-12-12")
+
+    def test_event_id_preserves_previous_date_when_event_spans_midnight(self):
+        seg = example_segmentation()
+        track = seg.size_gate_output.birth_gate_output.association_output.tracking_output
+        track.manifest_df.loc[0, "end_time"] = "2010-12-11T23:30:00"
+        events, frames = build_cme_catalog(seg)
+        self.assertEqual(events.iloc[0]["event_id"], "20101211_FAM_001")
+        self.assertTrue((frames["event_id"] == "20101211_FAM_001").all())
+
     def test_empty_mask_has_no_false_event(self):
         seg = example_segmentation()
         seg.family_pixel_masks["FAM_001"][:] = False
