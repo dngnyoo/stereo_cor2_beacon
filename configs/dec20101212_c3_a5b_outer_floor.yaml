@@ -1,0 +1,59 @@
+# Config-driven 2010-12-12 C3 / A5b / Identity experiment.
+# Geometry is frozen Stage-26 plate scale: 8.163 px / solar radius.
+# Validate this value against the selected north-up WCS before publication.
+run_name: dec20101212_c3_a5b_outer_floor
+date_str: 20101212
+repo_root: .
+output_base_dir: runs
+cache_enabled: true
+
+detection:
+  method: c3
+  denoiser: gaussian
+  floor_mode: outer_background
+  outer_floor_inner_px: 88.0
+  outer_floor_outer_px: 116.0
+
+geometry:
+  rsun_px: 8.163
+
+tracking:
+  method: a5b
+  parameters:
+    patch_size: 4
+    max_cadence_gap_sec: 4500.0
+    outward_gate_enabled: true
+    outward_gate_tolerance_px: 6.0
+    min_pa_width_deg: 8.0
+    ema_alpha: 0.1
+
+recovery:
+  method: signed_dynamic_pa
+  radial_window_px: 13.35
+  pa_margin_deg: 5.0
+  gaussian_sigma: 1.0
+
+association:
+  method: identity
+
+birth_gate:
+  max_birth_radius_px: 30.0
+
+size_gate:
+  min_detected_patches: 5
+
+segmentation:
+  method: island_first
+  min_island_area_px: 16
+  max_hole_fill_px: 16
+  occulter_r_min_px: 22.0
+  fov_r_max_px: 122.5
+
+products:
+  catalog: true
+  visualization: true
+  animation: true
+
+validation:
+  catalogs: [SEEDS]
+  compare_baseline: false
