@@ -47,12 +47,17 @@ def compare_gates(
     from astropy.wcs import WCS
     from cme_pipeline.utils.geometry import compute_wcs_rasters
     header = fits.Header.fromstring(
-        (pre / "target_wcs_header.txt").read_text(encoding="utf-8"), sep="\\n"
+        (pre / "target_wcs_header.txt").read_text(encoding="utf-8"), sep="\n"
     )
     wcs = WCS(header)
     sx, sy = wcs.world_to_pixel_values(0.0, 0.0)
     if not np.isfinite([sx, sy]).all():
         raise ValueError("Invalid WCS solar center")
+    if not (0.0 <= sx < 256.0 and 0.0 <= sy < 256.0):
+        raise ValueError(
+            f"WCS solar center ({sx:.2f}, {sy:.2f}) is outside the RD frame; "
+            "check target_wcs_header.txt parsing"
+        )
     rasters = compute_wcs_rasters(wcs=wcs, center_xy=(sx, sy), patch_size=4)
     patch_pa, patch_rad = rasters["patch_pa"], rasters["patch_rad"]
 
@@ -181,7 +186,7 @@ def compare_gates(
         fig.suptitle(
             f"Recovery + Identity + Birth/Size Gates | Pair {pair} | "
             f"{times.iloc[idx].strftime('%Y-%m-%d %H:%M UTC')}\n"
-            "Gray: detection | Green: admitted Family | Red: rejected Family | Cyan: recovery\\n"
+            "Gray: detection | Green: admitted Family | Red: rejected Family | Cyan: recovery\n"
             "Solid: PA start/end | Dashed: observed CPA | Arc: observed front",
             fontsize=10,
         )
