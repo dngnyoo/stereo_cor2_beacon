@@ -17,7 +17,7 @@ from cme_pipeline.utils.io import compute_dict_hash
 class FamilySizeGateStage(PipelineStage):
     """Admits Families based strictly on observed size and persistence."""
     name: str = "size_gate"
-    version: str = "2.0.0"
+    version: str = "2.1.0"
 
     def compute_fingerprint(
         self, inputs: BirthGateOutput, config: PipelineConfig, context: PipelineContext
@@ -27,6 +27,7 @@ class FamilySizeGateStage(PipelineStage):
             "version": self.version,
             "min_detected_patches": config.size_gate.min_detected_patches,
             "min_observed_pairs": config.size_gate.min_observed_pairs,
+            "size_qualified_persistence": config.size_gate.size_qualified_persistence,
             "upstream_birth_gated_count": len(inputs.birth_gated_family_ids),
         }
         return compute_dict_hash(desc)
@@ -45,6 +46,7 @@ class FamilySizeGateStage(PipelineStage):
 
         min_det_threshold = config.size_gate.min_detected_patches
         min_obs_threshold = config.size_gate.min_observed_pairs
+        qualified_mode = bool(config.size_gate.size_qualified_persistence)
         if min_det_threshold < 1 or min_obs_threshold < 1:
             raise ValueError("Gate thresholds must be positive")
         family_summary_rows = []
@@ -63,6 +65,7 @@ class FamilySizeGateStage(PipelineStage):
             max_det = 0
             max_det_pair = None
             active_pairs = []
+            qualified_pairs = []
 
             for f_idx in range(n_pairs):
                 p_num = int(man_df.iloc[f_idx]["pair_index"])
@@ -74,19 +77,29 @@ class FamilySizeGateStage(PipelineStage):
                         track_output, f_idx, m_sorted, fallback_component_ids=cids
                     )
                     det_cnt = int(det_union.sum())
+                    if det_cnt >= min_det_threshold:
+                        qualified_pairs.append(p_num)
                     if det_cnt > max_det:
                         max_det = det_cnt
                         max_det_pair = p_num
 
             n_observed = len(set(active_pairs))
+            n_qualified = len(set(qualified_pairs))
             is_admitted = (
-                has_anchor and max_det >= min_det_threshold
-                and n_observed >= min_obs_threshold
+                has_anchor and (
+                    n_qualified >= min_obs_threshold if qualified_mode
+                    else (max_det >= min_det_threshold and n_observed >= min_obs_threshold)
+                )
             )
             status = "ADMITTED" if is_admitted else "REJECTED"
             rejection_reason = "NONE"
             if not has_anchor:
                 rejection_reason = inputs.rejected_family_reasons.get(fid, "NO_SOLAR_ROOT_ANCHOR")
+            elif qualified_mode and n_qualified < min_obs_threshold:
+                rejection_reason = (
+                    f"SIZE_QUALIFIED_DURATION_BELOW_{min_obs_threshold}_PAIRS "
+                    f"(size>={min_det_threshold}, n={n_qualified})"
+                )
             elif max_det < min_det_threshold:
                 rejection_reason = f"SIZE_BELOW_{min_det_threshold}_PATCHES (max={max_det})"
             elif n_observed < min_obs_threshold:
@@ -109,6 +122,9 @@ class FamilySizeGateStage(PipelineStage):
                 "first_pair_index": min(active_pairs) if active_pairs else np.nan,
                 "last_pair_index": max(active_pairs) if active_pairs else np.nan,
                 "n_active_pairs": n_observed,
+                "n_size_qualified_pairs": n_qualified,
+                "size_qualified_pairs": str(sorted(set(qualified_pairs))),
+                "size_qualified_persistence_enabled": qualified_mode,
                 "min_required_observed_pairs": min_obs_threshold,
                 "min_required_detected_patches": min_det_threshold,
                 "max_detected_patches": max_det,
@@ -119,7 +135,7 @@ class FamilySizeGateStage(PipelineStage):
         df_fam_summary = pd.DataFrame(family_summary_rows).sort_values("max_detected_patches", ascending=False)
         df_size_decisions = df_fam_summary[
             ["family_id", "status", "rejection_reason", "member_count", "anchor_count",
-             "n_active_pairs", "max_detected_patches"]
+             "n_active_pairs", "n_size_qualified_pairs", "max_detected_patches"]
         ].copy()
 
         context.info(
