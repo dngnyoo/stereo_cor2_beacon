@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
-from cme_pipeline.core.standard_stages import STAGE_BY_NAME, VIS_MODES, resolve_visualization_mode
+from cme_pipeline.core.standard_stages import STAGE_BY_NAME, resolve_visualization_mode, normalize_visualization_mode
 from cme_pipeline.utils.io import load_yaml
 
 KNOWN_TOP = frozenset({"experiment", "input", "visualization", *STAGE_BY_NAME})
@@ -56,8 +56,7 @@ class StandardConfig:
             raise ValueError("visualization must be a mapping")
         if set(viz) - {"default"}:
             raise ValueError("visualization only accepts the default key; stage overrides go under that stage")
-        if viz.get("default", "off") not in VIS_MODES:
-            raise ValueError("Unknown visualization.default")
+        normalize_visualization_mode(viz.get("default", "off"))
         return cls(path=src, data=data)
 
     def method(self, stage: str) -> str:
