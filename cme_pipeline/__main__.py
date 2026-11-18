@@ -25,14 +25,14 @@ def parse_args() -> argparse.Namespace:
 
     # New isolated standard run. Legacy 'run' remains unchanged.
     standard_run_parser = subparsers.add_parser(
-        "run-standard", help="Execute isolated standard stages through Catalog; never overwrite old runs."
+        "run-standard", help="Execute isolated standard stages through SEEDS Validation; never overwrite old runs."
     )
     standard_run_parser.add_argument("--config", required=True)
     standard_run_parser.add_argument("--until", required=True, choices=(
-        "preprocessing", "detection", "tracking", "association", "gates", "recovery", "segmentation", "catalog",
+        "preprocessing", "detection", "tracking", "association", "gates", "recovery", "segmentation", "catalog", "validation",
     ))
     standard_run_parser.add_argument("--input-run", default=None,
-                                     help="Explicit completed Detection/Tracking/Association/Gates/Recovery/Segmentation Run to branch from")
+                                     help="Explicit completed Detection/Tracking/Association/Gates/Recovery/Segmentation/Catalog Run to branch from")
     standard_run_parser.add_argument("--run-name", required=True,
                                      help="Unique name for one new folder under runs/")
     standard_run_parser.add_argument("--visualize", choices=("off", "diagnostic", "all"),
@@ -276,7 +276,12 @@ def main() -> None:
             import json
             parent_manifest = json.loads((Path(args.input_run) / "run_manifest.json").read_text())
             parent_stages = parent_manifest["stages"]
-            if parent_stages.get("segmentation") == "COMPLETED":
+            if parent_stages.get("catalog") == "COMPLETED":
+                from cme_pipeline.standard_seeds_validation_parent import execute_from_catalog
+                finished = execute_from_catalog(
+                    cfg, input_run=args.input_run, until=args.until,
+                    run_dir=root, visualize=args.visualize)
+            elif parent_stages.get("segmentation") == "COMPLETED":
                 from cme_pipeline.standard_catalog_parent import execute_from_segmentation
                 finished = execute_from_segmentation(
                     cfg, input_run=args.input_run, until=args.until,
