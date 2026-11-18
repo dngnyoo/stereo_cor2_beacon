@@ -40,7 +40,7 @@ def moran_i(values, valid):
     if not edges:
         return np.nan
     # Both directions of each undirected edge cancel between numerator/W.
-    return float(n / edges * num / np.sum(x - x.mean())**2)
+    return float((n / edges) * num / np.sum((x - x.mean()) ** 2))
 
 
 def spatial_metrics(scores, valid, t24, *, tile_size=4, clip_quantile=95.):
