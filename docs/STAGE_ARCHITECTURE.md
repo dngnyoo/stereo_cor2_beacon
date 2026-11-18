@@ -549,3 +549,44 @@ The complete top-level Run summary is
 post-hoc only. Downloads are source acquisition, not ground truth. Tests
 for the full orchestrator mock algorithm execution; the actual 2024-05-10
 execution and PNGs remain to be verified on the local scientific environment.
+
+
+## Family-resolved Stage 05–07 diagnostics (tracking-compatible)
+
+The new read-only renderer \`cme_pipeline/family_stage_diagnostics.py\` uses the
+same signed north-up RD, fixed coolwarm \`[-600,+600] DN/s\`, saved WCS and
+\`_frame_tracks\` PA/CPA/front geometry as the canonical A5b tracking figures.
+A Family's color is \`tab20(track_id % 20)\`, consistently applied across
+Stages 05, 06 and 07. It reads existing stage outputs; no science is recomputed.
+
+- **05 Gates:** candidate and admitted-only panels; admitted families use
+  their fixed tracking colors, rejected families gray; solid contours are
+  size-qualified at that pair and dashed contours are not. Save the unmodified
+  family Gate decisions CSV separately.
+- **06 Recovery:** observed-only versus observed + recovered-only panels,
+  with family-colored recovered-only outlines and lighter fill. Magenta dashed
+  contours flag patches recovered by more than one family.
+- **07 Segmentation:** union and family-resolved pixel masks; family overlays
+  preserve individual masks rather than resolving overlaps arbitrarily.
+  Magenta dashed contours show inter-family pixel overlap; fine dotted white
+  outlines show the saved Recovery patch support.
+- Each stage writes \`frame_metrics.csv\`, \`family_palette.json\` and
+  frame-specific PNGs, using the existing full Run's immutable arrays.
+  \`diagnostic\` selects informative evaluation-date frames; \`all\` renders
+  every evaluation-date frame, never warmup by default.
+
+To replay the new diagnostics after a full Run has already created older
+plots (without changing the original images or rerunning the pipeline):
+
+~~~bash
+python -m cme_pipeline visualize-family-stages \
+  --run-root runs/20240510_full_001 \
+  --stages gates recovery segmentation \
+  --mode all
+~~~
+
+Outputs go to a fresh \`visualizations_family_v2/\` folder under the Run.
+The renderer fails rather than overwriting an existing destination. The
+existing \`run-standard --visualize all\` now uses this renderer for 05–07
+on subsequent new Runs. The algorithm outputs are unchanged. Live 2024-05-10
+verification remains necessary; unit tests cover stable geometry and sampling.
