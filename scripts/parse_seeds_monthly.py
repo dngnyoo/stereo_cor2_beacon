@@ -6,7 +6,9 @@ YYYY/MM/DD HH:MM:SS N PA WIDTH SPEED AUX
 The last field is preserved as an uninterpreted auxiliary value until the
 official parameter description can be checked. '-------' is missing.
 The parser uses the known event-level fields only. It does not invent
-framewise SEEDS PA/height tracks.
+framewise SEEDS PA/height tracks. The official archive may use a three-digit
+unwrapped PA (e.g., 399); preserve that raw value in IDs and source rows.
+Circular angular comparison elsewhere handles PA modulo 360.
 """
 from __future__ import annotations
 
@@ -50,7 +52,7 @@ def parse_monthly(raw: str, date: str | None = None) -> pd.DataFrame:
         if date is not None and stamp.strftime("%Y%m%d") != date:
             continue
         n, pa, width, speed = int(n), int(pa), int(width), float(speed)
-        if n < 1 or not 0 <= pa <= 360 or not 0 < width <= 360:
+        if n < 1 or not 0 <= pa <= 999 or not 0 < width <= 360:
             raise ValueError(f"Invalid SEEDS event geometry in row {number}")
         if not np.isfinite(speed):
             raise ValueError(f"Invalid SEEDS speed in row {number}")
