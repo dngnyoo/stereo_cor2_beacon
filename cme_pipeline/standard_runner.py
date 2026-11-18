@@ -259,6 +259,33 @@ def execute_to_gates(
             det_outputs["p16_external_metrics_sha256"] = str(
                 (target / "p16_external_metrics_sha256.txt").relative_to(run))
             (target / "p16_external_metrics_sha256.txt").write_text(_hash_file(metrics) + "\n")
+    # Record the fixed execution order of Detection substages, preserving
+    # metrics and decision provenance separately from scientific parameters.
+    from cme_pipeline.core.run_layout import _hash_file
+    p16_active = qc.get("normalized_weighted_tile_variance_min") is not None
+    substeps = [
+        {"id": "02.1", "name": "d4_patch_scoring_and_hierarchy", "status": "COMPLETED"},
+        {"id": "02.2", "name": "d4_global_activation_qc", "status": "COMPLETED",
+         "threshold": float(qc.get("global_activation_threshold", .70))},
+        {"id": "02.3", "name": "p16_spatial_metric", "status": "COMPLETED" if p16_active else "DISABLED",
+         "method": "existing_p16_spatial_diagnostics_v2" if computed_metrics else
+                   "explicit_external_metrics" if p16_active else None,
+         "metrics_sha256": _hash_file(metrics) if p16_active else None},
+        {"id": "02.4", "name": "p16_spatial_qc", "status": "COMPLETED" if p16_active else "DISABLED",
+         "threshold": float(qc["normalized_weighted_tile_variance_min"]) if p16_active else None,
+         "rule": "VALID and finite normalized variance < threshold"},
+        {"id": "02.5", "name": "final_detection_output", "status": "COMPLETED",
+         "usable_detection_sha256": _hash_file(detector_dir / "frame_detection_summary.csv")},
+    ]
+    substeps_path = target / "detection_substages.json"
+    substeps_path.write_text(json.dumps({
+        "stage": "detection", "date": date,
+        "scientific_config": det, "substeps": substeps,
+    }, indent=2) + "\n")
+    det_outputs["substage_provenance"] = str(substeps_path.relative_to(run))
+    if p16_active:
+        decisions_file = target / "qc" / "normalized_qc_decisions.csv"
+        det_outputs["p16_qc_decisions"] = str(decisions_file.relative_to(run))
     complete_stage(run, "detection", {"rd": pre_outputs["rd"], "valid_mask": pre_outputs["valid_mask"]},
                    det_outputs, "d4", det)
     if len(order) == 2:
