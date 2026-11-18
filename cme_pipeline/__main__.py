@@ -276,7 +276,12 @@ def main() -> None:
             import json
             parent_manifest = json.loads((Path(args.input_run) / "run_manifest.json").read_text())
             parent_stages = parent_manifest["stages"]
-            if parent_stages.get("tracking") == "COMPLETED":
+            if parent_stages.get("association") == "COMPLETED":
+                from cme_pipeline.standard_association_parent import execute_from_association
+                finished = execute_from_association(
+                    cfg, input_run=args.input_run, until=args.until,
+                    run_dir=root, visualize=args.visualize)
+            elif parent_stages.get("tracking") == "COMPLETED":
                 from cme_pipeline.standard_tracking_parent import execute_from_tracking
                 finished = execute_from_tracking(
                     cfg, input_run=args.input_run, until=args.until,
