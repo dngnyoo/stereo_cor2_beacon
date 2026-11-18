@@ -23,6 +23,19 @@ def parse_args() -> argparse.Namespace:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    # New isolated standard run. Legacy 'run' remains unchanged.
+    standard_run_parser = subparsers.add_parser(
+        "run-standard", help="Execute isolated standard stages 01-05; never overwrite old runs."
+    )
+    standard_run_parser.add_argument("--config", required=True)
+    standard_run_parser.add_argument("--until", required=True, choices=(
+        "preprocessing", "detection", "tracking", "association", "gates",
+    ))
+    standard_run_parser.add_argument("--run-name", required=True,
+                                     help="Unique name for one new folder under runs/")
+    standard_run_parser.add_argument("--visualize", choices=("off", "diagnostic", "all"),
+                                     default=None)
+
     # Read-only preflight for the new nine-stage runner (legacy run unchanged).
     plan_parser = subparsers.add_parser(
         "plan", help="Validate standard YAML and print stage plan; performs no execution."
@@ -247,6 +260,21 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.command == "run-standard":
+        from cme_pipeline.core.standard_config import StandardConfig
+        from cme_pipeline.standard_runner import execute_to_gates
+        from pathlib import Path
+        from cme_pipeline.core.standard_stages import VIS_MODES
+        if (args.run_name in (".", "..") or "/" in args.run_name
+                or "\\\\" in args.run_name or args.run_name.startswith(".")):
+            raise ValueError("--run-name must be a new simple folder name")
+        cfg = StandardConfig.load(args.config)
+        root = Path("runs") / args.run_name
+        finished = execute_to_gates(cfg, until=args.until, run_dir=root,
+                                   visualize=args.visualize)
+        print(f"Standard run outputs: {finished}")
+        return
+
     if args.command == "plan":
         from cme_pipeline.core.standard_config import StandardConfig
         from cme_pipeline.standard_plan import build_plan
