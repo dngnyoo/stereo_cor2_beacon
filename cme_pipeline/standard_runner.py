@@ -145,6 +145,7 @@ def execute_to_gates(
     if (_params(config, "gates").get("outward_split") or {}).get("enabled", False):
         raise ValueError("Outward split is not part of the baseline")
 
+    date = str(data["experiment"]["date"])
     run = Path(run_dir).expanduser().resolve()
     if not source.is_dir():
         raise FileNotFoundError(source)
@@ -161,7 +162,6 @@ def execute_to_gates(
         "mode": "explicit_preprocessed_import",
     }
     initialize_run(run, config.data, _revision(), provenance)
-    date = str(data["experiment"]["date"])
     pre, pre_outputs = _preprocess_import(run, source)
     complete_stage(run, "preprocessing", {"fits_sources": str(source)},
                    pre_outputs, "dual_archive_rd:explicit_import", {"mode": "import"})
