@@ -32,9 +32,9 @@ class TestMonthlyParser(unittest.TestCase):
 
     def test_2024_unwrapped_position_angles_keep_source_ids(self):
         sample = (
-            "2024/05/03 01:53:30   3  99 113    90     7.2\\n"
-            "2024/05/03 03:53:30   3 399 123  1023   251.8\\n"
-            "2024/05/03 06:53:30   2 374  71  1217 -------\\n"
+            "2024/05/03 01:53:30   3  99 113    90     7.2\n"
+            "2024/05/03 03:53:30   3 399 123  1023   251.8\n"
+            "2024/05/03 06:53:30   2 374  71  1217 -------\n"
         )
         df = parse_monthly(sample, "20240503")
         self.assertEqual(df.pa_deg.tolist(), [99, 399, 374])
