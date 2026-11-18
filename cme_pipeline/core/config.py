@@ -41,6 +41,7 @@ class TrackingConfig:
     outward_gate_enabled: bool = False
     outward_gate_tolerance_px: float = 4.0
     min_pa_width_deg: float = 8.0
+    terminate_on_qc: bool = False
 
     def __post_init__(self) -> None:
         if self.parameters is None:
@@ -54,7 +55,7 @@ class TrackingConfig:
             "alpha", "patch_size", "min_track_duration_pairs", "max_cadence_gap_sec",
             "direction_threshold_deg", "use_birth_direction", "lock_consecutive_frames",
             "max_direction_deviation_deg", "outward_gate_enabled", "outward_gate_tolerance_px",
-            "min_pa_width_deg",
+            "min_pa_width_deg", "terminate_on_qc",
         }
         for k, val in self.parameters.items():
             if k in known_fields:
@@ -107,6 +108,7 @@ class SizeGateConfig:
     min_detected_patches: int = 5
     min_observed_pairs: int = 1
     size_qualified_persistence: bool = False
+    consecutive_size_qualified: bool = False
 
 
 @dataclass
