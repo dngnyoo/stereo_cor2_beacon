@@ -135,9 +135,12 @@ def execute_to_gates(
     unknown_tracking = set(tr_params) - spec.supported_parameters
     if unknown_tracking:
         raise ValueError(f"Unsupported A5b tracking parameters: {sorted(unknown_tracking)}")
-    if tr.get("pre_size", {}).get("connectivity", 8) != 8:
+    pre_size = tr.get("pre_size", {"connectivity": 8, "min_component_patches": 8})
+    if not isinstance(pre_size, dict):
+        raise ValueError("tracking.pre_size must be a mapping")
+    if pre_size.get("connectivity", 8) != 8:
         raise ValueError("Only 8-connectivity pre-size is supported")
-    if tr.get("pre_size", {}).get("min_component_patches", 8) < 1:
+    if int(pre_size.get("min_component_patches", 8)) < 1:
         raise ValueError("Invalid pre-size patch count")
     if (_params(config, "gates").get("outward_split") or {}).get("enabled", False):
         raise ValueError("Outward split is not part of the baseline")
@@ -145,6 +148,9 @@ def execute_to_gates(
     run = Path(run_dir).expanduser().resolve()
     if not source.is_dir():
         raise FileNotFoundError(source)
+    source_meta = json.loads((source / "preprocessing_metadata.json").read_text())
+    if str(source_meta.get("requested_date", date)) != date:
+        raise ValueError("Preprocessed input date differs from experiment.date")
     if metrics is not None and not metrics.is_file():
         raise FileNotFoundError(metrics)
     if run.exists():
@@ -192,8 +198,7 @@ def execute_to_gates(
         return run
 
     detected = load_live_tracking_input(detector_dir)
-    pre_size = tr.get("pre_size") or {}
-    if pre_size:
+    if pre_size.get("enabled", True):
         detected = filter_small_components(
             detected, min_component_patches=int(pre_size.get("min_component_patches", 8))
         )
