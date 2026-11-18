@@ -270,3 +270,51 @@ python -m unittest discover -s tests -p 'test_standard_*.py'
 Compare recovered patch masks to an independently verified original Recovery
 reference with the *same* Gate family IDs, physical radius and recovery
 parameters. Only identical inputs/parameters justify bitwise comparisons.
+
+## Phase 8: Stage 07 independent Island-First Segmentation (local validation pending)
+
+A completed *standard* Recovery Run can be an explicit input. No upstream
+Recovery, Gates, Association, Tracking or Detection algorithm is repeated.
+
+~~~bash
+python -m cme_pipeline run-standard \
+  --config configs/20240503_recovery.yaml \
+  --input-run runs/20240503_recovery_001 \
+  --until segmentation \
+  --run-name 20240503_segmentation_001
+~~~
+
+The default Island-First parameters in the existing implementation are
+min_island_area_px=16, max_hole_fill_px=16, occulter_r_min_px=22.0,
+fov_r_max_px=122.5. To override them for a *new* experiment, set
+segmentation.min_island_area_px, segmentation.max_hole_fill_px,
+segmentation.occulter_r_min_px and segmentation.fov_r_max_px in YAML.
+
+The new run contains **07_segmentation** and its metadata, including:
+
+- arrays/final_pixel_segmentation_union.npy: (N,256,256) Boolean
+- arrays/family_pixel_masks.npz: mask_<FAM_ID> for all admitted families
+- tables/06_full_day_framewise_pixel_summary.csv
+- tables/07_full_day_family_pixel_statistics.csv
+- segmentation_summary.json: total segmented pixels, family count and provenance
+
+Validation includes SHA-256 for all Recovery stage contract artifacts, full
+Gates/Association/Tracking/Detection ancestry, strict Union equals Family-mask
+union, matching frame counts, admission Family keys and saved parameters.
+
+Original segmentation's overlapping-family policy is preserved: its global
+pixel mask is segmented once, and pixels are assigned to each intersecting
+Family ROI *without enforcing exclusive ownership*. The current input
+Recovery has 2,748 multi-Family overlapping patch positions. No overlap
+arbitration has been added.
+
+After testing:
+
+~~~bash
+python -m unittest discover -s tests -p 'test_standard_*.py'
+~~~
+
+For a scientific parity check compare the new Stage 07 masks and tables
+against the original Island-First execution run using the same saved Recovery
+and segmentation parameters. Comparing only total segmented pixels is not
+sufficient. This branch has not yet been executed locally against real data.
