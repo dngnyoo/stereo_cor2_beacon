@@ -161,3 +161,30 @@ Smoke tests:
 ~~~bash
 python -m unittest discover -s tests -p 'test_standard_*.py'
 ~~~
+
+## Phase 5: explicit Tracking parent -> Association/Gates (pending MELONHOUSE test)
+
+From a successful child Tracking Run, create a new run with only stages 04 and 05:
+
+~~~bash
+python -m cme_pipeline run-standard \
+  --config configs/standard_baseline.example.yaml \
+  --input-run runs/20240503_child_a5b_001 \
+  --until gates \
+  --run-name 20240503_child_gates_001
+~~~
+
+The CLI selects the highest completed stage in the explicitly chosen
+input Run (Tracking before Detection). No resume and no upstream recomputation.
+Parent Tracking contract files are SHA-256 verified, the exact Detection
+ancestor is independently verified, and pre-size Tracking input arrays are
+reloaded rather than inferred. The child saves only 04_association and
+05_gates, with provenance pointing to both ancestors.
+
+Different Gate thresholds can be used in separate new YAML configurations;
+the Tracking settings must remain identical to the parent.
+
+This code has not yet passed a live MELONHOUSE regression. Compare its
+05_gates/data/tables/04_full_day_family_summary.csv against the verified
+20240503_standard_gates_001 result (12 admitted families) before relying on
+the new input-run path for science.
