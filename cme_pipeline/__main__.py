@@ -314,8 +314,15 @@ def main() -> None:
             else:
                 raise ValueError("Input Run has no supported completed Tracking or Detection stage")
         else:
-            finished = execute_to_gates(cfg, until=args.until, run_dir=root,
-                                       visualize=args.visualize)
+            if args.until in ("preprocessing", "detection", "tracking",
+                              "association", "gates"):
+                finished = execute_to_gates(cfg, until=args.until, run_dir=root,
+                                           visualize=args.visualize)
+            else:
+                from cme_pipeline.standard_full_orchestrator import run_full_standard
+                finished = run_full_standard(
+                    cfg, until=args.until, run_dir=root, visualize=args.visualize
+                )
         print(f"Standard run outputs: {finished}")
         return
 
