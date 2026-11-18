@@ -138,7 +138,7 @@ def make_review(detection_dir, metrics_csv, output_dir, *,
         if z is None:
             scores16, accepted16 = np.full((16, 16), np.nan), np.zeros((16,16), bool)
         else:
-            scores16, accepted16 = _scores(z, mask, 16)
+            scores16, accepted16 = _scores(z, mask, 16, score_mode=meta.get("score_mode", "abs"))
         t24 = float(det_summary.iloc[i].T24_p16)
         _, v16, a16, raw16, clipped16 = spatial_metrics(scores16, accepted16, t24)
         if int(a16.sum()) != int(metrics.loc[pair].n_active_p16):
