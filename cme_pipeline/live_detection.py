@@ -25,11 +25,14 @@ SHAPES = {16: (16, 16), 8: (32, 32), 4: (64, 64)}
 CONNECTIVITY_8 = np.ones((3, 3), dtype=bool)
 
 
-def _scores(z: np.ndarray, valid: np.ndarray, size: int):
+def _scores(z: np.ndarray, valid: np.ndarray, size: int, *, score_mode: str = "abs"):
     n = 256 // size
     if z.shape != (256, 256) or valid.shape != z.shape:
         raise ValueError("Detection input must have 256x256 RD and valid masks")
-    blocks = np.where(valid, np.abs(z), np.nan).reshape(
+    if score_mode not in {"abs", "positive"}:
+        raise ValueError("score_mode must be abs or positive")
+    activity = np.abs(z) if score_mode == "abs" else np.maximum(z, 0.)
+    blocks = np.where(valid, activity, np.nan).reshape(
         n, size, n, size).transpose(0, 2, 1, 3).reshape(n, n, size * size)
     fractions = valid.reshape(n, size, n, size).mean(axis=(1, 3))
     accepted = (fractions >= .5) & (np.isfinite(blocks).sum(axis=2) > 0)
@@ -160,12 +163,17 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
                   outer_floor_inner_px: float = 88.0,
                   outer_floor_outer_px: float = 116.0,
                   absolute_p04_floor: float | None = None,
+                  score_mode: str = "abs",
                   output_dir: str | Path | None = None) -> Path:
     """Compute C0, C3 or D4 on saved RD, preserving C3 behavior.
 
     D4 shares the C3 hierarchy and adds an absolute P04 score lower bound. All methods
     process frames chronologically. Only previous frames enter T24.
     """
+    if score_mode not in {"abs", "positive"}:
+        raise ValueError("score_mode must be abs or positive")
+    if method != "d4" and score_mode != "abs":
+        raise ValueError("positive score_mode is experimental and D4-only")
     if method not in {"c0", "c3", "d4"}:
         raise ValueError("Detector must be c0, c3 or d4")
     if method == "d4":
@@ -230,7 +238,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         accepted = {}
         for size in SCALES:
             if has_data:
-                scores[size], accepted[size] = _scores(z, usable, size)
+                scores[size], accepted[size] = _scores(z, usable, size, score_mode=score_mode)
             else:
                 scores[size] = np.full(SHAPES[size], np.nan)
                 accepted[size] = np.zeros(SHAPES[size], dtype=bool)
@@ -318,7 +326,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
             "analysis_date": requested_date,
             "in_requested_date": current.strftime("%Y%m%d") == requested_date,
             "status": status, "usable_detection": status == "VALID",
-            "denoiser": denoiser, "detector": method,
+            "denoiser": denoiser, "detector": method, "score_mode": score_mode,
             "active_fraction_pre": active_fraction_pre,
             "t24_mad_multiplier": t24_mad_multiplier,
             "T24_p16": thresholds[16], "T24_p08": thresholds[8],
@@ -345,6 +353,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         writer.writerows(rows)
     (out / "detection_metadata.json").write_text(json.dumps({
         "detector": method, "denoiser": denoiser,
+        "score_mode": score_mode,
         "t24_mad_multiplier": t24_mad_multiplier,
         "requested_date": requested_date,
         "input_dir": str(folder),
