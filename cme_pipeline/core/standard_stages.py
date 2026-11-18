@@ -71,6 +71,18 @@ def stages_until(until: str) -> tuple[StageSpec, ...]:
     return STAGES[:STAGE_BY_NAME[until].ordinal]
 
 
+def normalize_visualization_mode(value: object) -> str:
+    """Accept YAML 1.1 unquoted 'off' (parsed as False), but reject True.
+
+    The canonical internal representation is always a string.
+    """
+    if value is False:
+        return "off"
+    if not isinstance(value, str) or value not in VIS_MODES:
+        raise ValueError(f"Invalid visualization mode {value!r}; expected off, diagnostic or all")
+    return value
+
+
 def resolve_visualization_mode(
     stage_name: str, *, config: Mapping, cli_override: Optional[str] = None
 ) -> str:
@@ -81,9 +93,7 @@ def resolve_visualization_mode(
     stage_cfg = (config.get(stage_name, {}) or {}).get("visualization", {}) or {}
     mode = (cli_override if cli_override is not None else
             stage_cfg.get("mode", shared.get("default", "off")))
-    if mode not in VIS_MODES:
-        raise ValueError(f"Invalid visualization mode {mode!r}")
-    return str(mode)
+    return normalize_visualization_mode(mode)
 
 
 def stage_data_path(run_dir: str | Path, stage_name: str) -> Path:
