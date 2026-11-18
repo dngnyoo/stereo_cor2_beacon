@@ -81,7 +81,7 @@ def save_detection_diagnostics(
             score = np.full((64, 64), np.nan)
             accepted = np.zeros((64, 64), bool)
         else:
-            score, accepted = _scores(z, usable, 4)
+            score, accepted = _scores(z, usable, 4, score_mode=meta.get("score_mode", "abs"))
         state = np.asarray(states[i])
         active = state == 1
         fig, axes = plt.subplots(1, 3, figsize=(16, 5.5), constrained_layout=True)
@@ -98,7 +98,8 @@ def save_detection_diagnostics(
         score_map = np.ma.masked_where(~accepted, score)
         sm = axes[1].imshow(score_map, origin="lower", extent=(-.5, 255.5, -.5, 255.5),
                              interpolation="nearest", cmap="viridis", vmin=0)
-        fig.colorbar(sm, ax=axes[1], shrink=.75, label="P04 |Z| p95")
+        fig.colorbar(sm, ax=axes[1], shrink=.75, label=("P04 P95(max(Z,0))" if meta.get("score_mode") == "positive"
+                                  else "P04 P95(abs(Z))"))
         axes[1].set_title("P04 patch activity score")
         axes[2].imshow(masked, origin="lower", cmap=get_rd_cmap(),
                        vmin=-600, vmax=600)
@@ -107,7 +108,7 @@ def save_detection_diagnostics(
             axes[2].add_collection(PatchCollection(
                 [Rectangle((int(x) * 4 - .5, int(y) * 4 - .5), 4, 4)
                  for y, x in zip(yy, xx)],
-                facecolor="none", edgecolor="red",
+                facecolor="none", edgecolor="#FF00FF",
                 linewidth=.65, alpha=.9,
             ))
         axes[2].set_title(f"Activated P04: {int(active.sum())} patches")
@@ -128,7 +129,7 @@ def save_detection_diagnostics(
                 return "N/A"
         fig.suptitle(
             f"Pair {int(row['pair_index'])} | {times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')} "
-            f"| {meta['detector']} / {meta.get('floor_mode', 'legacy')}"
+            f"| {meta['detector']} ({meta.get('score_mode', 'abs')}) / {meta.get('floor_mode', 'legacy')}"
             f" (k={meta.get('outer_floor_k')}) | {row['status']}\n"
             f"T24={fmt(row['T24_p04'])} | Floor={fmt(row['floor_p04'])} "
             f"| Effective={fmt(row['effective_threshold_p04'])} "
