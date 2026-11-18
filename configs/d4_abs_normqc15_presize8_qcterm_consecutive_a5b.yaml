@@ -1,0 +1,27 @@
+# Strict tracking continuity experiment, 2024-05-03 Absolute D4.
+# Upstream QC: normalized P16 weighted variance < 1.5 -> SPATIAL_QC.
+# QC frames terminate active A5b tracks; normal missing/warmup remain unavailable.
+detection:
+  method: d4
+  denoiser: gaussian
+  floor_mode: outer_p95
+  absolute_p04_floor: 0.5
+tracking:
+  method: a5b
+  outward_gate_enabled: true
+  outward_gate_tolerance_px: 4.0
+  max_cadence_gap_sec: 4500.0
+  parameters:
+    birth_gate_threshold_px: 30.0
+    terminate_on_qc: true
+pre_size_gate:
+  enabled: true
+  connectivity: 8
+  min_component_patches: 8
+birth_gate:
+  max_birth_radius_px: 30.0
+size_gate:
+  min_detected_patches: 10
+  min_observed_pairs: 3
+  size_qualified_persistence: true
+  consecutive_size_qualified: true
