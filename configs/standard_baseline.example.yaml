@@ -4,6 +4,12 @@ experiment:
   date: "20240503"
   source: dual_archive
 
+# Set these to known, verified inputs. The runner never searches other runs.
+# Read the original preprocessing location from the saved D4 detection metadata.
+input:
+  preprocessed_dir: REPLACE_WITH_VALIDATED_PREPROCESSED_DIR
+  spatial_metrics_csv: runs/20240503_p16_spatial/p16_spatial_metrics.csv
+
 visualization:
   default: 'off'   # CLI --visualize has highest priority.
 
