@@ -64,6 +64,15 @@ def spatial_metrics(scores, valid, t24, *, tile_size=4, clip_quantile=95.):
                 continue
             occupancy.append(float(active[region].sum() / vv.sum()))
             tiled.append(float(clipped[region][vv].mean()))
+    # Squared coefficient of variation of per-tile mean excess weights.
+    # Undefined for all-zero/near-zero mean; avoid an unstable epsilon-based value.
+    mean_tile_weight = float(np.mean(tiled)) if tiled else np.nan
+    weighted_tile_variance = float(np.var(tiled)) if len(tiled) > 1 else np.nan
+    normalized_tile_variance = (
+        float(weighted_tile_variance / (mean_tile_weight ** 2))
+        if len(tiled) > 1 and np.isfinite(mean_tile_weight)
+        and mean_tile_weight > 1e-10 else np.nan
+    )
     structure = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
     labs, ncomp = label(active, structure=structure)
     sizes = np.bincount(labs[active], minlength=ncomp+1)[1:]
@@ -79,7 +88,9 @@ def spatial_metrics(scores, valid, t24, *, tile_size=4, clip_quantile=95.):
         "p16_excess_moran": moran_i(excess, accepted),
         "p16_clipped_excess_moran": moran_i(clipped, accepted),
         "p16_tile_occupancy_variance": float(np.var(occupancy)) if len(occupancy) > 1 else np.nan,
-        "p16_weighted_tile_variance": float(np.var(tiled)) if len(tiled) > 1 else np.nan,
+        "p16_weighted_tile_variance": weighted_tile_variance,
+        "p16_normalized_weighted_tile_variance": normalized_tile_variance,
+        "p16_mean_tile_excess": mean_tile_weight,
         "p16_largest_component_fraction": float(sizes.max()/n_active) if n_active else np.nan,
     }, accepted, active, raw, clipped
 
@@ -180,6 +191,7 @@ def run(detection_dir, output_dir, *, date=None, focus_pair=99, tile_size=4):
         "clipped_excess_weight":"excess clipped at each frame active excess P95",
         "moran_weights":"4 nearest neighbors; valid pairs only",
         "tile_validity":"minimum 4 valid patches",
+        "normalized_weighted_tile_variance":"variance(tile means)/mean(tile means)^2; NaN when mean <= 1e-10",
         "experiment_only":True,
     },indent=2),encoding="utf-8")
     print(f"Saved {len(df)} frames to {out}")
