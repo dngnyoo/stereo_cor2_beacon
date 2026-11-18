@@ -49,7 +49,9 @@ class SEEDSValidationParentTests(unittest.TestCase):
 
     def test_reject_bad_threshold_before_loading_parent(self):
         with TemporaryDirectory() as temp:
-            cfg = self.config(temp)
+            reference = Path(temp) / "seeds_frames.csv"
+            reference.write_text("DATE,TIME,BPA,PASTART,PAEND,HMLEAD,parent_event_id\n")
+            cfg = self.config(temp, str(reference))
             cfg.data["validation"]["min_mean_iou"] = -0.5
             with self.assertRaisesRegex(ValueError, "threshold"):
                 validation_parameters(cfg)
