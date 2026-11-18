@@ -196,6 +196,11 @@ def execute_to_gates(
         raw_root = info.get("raw_root")
         if raw_root is not None and raw_dir is not None:
             raise ValueError("input.raw_root is for download mode only")
+        # Shared, repository-level RAW cache. Run-specific manifests and
+        # processed arrays remain inside the immutable Run directory.
+        # Explicit input.raw_root still takes priority.
+        if raw_dir is None and raw_root is None:
+            raw_root = Path(__file__).resolve().parents[1] / "data" / "raw" / "cor2"
         manifest = prepare_source(
             date=date, source="local" if raw_dir is not None else "download",
             product="d7", input_dir=str(raw_dir) if raw_dir is not None else None,
@@ -211,7 +216,8 @@ def execute_to_gates(
         implementation = "dual_archive_rd:raw_local" if raw_dir is not None else "dual_archive_rd:raw_download"
         pre_settings = {"mode": mode, "warmup_days": warmup,
                         "mask_path": str(mask) if mask else None,
-                        "phase_sec": phase}
+                        "phase_sec": phase,
+                        "shared_raw_root": str(Path(raw_root).resolve()) if raw_root is not None else None}
         pre_outputs["acquisition_manifest"] = str(manifest.relative_to(run))
     complete_stage(run, "preprocessing", pre_inputs,
                    pre_outputs, implementation, pre_settings)
