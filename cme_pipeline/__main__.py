@@ -31,6 +31,8 @@ def parse_args() -> argparse.Namespace:
     standard_run_parser.add_argument("--until", required=True, choices=(
         "preprocessing", "detection", "tracking", "association", "gates",
     ))
+    standard_run_parser.add_argument("--input-run", default=None,
+                                     help="Explicit completed Detection Run to branch from (no auto-search)")
     standard_run_parser.add_argument("--run-name", required=True,
                                      help="Unique name for one new folder under runs/")
     standard_run_parser.add_argument("--visualize", choices=("off", "diagnostic", "all"),
@@ -270,8 +272,14 @@ def main() -> None:
             raise ValueError("--run-name must be a new simple folder name")
         cfg = StandardConfig.load(args.config)
         root = Path("runs") / args.run_name
-        finished = execute_to_gates(cfg, until=args.until, run_dir=root,
-                                   visualize=args.visualize)
+        if args.input_run:
+            from cme_pipeline.standard_input_run import execute_from_detection
+            finished = execute_from_detection(
+                cfg, input_run=args.input_run, until=args.until,
+                run_dir=root, visualize=args.visualize)
+        else:
+            finished = execute_to_gates(cfg, until=args.until, run_dir=root,
+                                       visualize=args.visualize)
         print(f"Standard run outputs: {finished}")
         return
 
