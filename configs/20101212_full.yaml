@@ -1,0 +1,65 @@
+# Canonical full 9-stage demonstration for STEREO-A COR2, 2010-12-12.
+# No personal paths or cross-run inputs. Dual-archive downloads use data/raw/cor2.
+# Run with: python -m cme_pipeline run-standard --config configs/20101212_full.yaml --until validation --visualize all --run-name demo_20101212_full_001
+experiment:
+  name: cor2_20101212_full
+  date: "20101212"
+  source: dual_archive
+
+input:
+  warmup_days: 2
+
+visualization:
+  default: "off"
+
+preprocessing:
+  method: dual_archive_rd
+
+detection:
+  method: d4
+  denoiser: gaussian
+  score_mode: abs
+  gaussian_sigma: 1.0
+  threshold_method: causal_t24
+  t24_mad_multiplier: 3.0
+  floor_mode: outer_p95
+  absolute_p04_floor: 0.5
+  qc:
+    global_activation_threshold: 0.70
+    normalized_weighted_tile_variance_min: 1.5
+
+tracking:
+  method: a5b
+  pre_size:
+    connectivity: 8
+    min_component_patches: 8
+  parameters:
+    max_missed_frames: 1
+    terminate_on_qc: true
+    outward_gate_enabled: true
+    outward_gate_tolerance_px: 4.0
+
+association:
+  method: identity
+
+gates:
+  birth_max_radius_px: 30.0
+  persistence:
+    method: consecutive_size_qualified
+    min_detected_patches: 10
+    min_observed_pairs: 3
+  outward_split:
+    enabled: false
+
+recovery:
+  method: signed_dynamic_pa
+
+segmentation:
+  method: island_first
+
+catalog:
+  method: event_kinematics
+
+validation:
+  method: seeds
+  catalogs: [SEEDS]
