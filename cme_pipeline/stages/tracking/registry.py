@@ -65,7 +65,7 @@ def _ensure_defaults_registered() -> None:
         "birth_gate_threshold_px",
         "default_roi_half_width_deg",
         "roi_padding_deg",
-        "max_missed_frames",
+        "max_missed_frames", "terminate_on_qc",
     })
     a3_a4_defaults = {
         "patch_size": 4,
@@ -77,6 +77,7 @@ def _ensure_defaults_registered() -> None:
         "default_roi_half_width_deg": 15.0,
         "roi_padding_deg": 5.0,
         "max_missed_frames": 3,
+        "terminate_on_qc": False,
     }
 
     register_tracking_method(
