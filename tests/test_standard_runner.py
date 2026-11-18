@@ -26,6 +26,9 @@ class StandardRunnerTests(unittest.TestCase):
             "preprocessing_metadata.json",
         ):
             (source / name).write_bytes(b"fixture")
+        (source / "preprocessing_metadata.json").write_text(
+            json.dumps({"requested_date": "20240503", "unit": "DN/s", "msb_applied": False})
+        )
         yaml = base / "baseline.yaml"
         yaml.write_text(
             'experiment:\n  date: "20240503"\n'
