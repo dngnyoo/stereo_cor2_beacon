@@ -49,7 +49,8 @@ def visualize_admitted_families(gates_run: str | Path, *,
         raise FileExistsError(f"Refusing to overwrite: {target}")
     save_tracking_diagnostics(
         tracking, date=str(metadata["date"]), output_dir=target,
-        included_track_ids=set(track_to_family))
+        included_track_ids=set(track_to_family),
+        track_family_ids=track_to_family)
     geometry = target / "track_geometry.csv"
     records = pd.read_csv(geometry) if geometry.stat().st_size else pd.DataFrame()
     if len(records):
