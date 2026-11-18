@@ -54,7 +54,7 @@ from cme_pipeline.utils.io import compute_dict_hash
 class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
     """A5b PA-Width-Normalized CPA Distance Adaptive PA-ROI Tracking Stage."""
     name: str = "tracking"
-    version: str = "5.1.1"
+    version: str = "5.2.0"
 
     def compute_fingerprint(
         self, inputs: Any, config: PipelineConfig, context: PipelineContext
@@ -111,6 +111,7 @@ class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
         default_roi_half = float(effective_params["default_roi_half_width_deg"])
         roi_padding = float(effective_params["roi_padding_deg"])
         max_missed_frames = int(effective_params["max_missed_frames"])
+        terminate_on_qc = bool(effective_params["terminate_on_qc"])
 
         prev_time = None
 
@@ -119,6 +120,14 @@ class PAWidthWeightedCPAAdaptiveROITrackingStage(PipelineStage):
             # do not update tracks, increment missed, or advance last valid time.
             if ("usable_detection" in man_df.columns
                     and not bool(man_df.iloc[step_idx]["usable_detection"])):
+                status = str(man_df.iloc[step_idx]["observation_status"])
+                if terminate_on_qc and status in ("SPATIAL_QC", "GLOBAL_ACTIVATION"):
+                    terminated = 0
+                    for track in tracks.values():
+                        if not track.terminated:
+                            track.terminated = True
+                            terminated += 1
+                    context.info(f"Pair {int(man_df.iloc[step_idx]['pair_index'])}: {status}; terminated {terminated} active tracks at QC boundary.")
                 context.info(
                     f"Pair {int(man_df.iloc[step_idx]['pair_index'])}: "
                     f"{man_df.iloc[step_idx]['observation_status']} — "
