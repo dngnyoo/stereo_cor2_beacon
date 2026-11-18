@@ -97,6 +97,8 @@ def parse_args() -> argparse.Namespace:
     detect_parser.add_argument("--date", default=None, help="Analysis YYYYMMDD; infer from RD metadata if omitted")
     detect_parser.add_argument("--floor-mode", choices=("frame_median", "outer_background", "outer_background_mad", "outer_p95"),
                                default="frame_median", help="C3 P04 floor strategy")
+    detect_parser.add_argument("--score-mode", choices=("abs", "positive"), default="abs",
+                               help="Patch P95 activity: abs(Z) baseline or max(Z,0) D4 experiment")
     detect_parser.add_argument("--absolute-p04-floor", type=float, default=None,
                                help="D4-only minimum P04 P95(abs(Z)) score; e.g. 0.5")
     detect_parser.add_argument("--t24-mad-multiplier", type=float, default=3.0,
@@ -331,6 +333,7 @@ def main() -> None:
                                  outer_floor_inner_px=args.outer_floor_inner_px,
                                  outer_floor_outer_px=args.outer_floor_outer_px,
                                  absolute_p04_floor=args.absolute_p04_floor,
+                                 score_mode=args.score_mode,
                                  output_dir=args.output_dir)
         print(f"Detector outputs: {detected}")
         if args.visualize:
