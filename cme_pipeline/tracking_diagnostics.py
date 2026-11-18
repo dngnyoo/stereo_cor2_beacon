@@ -16,6 +16,7 @@ from cme_pipeline.tracking_comparison import _frame_tracks
 def save_tracking_diagnostics(
     tracking_run: str | Path, *, date: str | None = None,
     output_dir: str | Path | None = None,
+    included_track_ids: set[int] | None = None,
 ) -> Path:
     root = Path(tracking_run).resolve()
     meta = json.loads((root / "tracking_metadata.json").read_text())
@@ -76,7 +77,10 @@ def save_tracking_diagnostics(
         image = np.ma.masked_where(~np.asarray(valid[i], bool) | ~np.isfinite(image), image)
         fig, ax = plt.subplots(figsize=(9, 8), constrained_layout=True)
         im = ax.imshow(image, origin="lower", cmap=get_rd_cmap(), vmin=-600, vmax=600)
-        tracks = _frame_tracks(np.asarray(owners[i]), rasters["patch_pa"], rasters["patch_rad"])
+        owner_grid = np.asarray(owners[i])
+        if included_track_ids is not None:
+            owner_grid = np.where(np.isin(owner_grid, list(included_track_ids)), owner_grid, 0)
+        tracks = _frame_tracks(owner_grid, rasters["patch_pa"], rasters["patch_rad"])
         observed = states[(states["pair_index"] == pair) & (states["state"] == "OBSERVED")]
         by_id = {int(r["track_id"]): r for _, r in observed.iterrows()}
         for t in tracks:
@@ -119,7 +123,7 @@ def save_tracking_diagnostics(
             })
         ax.set(xlim=(-.5,255.5), ylim=(-.5,255.5), xlabel="X (pixel)", ylabel="Y (pixel)")
         ax.set_aspect("equal")
-        ax.set_title(f"A5b | Pair {pair} | {times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')}\n"
+        ax.set_title(f"{'Admitted Families' if included_track_ids is not None else 'A5b'} | Pair {pair} | {times.iloc[i].strftime('%Y-%m-%d %H:%M UTC')}\n"
                      f"{summary.iloc[i]['status']} | Active Tracks={len(tracks)}")
         fig.colorbar(im, ax=ax, shrink=.8, label="RD (DN/s)")
         fig.savefig(out / f"pair_{pair:03d}_{times.iloc[i].strftime('%Y%m%dT%H%M%SZ')}.png",
