@@ -369,3 +369,71 @@ preserved; no new exclusivity or merging logic is introduced.
 First run the regression tests, then the real Catalog run, and inspect
 event speeds and fit quality. Stage 08 code is committed but local live-data
 execution is still pending.
+
+## Phase 10: Stage 09 isolated SEEDS-only external Validation (local test pending)
+
+This Stage 09 adapter uses the existing *official GMU SEEDS COR2-A* monthly
+download, detail download, detail-to-frame parser, and
+`scripts.validate_seeds.validate_seeds` one-to-one temporal angular IoU
+event matcher. It does **not** run the legacy frozen 2010 external-catalog
+validation algorithm or automatically substitute 2010 reference data.
+CACTus, Göttingen and other catalogs are deferred.
+
+Prepare the independently supplied official SEEDS reference:
+
+~~~bash
+python -m scripts.fetch_seeds_monthly --date 20240503
+python -m scripts.fetch_seeds_details --date 20240503
+~~~
+
+The scripts save raw source files and normalized frame measurements at
+`data/catalogs/seeds/20240503/seeds_frames.csv`. If these files are already
+available, skip downloads. If monthly source assets already exist but details
+do not, run only the details downloader. If the SEEDS provider has no events
+or the source format changes, stop and investigate; never synthesize frames.
+
+Create `configs/20240503_seeds_validation.yaml` by copying the verified
+`configs/20240503_catalog.yaml` (and retaining its exact Catalog/Segmentation/
+Recovery/Gates configuration). Add:
+
+~~~yaml
+validation:
+  method: seeds
+  catalogs: [SEEDS]
+  seeds_frames_csv: data/catalogs/seeds/20240503/seeds_frames.csv
+  max_time_delta_sec: 900
+  min_mean_iou: 0.1
+  min_common_frames: 1
+~~~
+
+Then execute a new Run:
+
+~~~bash
+python -m cme_pipeline run-standard \
+  --config configs/20240503_seeds_validation.yaml \
+  --input-run runs/20240503_catalog_001 \
+  --until validation \
+  --run-name 20240503_seeds_validation_001
+~~~
+
+The resulting `09_validation/data/tables/` contains event_pair_scores.csv
+and event_status.csv; `09_validation/data/summary.json` contains the matching
+settings, reference SHA-256, source paths and conditional SEEDS metrics.
+
+This validation is post-hoc: SEEDS is a non-exhaustive external *reference*,
+not a ground-truth segmentation mask. Match metrics are conditional on
+evaluable observations; unmatched catalog detections outside the reference
+window remain OUTSIDE_EVALUATION. The parser does not invent missing SEEDS
+frames or interpolate trajectories. The recorded source reference must
+contain official SEEDS_COR2A_20240503T... event identifiers. Stage 09 loads
+the original Stage 08 catalog from a verified completed Run, and checks its
+Stage 07 through 01 ancestor chain. It never recomputes any upstream stages.
+
+Run the standard regression tests plus existing SEEDS parser/matcher tests:
+
+~~~bash
+python -m unittest discover -s tests -p 'test_standard_*.py'
+python -m pytest -q tests/test_parse_seeds_details.py tests/test_seeds_validation.py
+~~~
+
+Implementation is committed; real 2024 data execution remains to be tested.
