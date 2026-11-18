@@ -84,22 +84,37 @@ def _ensure_seeds(config):
     from scripts.parse_seeds_monthly import parse_monthly
     from scripts.parse_seeds_details import parse_directory
     from datetime import datetime
-    import pandas as pd
     dt = datetime.strptime(date, "%Y%m%d")
-    month = Path("data/catalogs/seeds/raw") / f"{dt:%Y}" / f"{dt:%m}" / "monthly.txt"
+    raw_root = Path("data/catalogs/seeds/raw")
+    detail_root = Path("data/catalogs/seeds/details")
+    month = raw_root / f"{dt:%Y}" / f"{dt:%m}" / "monthly.txt"
+    # A previously interrupted monthly fetch may have downloaded valid
+    # source bytes before the parser failed. Never overwrite those bytes.
     if not month.is_file():
-        acquire(date, output_root=Path("data/catalogs/seeds/raw"))
-    # Detect schema problems explicitly: never silently drop abnormal events.
-    parse_monthly(month.read_text(encoding="utf-8-sig"), date=date)
-    details = Path("data/catalogs/seeds/details") / date
-    if not list(details.glob(f"{date}.*.txt")):
-        fetch_details(date)
+        month_dir = month.parent
+        if month_dir.exists() and any(month_dir.iterdir()):
+            raise FileNotFoundError(
+                f"SEEDS monthly source incomplete at {month_dir}; inspect before refetch"
+            )
+        acquire(date, output_root=raw_root)
+    events_expected = parse_monthly(month.read_text(encoding="utf-8-sig"), date=date)
+    details = detail_root / date
+    # fetch_details verifies and reuses each cached event file, and fetches
+    # only missing official source event details.
+    fetch_details(date, raw_root=raw_root, output_root=detail_root)
     events, frames = parse_directory(details, date)
-    if frames.empty or events.empty:
-        raise ValueError(f"No official SEEDS observations for {date}")
+    if frames.empty or events.empty or len(events) != len(events_expected):
+        raise ValueError(f"Incomplete official SEEDS observations for {date}")
+    if set(events["event_id"]) != set(events_expected["event_id"]):
+        raise ValueError("Parsed SEEDS details do not match source monthly event IDs")
     target.parent.mkdir(parents=True, exist_ok=True)
+    events_path = target.with_name("seeds_events.csv")
+    if events_path.exists():
+        raise FileExistsError(
+            f"SEEDS events output already exists without frame reference: {events_path}"
+        )
     frames.to_csv(target, index=False)
-    events.to_csv(target.with_name("seeds_events.csv"), index=False)
+    events.to_csv(events_path, index=False)
 
 
 def run_full_standard(config, *, until: str, run_dir, visualize=None):
