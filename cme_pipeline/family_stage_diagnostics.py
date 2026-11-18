@@ -213,6 +213,8 @@ def render_stage(config, stage, run, destination, mode):
     destination.mkdir(parents=True, exist_ok=False)
     summary = pd.DataFrame(rows)
     summary.to_csv(destination / "frame_metrics.csv", index=False)
+    if stage == "gates":
+        decisions.to_csv(destination / "family_gate_decisions.csv", index=False)
     (destination / "family_palette.json").write_text(json.dumps({
         fid: _palette(fid) for fid in sorted(by_family.index.astype(str))}, indent=2) + "\n")
     output = []
@@ -238,13 +240,23 @@ def render_stage(config, stage, run, destination, mode):
                     if panel == "admitted" and not accepted:
                         continue
                     color = _palette(fid) if accepted else "#777777"
-                    _contour(ax, t["mask"], color, lw=1.8 if accepted else .9)
+                    qualified_text = str(by_family.loc[fid].get("size_qualified_pairs", "[]"))
+                    qualified = set(ast.literal_eval(qualified_text))
+                    size_qualified_now = pair in qualified
+                    _contour(ax, t["mask"], color,
+                             lw=1.9 if size_qualified_now and accepted else 1.1,
+                             ls="solid" if size_qualified_now else "dashed")
                     _annotate(ax, fid, t, center, state_lookup.get(t["track_id"]),
                               detailed=accepted, color=color)
                 ax.legend(handles=[Patch(edgecolor="#00ffdd", facecolor="none",label="Admitted (family color)"),
-                                   Patch(edgecolor="#777777",facecolor="none",label="Rejected")],
+                                   Patch(edgecolor="#777777",facecolor="none",label="Rejected"),
+                                   Patch(edgecolor="white",facecolor="none",label="Solid: size qualified"),
+                                   Patch(edgecolor="white",facecolor="none",label="Dashed: not qualified")],
                           loc="lower right", fontsize=8)
             elif stage == "recovery":
+                overlap = np.zeros((64,64), dtype=np.uint16)
+                for mask_stack in families.values():
+                    overlap += mask_stack[i].astype(np.uint16)
                 for fid, mask_stack in sorted(families.items()):
                     tid = int(fid[5:])
                     observed_family = observed == tid
@@ -263,6 +275,8 @@ def render_stage(config, stage, run, destination, mode):
                     if record is not None:
                         _annotate(ax, fid, record, center, state_lookup.get(tid),
                                   detailed=(panel=="observed_plus_recovered"), color=color)
+                if panel == "observed_plus_recovered":
+                    _contour(ax, overlap > 1, "#ff00ff", lw=2.0, ls="dashed")
             else:
                 overlaps = np.zeros((256,256), dtype=np.uint16)
                 for fid, stack in sorted(families.items()):
@@ -285,6 +299,15 @@ def render_stage(config, stage, run, destination, mode):
                     combined = overlaps > 0
                     _contour(ax, combined, "#00FF66", pixel=True, lw=1.45)
                 if panel == "families":
+                    # Outline the saved Recovery union as a thin dotted
+                    # comparison guide, never as a segmentation family mask.
+                    recovery_root = run.parent / "06_recovery"
+                    support = np.load(
+                        _saved(recovery_root, "recovery", "recovered_patch_masks"),
+                        mmap_mode="r")[i]
+                    if support.shape != (64,64):
+                        raise ValueError("Saved Recovery support must be 64x64")
+                    _contour(ax, support, "#ffffff", lw=.65, ls="dotted")
                     _contour(ax, overlaps > 1, "#ff00ff", pixel=True, lw=1.3, ls="dashed")
             ax.set_aspect("equal")
         counts = rows[i]
