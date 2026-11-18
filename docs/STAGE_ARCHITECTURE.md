@@ -590,3 +590,21 @@ The renderer fails rather than overwriting an existing destination. The
 existing \`run-standard --visualize all\` now uses this renderer for 05–07
 on subsequent new Runs. The algorithm outputs are unchanged. Live 2024-05-10
 verification remains necessary; unit tests cover stable geometry and sampling.
+
+
+## Shared raw-data storage
+
+The canonical root for COR2 downloaded FITS is `data/raw/cor2/` under the repository,
+with `science/YYYYMMDD` and `beacon/YYYYMMDD` source-separated directories.
+New standard Runs default to that path if `input.raw_dir` and `input.raw_root`
+are both unspecified. `input.raw_root` explicitly overrides the download cache;
+`input.raw_dir` remains a strict local-only input, with no implicit downloads.
+The run-specific acquisition manifest, calibrated RD, masks and lineage stay
+inside that run's `stage_runs/01_02_preprocessing_detection/`.
+
+Historical `DATA/STEREO_DATA/STA/d7/YYYYMMDD` files must be inventoried,
+checksum-verified and copied to `data/raw/cor2/legacy_d7/YYYYMMDD`
+before deleting or renaming legacy directories. These files cannot be assumed
+identical to official science/beacon archive copies. Do not blindly merge
+`data` and `DATA`: `data/catalogs` and other non-raw scientific assets
+must be preserved. Existing Run provenance paths must remain valid.
