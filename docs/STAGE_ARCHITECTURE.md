@@ -461,3 +461,44 @@ python -m scripts.fetch_seeds_details --date 20240503
 
 If the next source row raises a separate schema/geometry error, inspect
 that original row instead of silently skipping or rewriting scientific data.
+
+## Stage 01: raw FITS local-first acquisition (2024-05-10 trial)
+
+The standard runner now supports direct local/remote **Raw FITS to new
+North-up No-MSB RD** processing inside Stage 01. Existing preprocessed
+imports remain supported as a distinct legacy experiment option.
+
+Set `input.raw_dir` to reuse original local FITS files without modifying or
+copying them to another source directory. If this key is omitted, Stage 01
+uses the existing official dual-archive download implementation. An explicit
+but missing local path is an error, **not** permission to download silently.
+Both modes use `prepare_source` for d7 frame selection and
+`run_no_msb_north_up` for actual RD processing. Stage 01 saves
+`input_manifest.json`, the standard RD/WCS outputs and checksum-verified
+stage metadata inside the same new run directory.
+
+~~~yaml
+experiment:
+  date: "20240510"
+input:
+  raw_dir: /home/aababc/stereo_cor2/DATA_1M/STEREO_DATA/STA/d7
+  warmup_days: 2
+preprocessing:
+  method: dual_archive_rd
+~~~
+
+To download instead, omit `raw_dir`; optionally set `input.raw_root`
+for download cache location. `input.preprocessed_dir` is mutually exclusive
+with `raw_dir` and raw preparation options.
+
+~~~bash
+python -m cme_pipeline run-standard \
+  --config configs/20240510_full.yaml \
+  --until preprocessing \
+  --run-name 20240510_stage01_trial
+~~~
+
+This new acquisition capability does not yet remove the separate integrated
+runner's 01–05 `--until` limit or enable stage-specific `--visualize all`.
+Those remain separate implementation work. Tests mock the science functions;
+real May 10 Stage 01 must be tested on the user's raw local files.
