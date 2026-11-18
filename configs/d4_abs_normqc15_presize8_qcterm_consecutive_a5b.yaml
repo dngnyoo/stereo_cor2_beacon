@@ -14,6 +14,7 @@ tracking:
   parameters:
     birth_gate_threshold_px: 30.0
     terminate_on_qc: true
+    max_missed_frames: 1
 pre_size_gate:
   enabled: true
   connectivity: 8
