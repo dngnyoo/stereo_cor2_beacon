@@ -90,6 +90,62 @@ def _plot(stage: str, run: Path, destination: Path) -> list[Path]:
     return [output]
 
 
+
+def _render_mask_overlays(config, stage, run, destination, mode):
+    """Render evaluation-date masks on original saved RD without recomputing."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    first = run.parent / "01_02_preprocessing_detection"
+    pre = first / "01_preprocessing/data/acquisition/preprocessed"
+    if not pre.is_dir():
+        pre = first / "01_preprocessing/data"
+    manifest = pd.read_csv(pre / "01_rd_manifest.csv")
+    rd = np.load(pre / "north_up_RD_DNs_per_second.npy", mmap_mode="r")
+    valid = np.load(pre / "north_up_pair_valid_masks.npy", mmap_mode="r")
+    meta = verify_stage(run, stage)
+    key = "recovered_patch_masks" if stage == "recovery" else "pixel_masks"
+    masks = np.load(_artifact(run, meta, key), mmap_mode="r")
+    if len(manifest) != len(rd) or valid.shape != rd.shape or len(masks) != len(rd):
+        raise ValueError("Original RD and saved mask frames are not aligned")
+    dates = pd.to_datetime(manifest["end_time"], utc=True).dt.strftime("%Y%m%d")
+    idx = np.flatnonzero(dates.eq(str(config.data["experiment"]["date"])).to_numpy())
+    if not len(idx):
+        raise ValueError("No evaluation-date frames for mask overlays")
+    if mode != "all":
+        idx = idx[np.unique(np.linspace(0, len(idx)-1, min(6, len(idx)), dtype=int))]
+    output = []
+    for i in idx:
+        i = int(i)
+        mask = np.asarray(masks[i], bool)
+        if stage == "recovery":
+            if mask.shape != (64, 64):
+                raise ValueError("Recovery mask must have shape (64,64)")
+            mask = np.repeat(np.repeat(mask, 4, axis=0), 4, axis=1)
+        if mask.shape != (256, 256):
+            raise ValueError("Pixel mask must have shape (256,256)")
+        image = np.ma.masked_where(~np.asarray(valid[i], bool), rd[i])
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5.5), constrained_layout=True)
+        for ax in axes:
+            ax.imshow(image, origin="lower", cmap="gray", vmin=-600, vmax=600)
+            ax.set(xlim=(-.5, 255.5), ylim=(-.5, 255.5),
+                   xlabel="X (pixel)", ylabel="Y (pixel)", aspect="equal")
+        overlay = np.ma.masked_where(~mask, mask.astype(float))
+        axes[1].imshow(overlay, origin="lower", cmap="autumn",
+                       alpha=.45, interpolation="nearest", vmin=0, vmax=1)
+        axes[0].set_title("Original north-up RD")
+        axes[1].set_title(f"{stage.capitalize()} mask overlay")
+        fig.suptitle(str(manifest.iloc[i]["end_time"]) + " UTC")
+        filename = destination / f"pair_{int(manifest.iloc[i]['pair_index']):03d}_{stage}.png"
+        if filename.exists():
+            raise FileExistsError(filename)
+        fig.savefig(filename, dpi=130)
+        plt.close(fig)
+        output.append(filename)
+    return output
+
+
 def render_full_stage(config, stage: str, run: Path, top_run: Path,
                       visualize: str | None = None) -> list[Path]:
     mode = config.vis_mode(stage, visualize)
@@ -116,6 +172,10 @@ def render_full_stage(config, stage: str, run: Path, top_run: Path,
             detector, date=date, all_frames=(mode == "all"),
             output_dir=destination
         )
+    elif stage in ("recovery", "segmentation"):
+        destination.mkdir(parents=True, exist_ok=False)
+        paths = _render_mask_overlays(config, stage, run, destination, mode)
+        paths.extend(_plot(stage, run, destination))
     elif stage == "tracking":
         from cme_pipeline.tracking_diagnostics import save_tracking_diagnostics
         data_root = run / "03_tracking/data"
