@@ -437,3 +437,27 @@ python -m pytest -q tests/test_parse_seeds_details.py tests/test_seeds_validatio
 ~~~
 
 Implementation is committed; real 2024 data execution remains to be tested.
+
+### 2024 SEEDS monthly unwrapped PA compatibility
+
+Observed original May 2024 GMU monthly records include PA=399 on line 31
+and PA=374 on line 32. The original validator rejected all PA>360
+incorrectly for these three-digit source-native identifiers. The revised
+monthly parser preserves these raw values and original filename/event-ID
+components (P399, P374), admitting the three-digit range 0..999 while
+retaining positive WIDTH <=360 and positive observation count validation.
+Circular angular comparison in the existing geometry utilities handles
+normalization modulo 360. Do **not** rewrite source PA in filenames, because
+detail-file retrieval must preserve the exact official source identifiers.
+
+If monthly raw data were already downloaded by a run that failed during
+parsing, **do not rerun** fetch_seeds_monthly without a deliberate overwrite.
+Instead parse the cached raw monthly.txt directly:
+
+~~~bash
+python -m scripts.parse_seeds_monthly --date 20240503
+python -m scripts.fetch_seeds_details --date 20240503
+~~~
+
+If the next source row raises a separate schema/geometry error, inspect
+that original row instead of silently skipping or rewriting scientific data.
