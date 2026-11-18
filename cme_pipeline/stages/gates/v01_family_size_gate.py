@@ -17,7 +17,7 @@ from cme_pipeline.utils.io import compute_dict_hash
 class FamilySizeGateStage(PipelineStage):
     """Admits Families based strictly on observed size and persistence."""
     name: str = "size_gate"
-    version: str = "2.1.0"
+    version: str = "2.2.0"
 
     def compute_fingerprint(
         self, inputs: BirthGateOutput, config: PipelineConfig, context: PipelineContext
@@ -28,6 +28,7 @@ class FamilySizeGateStage(PipelineStage):
             "min_detected_patches": config.size_gate.min_detected_patches,
             "min_observed_pairs": config.size_gate.min_observed_pairs,
             "size_qualified_persistence": config.size_gate.size_qualified_persistence,
+            "consecutive_size_qualified": config.size_gate.consecutive_size_qualified,
             "upstream_birth_gated_count": len(inputs.birth_gated_family_ids),
         }
         return compute_dict_hash(desc)
@@ -47,6 +48,9 @@ class FamilySizeGateStage(PipelineStage):
         min_det_threshold = config.size_gate.min_detected_patches
         min_obs_threshold = config.size_gate.min_observed_pairs
         qualified_mode = bool(config.size_gate.size_qualified_persistence)
+        consecutive_mode = bool(config.size_gate.consecutive_size_qualified)
+        if consecutive_mode and not qualified_mode:
+            raise ValueError("consecutive_size_qualified requires size_qualified_persistence")
         if min_det_threshold < 1 or min_obs_threshold < 1:
             raise ValueError("Gate thresholds must be positive")
         family_summary_rows = []
@@ -66,6 +70,7 @@ class FamilySizeGateStage(PipelineStage):
             max_det_pair = None
             active_pairs = []
             qualified_pairs = []
+            qualified_indices = []
 
             for f_idx in range(n_pairs):
                 p_num = int(man_df.iloc[f_idx]["pair_index"])
@@ -79,15 +84,27 @@ class FamilySizeGateStage(PipelineStage):
                     det_cnt = int(det_union.sum())
                     if det_cnt >= min_det_threshold:
                         qualified_pairs.append(p_num)
+                        qualified_indices.append(f_idx)
                     if det_cnt > max_det:
                         max_det = det_cnt
                         max_det_pair = p_num
 
             n_observed = len(set(active_pairs))
             n_qualified = len(set(qualified_pairs))
+            longest_consecutive = 0
+            current_consecutive = 0
+            last_qualified_index = None
+            for qualified_index in qualified_indices:
+                if last_qualified_index is not None and qualified_index == last_qualified_index + 1:
+                    current_consecutive += 1
+                else:
+                    current_consecutive = 1
+                longest_consecutive = max(longest_consecutive, current_consecutive)
+                last_qualified_index = qualified_index
             is_admitted = (
                 has_anchor and (
-                    n_qualified >= min_obs_threshold if qualified_mode
+                    (longest_consecutive >= min_obs_threshold if consecutive_mode
+                     else n_qualified >= min_obs_threshold) if qualified_mode
                     else (max_det >= min_det_threshold and n_observed >= min_obs_threshold)
                 )
             )
@@ -95,6 +112,11 @@ class FamilySizeGateStage(PipelineStage):
             rejection_reason = "NONE"
             if not has_anchor:
                 rejection_reason = inputs.rejected_family_reasons.get(fid, "NO_SOLAR_ROOT_ANCHOR")
+            elif consecutive_mode and longest_consecutive < min_obs_threshold:
+                rejection_reason = (
+                    f"CONSECUTIVE_SIZE_QUALIFIED_BELOW_{min_obs_threshold} "
+                    f"(max_run={longest_consecutive}, total_qualified={n_qualified})"
+                )
             elif qualified_mode and n_qualified < min_obs_threshold:
                 rejection_reason = (
                     f"SIZE_QUALIFIED_DURATION_BELOW_{min_obs_threshold}_PAIRS "
@@ -123,6 +145,8 @@ class FamilySizeGateStage(PipelineStage):
                 "last_pair_index": max(active_pairs) if active_pairs else np.nan,
                 "n_active_pairs": n_observed,
                 "n_size_qualified_pairs": n_qualified,
+                "longest_consecutive_size_qualified": longest_consecutive,
+                "consecutive_size_qualified_enabled": consecutive_mode,
                 "size_qualified_pairs": str(sorted(set(qualified_pairs))),
                 "size_qualified_persistence_enabled": qualified_mode,
                 "min_required_observed_pairs": min_obs_threshold,
@@ -135,7 +159,8 @@ class FamilySizeGateStage(PipelineStage):
         df_fam_summary = pd.DataFrame(family_summary_rows).sort_values("max_detected_patches", ascending=False)
         df_size_decisions = df_fam_summary[
             ["family_id", "status", "rejection_reason", "member_count", "anchor_count",
-             "n_active_pairs", "n_size_qualified_pairs", "max_detected_patches"]
+             "n_active_pairs", "n_size_qualified_pairs",
+             "longest_consecutive_size_qualified", "max_detected_patches"]
         ].copy()
 
         context.info(
