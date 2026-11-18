@@ -33,6 +33,32 @@ def visualize_admitted_families(gates_run: str | Path, *,
     admitted = families.loc[families.status.eq("ADMITTED")].copy()
     if len(admitted) != int(metadata["size_gate_admitted"]):
         raise ValueError("Admitted family count differs from saved gate summary")
+    # A qualifying run does not imply all epochs of this Family are continuous.
+    # Display only the longest contiguous size-qualified segment, without
+    # altering the actual Tracking and Gate results on disk.
+    strict_segments = bool(metadata.get("consecutive_size_qualified", False))
+    allowed_family_pairs = {}
+    if strict_segments:
+        if "size_qualified_pairs" not in admitted.columns:
+            raise ValueError("Missing size_qualified_pairs for strict visualization")
+        for _, row in admitted.iterrows():
+            fid = str(row.family_id)
+            pairs = sorted(set(map(int, ast.literal_eval(str(row.size_qualified_pairs)))))
+            segments = []
+            current = []
+            for pair in pairs:
+                if current and pair != current[-1] + 1:
+                    segments.append(current)
+                    current = []
+                current.append(pair)
+            if current:
+                segments.append(current)
+            best = sorted(segments, key=lambda g: (-len(g), g[0]))[0] if segments else []
+            if len(best) < int(metadata["min_observed_pairs"]):
+                raise ValueError(f"Admitted Family {fid} lacks a valid consecutive segment")
+            if int(row.longest_consecutive_size_qualified) != len(best):
+                raise ValueError(f"Unexpected consecutive segment length for {fid}")
+            allowed_family_pairs[fid] = set(best)
     track_to_family = {}
     for _, row in admitted.iterrows():
         ids = ast.literal_eval(str(row.member_track_ids))
@@ -50,7 +76,8 @@ def visualize_admitted_families(gates_run: str | Path, *,
     save_tracking_diagnostics(
         tracking, date=str(metadata["date"]), output_dir=target,
         included_track_ids=set(track_to_family),
-        track_family_ids=track_to_family)
+        track_family_ids=track_to_family,
+        allowed_family_pairs=allowed_family_pairs if strict_segments else None)
     geometry = target / "track_geometry.csv"
     records = pd.read_csv(geometry) if geometry.stat().st_size else pd.DataFrame()
     if len(records):
@@ -62,6 +89,12 @@ def visualize_admitted_families(gates_run: str | Path, *,
         pd.DataFrame(columns=["family_id","pair_index","track_id"]).to_csv(
             target / "admitted_family_geometry.csv", index=False)
     admitted.to_csv(target / "admitted_family_summary.csv",index=False)
+    if strict_segments:
+        pd.DataFrame([
+            {"family_id": fid, "first_pair": min(pairs),
+             "last_pair": max(pairs), "n_consecutive_pairs": len(pairs)}
+            for fid, pairs in sorted(allowed_family_pairs.items())
+        ]).to_csv(target / "displayed_consecutive_segments.csv", index=False)
     print(f"Gate-admitted visualization: {len(admitted)} families, "
           f"{len(track_to_family)} tracks; {target}")
     return target
