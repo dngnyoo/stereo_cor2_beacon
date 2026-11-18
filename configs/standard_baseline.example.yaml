@@ -5,11 +5,11 @@ experiment:
   source: dual_archive
 
 visualization:
-  default: off   # CLI --visualize has highest priority.
+  default: 'off'   # CLI --visualize has highest priority.
 
 preprocessing:
   method: dual_archive_rd
-  visualization: {mode: off}
+  visualization: {mode: 'off'}
 
 detection:
   method: d4
