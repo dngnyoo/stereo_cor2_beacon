@@ -102,7 +102,9 @@ def render_full_stage(config, stage: str, run: Path, top_run: Path,
     if stage == "preprocessing":
         from cme_pipeline.rd_diagnostics import save_rd_diagnostics
         paths = save_rd_diagnostics(
-            run / "01_preprocessing/data/preprocessed",
+            (run / "01_preprocessing/data/acquisition/preprocessed"
+             if (run / "01_preprocessing/data/acquisition/preprocessed").is_dir()
+             else run / "01_preprocessing/data"),
             date=date, all_frames=(mode == "all"),
             output_dir=destination
         )
