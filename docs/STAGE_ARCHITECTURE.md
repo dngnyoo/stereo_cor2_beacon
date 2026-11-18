@@ -1,0 +1,62 @@
+# COR2 standardized pipeline (design contract, migration in progress)
+
+This document defines the target architecture; existing legacy commands remain unchanged until parity tests pass.
+
+## Nine stages
+
+| # | Stage | Substeps | Contract outputs |
+| --- | --- | --- | --- |
+| 01 | preprocessing | Acquisition, cadence selection, North-up RD | rd, valid_mask, manifest, geometry, source_provenance |
+| 02 | detection | D4, T24 thresholds, QC | patch_activation, component_labels, frame_qc, detection_scores |
+| 03 | tracking | Pre-size, A5b, strict continuity | track_states, track_ownership, tracking_provenance |
+| 04 | association | Identity mapping | family_membership, association_decisions |
+| 05 | gates | Birth, consecutive size-qualified persistence | gate_decisions, admitted_family_ids, qualified_pair_ranges |
+| 06 | recovery | Region recovery | recovered_patch_masks, recovery_metrics |
+| 07 | segmentation | Pixel masks | pixel_masks, segmentation_metrics |
+| 08 | catalog | CME events, height-time, kinematics | events, height_time, kinematics |
+| 09 | validation | External catalog matching | catalog_matches, evaluation_metrics |
+
+The authoritative stage identifiers and required artifact names live in `cme_pipeline/core/standard_stages.py`.
+
+## Output layout
+
+```text
+runs/<run-id>/
+  config_snapshot.json
+  run_manifest.json
+  01_preprocessing/{metadata.json,data/,diagnostics/}
+  02_detection/{metadata.json,data/,diagnostics/}
+  03_tracking/{metadata.json,data/,diagnostics/}
+  04_association/{metadata.json,data/,diagnostics/}
+  05_gates/{metadata.json,data/,diagnostics/}
+  06_recovery/{metadata.json,data/,diagnostics/}
+  07_segmentation/{metadata.json,data/,diagnostics/}
+  08_catalog/{metadata.json,data/,diagnostics/}
+  09_validation/{metadata.json,data/,diagnostics/}
+```
+
+Stage directories exist only for executed stages. Visualization outputs are not scientific stages and live under that stage's diagnostics directory.
+
+## Execution rules
+
+1. New `run --config ... --until ...` creates one new folder. Never automatically borrow outputs from other runs.
+2. Explicit `run --run <existing> --until ...` may continue only with the stored immutable configuration and verified upstream artifacts.
+3. Explicit `--input-run` and `--from` may create a new child run using pinned, verified parent inputs; record provenance and parent artifact checksums.
+4. No mutation of completed science artifacts. Do not infer success from folder existence. Refuse inconsistent config, schema, timestamps, patch geometry, or hashes.
+5. Visualization `off|diagnostic|all` defaults to off. CLI `--visualize` overrides per-stage config, which overrides shared config. Visualization changes do not invalidate scientific outputs.
+6. No deletion or movement of legacy runs until equivalence is validated.
+
+## Baseline scientific settings
+
+20240503: Absolute D4 P95(abs(Z)), Gaussian sigma=1, causal T24 median+3 scaled MAD, outer P95 P04 floor with absolute min 0.5; P16 spatial normalized weighted tile variance cutoff 1.5; pre-size 8-connected >=8 patches; A5b outward front tolerance 4px, max_missed_frames=1, terminate_on_qc=true; Identity association; first observed minimum radius <=30px; size-qualified >=10 patches for >=3 consecutive OBSERVED frames. Outward split is **excluded**.
+
+## Implementation migration gates
+
+- Inventory existing module paths, imports and stage entrypoints; classify algorithm vs diagnostic vs experiment vs utility.
+- Add adapters matching the artifact schema; link named algorithms through explicit registries.
+- Introduce single-YAML validation and `run --until`, `--dry-run` only after wiring existing algorithms.
+- Preserve old imports and CLI entrypoints as compatibility wrappers during migration.
+- Cross-check old/new detection arrays, QC statuses, owned masks, tracks, family admissions and catalogs, with deterministic fixtures.
+- Archive old `runs/` directories only after results and provenance are verified.
+
+**Status:** Contract and metadata primitives landed on the refactor branch. The new orchestrator, migration, and full local parity tests are NOT yet complete.
