@@ -273,10 +273,21 @@ def main() -> None:
         cfg = StandardConfig.load(args.config)
         root = Path("runs") / args.run_name
         if args.input_run:
-            from cme_pipeline.standard_input_run import execute_from_detection
-            finished = execute_from_detection(
-                cfg, input_run=args.input_run, until=args.until,
-                run_dir=root, visualize=args.visualize)
+            import json
+            parent_manifest = json.loads((Path(args.input_run) / "run_manifest.json").read_text())
+            parent_stages = parent_manifest["stages"]
+            if parent_stages.get("tracking") == "COMPLETED":
+                from cme_pipeline.standard_tracking_parent import execute_from_tracking
+                finished = execute_from_tracking(
+                    cfg, input_run=args.input_run, until=args.until,
+                    run_dir=root, visualize=args.visualize)
+            elif parent_stages.get("detection") == "COMPLETED":
+                from cme_pipeline.standard_input_run import execute_from_detection
+                finished = execute_from_detection(
+                    cfg, input_run=args.input_run, until=args.until,
+                    run_dir=root, visualize=args.visualize)
+            else:
+                raise ValueError("Input Run has no supported completed Tracking or Detection stage")
         else:
             finished = execute_to_gates(cfg, until=args.until, run_dir=root,
                                        visualize=args.visualize)
