@@ -172,6 +172,40 @@ def render_full_stage(config, stage: str, run: Path, top_run: Path,
             detector, date=date, all_frames=(mode == "all"),
             output_dir=destination
         )
+        # P16's per-frame values and QC decisions are computed within
+        # Detection, not supplied by configuration as observations.
+        if "p16_spatial_metrics" in metadata:
+            raise ValueError("Unexpected legacy Detection metadata shape")
+        if "p16_qc_decisions" in metadata["outputs"]:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+            metrics_item = metadata["outputs"].get("p16_spatial_metrics")
+            if metrics_item is None:
+                raise ValueError("Enabled P16 QC lacks calculated metrics")
+            metrics = pd.read_csv(run / metrics_item["path"])
+            choices = pd.read_csv(_artifact(run, metadata, "p16_qc_decisions"))
+            merged = metrics.merge(choices[["pair_index", "qc_status"]],
+                                   on="pair_index", validate="one_to_one")
+            if merged.empty:
+                raise ValueError("Missing P16 QC decision rows")
+            cutoff = float((config.data.get("detection") or {}).get("qc", {})[
+                "normalized_weighted_tile_variance_min"])
+            fig, ax = plt.subplots(figsize=(12, 4.5), constrained_layout=True)
+            ax.plot(merged["pair_index"], merged["p16_normalized_weighted_tile_variance"],
+                    ".-", label="Observed normalized P16 variance")
+            ax.axhline(cutoff, linestyle="--", label=f"Configured QC cutoff = {cutoff:g}")
+            flagged = merged["qc_status"].astype(str).eq("SPATIAL_QC")
+            ax.scatter(merged.loc[flagged, "pair_index"],
+                       merged.loc[flagged, "p16_normalized_weighted_tile_variance"],
+                       marker="x", label="New P16 QC rejection")
+            ax.set(xlabel="RD pair index", ylabel="Normalized weighted tile variance",
+                   title="Stage 02 P16 metric and QC (computed from saved D4 output)")
+            ax.legend()
+            qc_plot = destination / "p16_spatial_qc_timeline.png"
+            fig.savefig(qc_plot, dpi=145)
+            plt.close(fig)
+            paths.append(qc_plot)
     elif stage in ("recovery", "segmentation"):
         destination.mkdir(parents=True, exist_ok=False)
         paths = _render_mask_overlays(config, stage, run, destination, mode)
