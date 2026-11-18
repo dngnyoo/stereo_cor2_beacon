@@ -60,7 +60,7 @@ def save_tracking_diagnostics(
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.colors import to_hex
+    from cme_pipeline.family_colors import track_color
     from matplotlib import patheffects
     from cme_pipeline.stages.segmentation.visualization import get_rd_cmap
 
@@ -93,7 +93,7 @@ def save_tracking_diagnostics(
         by_id = {int(r["track_id"]): r for _, r in observed.iterrows()}
         for t in tracks:
             tid = t["track_id"]
-            colour = to_hex(plt.get_cmap("tab20")(tid % 20))
+            colour = track_color(tid)
             ax.contour(np.arange(64) * 4 + 1.5, np.arange(64) * 4 + 1.5,
                        t["mask"].astype(float), levels=[.5],
                        colors=[colour], linewidths=1.6)
