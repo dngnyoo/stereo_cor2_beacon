@@ -1,0 +1,22 @@
+# Fixed A5b experiment configuration for comparison of original D4 and
+# normalized-P16-QC D4 input. No detector recalculation.
+detection:
+  method: d4
+  denoiser: gaussian
+  floor_mode: outer_p95
+  absolute_p04_floor: 0.5
+tracking:
+  method: a5b
+  outward_gate_enabled: true
+  outward_gate_tolerance_px: 4.0
+  birth_gate_threshold_px: 30.0
+  max_cadence_gap_sec: 4500.0
+pre_size_gate:
+  enabled: true
+  connectivity: 8
+  min_component_patches: 2
+birth_gate:
+  max_birth_radius_px: 30.0
+size_gate:
+  min_detected_patches: 10
+  min_observed_pairs: 3
