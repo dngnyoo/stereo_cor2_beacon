@@ -123,7 +123,7 @@ def run(detection_dir, output_dir, *, date=None, focus_pair=99, tile_size=4):
         if z is None:
             scores, accepted = np.full((16,16), np.nan), np.zeros((16,16), bool)
         else:
-            scores, accepted = _scores(z, valid, 16)
+            scores, accepted = _scores(z, valid, 16, score_mode=meta.get("score_mode", "abs"))
         t24 = float(summary.iloc[i]["T24_p16"])
         metrics, valid16, active, raw, clipped = spatial_metrics(
             scores, accepted, t24, tile_size=tile_size)
@@ -184,7 +184,8 @@ def run(detection_dir, output_dir, *, date=None, focus_pair=99, tile_size=4):
         plt.close(fig)
     (out/"experiment_metadata.json").write_text(json.dumps({
         "source_detection":str(det),"date":day,"tile_size":tile_size,
-        "score_definition":"P95(abs(Z)), inclusive of both Z signs",
+        "score_definition":"P95 of abs(Z) or max(Z,0), selected from detector metadata",
+        "score_mode":meta.get("score_mode","abs"),
         "active_definition":"P16 score > causal T24 P16",
         "raw_weight":"P16 score on active cells, zero otherwise",
         "excess_weight":"max(0, P16 score - T24 P16)",
