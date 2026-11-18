@@ -318,3 +318,54 @@ For a scientific parity check compare the new Stage 07 masks and tables
 against the original Island-First execution run using the same saved Recovery
 and segmentation parameters. Comparing only total segmented pixels is not
 sufficient. This branch has not yet been executed locally against real data.
+
+## Phase 9: Stage 08 image-plane CME Catalog (MELONHOUSE test pending)
+
+A completed explicit Stage 07 Segmentation Run now feeds an independently
+created Stage 08 Catalog Run. No previous stage is recomputed and no optional
+visualizations/animations are rendered. The canonical
+cme_pipeline.stages.segmentation.cme_catalog.build_cme_catalog() is reused.
+
+**Geometry prerequisite:** Unlike pixel segmentation, the catalog expresses
+front heights in R_sun and speeds in km/s. The current Tracking loader has
+geometry.rsun_px=NaN. Set catalog.rsun_px to a *verified* solar radius
+measured in native 256x256 pixels for these observations (not a guessed value).
+The builder uses the published default solar radius 695700 km for the
+height-to-km conversion.
+
+Example (replace the placeholder only after checking FITS/WCS scale):
+
+~~~yaml
+catalog:
+  method: event_kinematics
+  rsun_px: <VERIFIED_SOLAR_RADIUS_IN_256PX_IMAGE>
+  solar_radius_km: 695700.0
+~~~
+
+Create an alternate YAML config from configs/20240503_recovery.yaml, add
+the catalog section and invoke:
+
+~~~bash
+python -m cme_pipeline run-standard \
+  --config configs/20240503_catalog.yaml \
+  --input-run runs/20240503_segmentation_001 \
+  --until catalog \
+  --run-name 20240503_catalog_001
+~~~
+
+The new 08_catalog Run writes tables/cme_event_catalog.csv
+(EVENT_FIELDS), tables/cme_frame_measurements.csv (FRAME_FIELDS),
+tables/cme_kinematics.csv (event-based speed view), and
+catalog_summary.json. The manifest records hashes and references the exact
+Segmentation parent Run. Catalog event speeds remain *exploratory* linear
+fits of per-frame leading height vs elapsed time, using the canonical code's
+speed_fit_r2 and speed_quality fields. They are not ground truth.
+
+Strict preflight verifies the original Segmentation contract SHA-256, its
+Recovery/Gates/Tracking/Detection chain, saved global and family pixel masks,
+framewise pixel counts and family stats. Overlapping Family masks are
+preserved; no new exclusivity or merging logic is introduced.
+
+First run the regression tests, then the real Catalog run, and inspect
+event speeds and fit quality. Stage 08 code is committed but local live-data
+execution is still pending.
