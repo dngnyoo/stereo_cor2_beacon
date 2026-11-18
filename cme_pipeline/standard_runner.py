@@ -137,8 +137,8 @@ def execute_to_gates(
         raise ValueError("Unsupported threshold implementation")
     if float(det.get("gaussian_sigma", 1.0)) != 1.0 or det.get("denoiser", "gaussian") != "gaussian":
         raise ValueError("Current detector only supports configured Gaussian sigma=1")
-    if qc.get("normalized_weighted_tile_variance_min") is not None and metrics is None:
-        raise ValueError("Spatial QC needs explicit input.spatial_metrics_csv")
+    # If the original date-specific metrics are not supplied, calculate them
+    # from this Run's freshly saved D4 products with the existing v2 metric.
     if qc.get("normalized_weighted_tile_variance_min") is None and metrics:
         raise ValueError("QC metrics supplied but threshold not configured")
 
@@ -231,7 +231,14 @@ def execute_to_gates(
                   outer_floor_inner_px=float(det.get("outer_floor_inner_px", 88)),
                   outer_floor_outer_px=float(det.get("outer_floor_outer_px", 116)))
     detector_dir = raw_dir
-    if metrics is not None:
+    computed_metrics = False
+    if qc.get("normalized_weighted_tile_variance_min") is not None:
+        if metrics is None:
+            from cme_pipeline.p16_spatial_diagnostics import run as compute_p16_spatial_metrics
+            metrics_dir = target / "p16_spatial_diagnostics"
+            compute_p16_spatial_metrics(raw_dir, metrics_dir, date=date)
+            metrics = metrics_dir / "p16_spatial_metrics.csv"
+            computed_metrics = True
         detector_dir = apply_spatial_qc(
             raw_dir, metrics, target / "qc",
             date=date, cutoff=float(qc["normalized_weighted_tile_variance_min"])
@@ -242,6 +249,16 @@ def execute_to_gates(
         "frame_qc": detector_dir / "frame_detection_summary.csv",
         "detection_scores": raw_dir / "frame_detection_summary.csv",
     })
+    if metrics is not None:
+        # The metrics source is part of Stage 02 provenance and must be
+        # content-addressed by the Run layout when computed locally.
+        if computed_metrics:
+            det_outputs["p16_spatial_metrics"] = str(metrics.resolve().relative_to(run))
+        else:
+            from cme_pipeline.core.run_layout import _hash_file
+            det_outputs["p16_external_metrics_sha256"] = str(
+                (target / "p16_external_metrics_sha256.txt").relative_to(run))
+            (target / "p16_external_metrics_sha256.txt").write_text(_hash_file(metrics) + "\n")
     complete_stage(run, "detection", {"rd": pre_outputs["rd"], "valid_mask": pre_outputs["valid_mask"]},
                    det_outputs, "d4", det)
     if len(order) == 2:
