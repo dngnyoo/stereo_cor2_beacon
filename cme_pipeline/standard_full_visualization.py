@@ -209,9 +209,9 @@ def render_full_stage(config, stage: str, run: Path, top_run: Path,
             fig.savefig(qc_plot, dpi=145)
             plt.close(fig)
             paths.append(qc_plot)
-    elif stage in ("recovery", "segmentation"):
-        destination.mkdir(parents=True, exist_ok=False)
-        paths = _render_mask_overlays(config, stage, run, destination, mode)
+    elif stage in ("gates", "recovery", "segmentation"):
+        from cme_pipeline.family_stage_diagnostics import render_stage
+        paths = render_stage(config, stage, run, destination, mode)
         paths.extend(_plot(stage, run, destination))
     elif stage == "tracking":
         from cme_pipeline.tracking_diagnostics import save_tracking_diagnostics
