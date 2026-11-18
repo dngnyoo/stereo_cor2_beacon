@@ -28,12 +28,8 @@ def _family_id(tid):
 
 
 def _palette(fid):
-    """Match the current A5b tracking renderer's tab20(track_id % 20)."""
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import to_hex
-    if not fid.startswith("FAM_T") or not fid[5:].isdigit():
-        raise ValueError(f"Unexpected identity Family ID: {fid!r}")
-    return to_hex(plt.get_cmap("tab20")(int(fid[5:]) % 20))
+    from cme_pipeline.family_colors import family_color
+    return family_color(fid)
 
 
 def _load(run, stage):
@@ -227,8 +223,11 @@ def render_stage(config, stage, run, destination, mode):
         state_lookup = {int(r.track_id): r for _, r in observed_states.iterrows()}
         panels = ("candidates", "admitted") if stage == "gates" else (
             ("observed", "observed_plus_recovered") if stage == "recovery"
-            else ("union", "families"))
-        fig, axes = plt.subplots(1, 2, figsize=(16, 7), constrained_layout=True)
+            else ("families",))
+        fig, axes = plt.subplots(1, len(panels),
+                                 figsize=(16, 7) if len(panels) == 2 else (8.5, 8),
+                                 constrained_layout=True)
+        axes = np.atleast_1d(axes)
         for ax, panel in zip(axes, panels):
             im = _base(ax, rd[i], valid[i], panel.replace("_", " ").title())
             if stage == "gates":
@@ -295,9 +294,6 @@ def render_stage(config, stage, run, destination, mode):
                             ax.text(float(xx.mean())+.5,float(yy.mean())+.5,fid,
                                     color=color, fontsize=8, ha="center", va="center",
                                     bbox={"facecolor":"black","alpha":.5,"edgecolor":"none"})
-                if panel == "union":
-                    combined = overlaps > 0
-                    _contour(ax, combined, "#00FF66", pixel=True, lw=1.45)
                 if panel == "families":
                     # Outline the saved Recovery union as a thin dotted
                     # comparison guide, never as a segmentation family mask.
