@@ -81,3 +81,43 @@ Next: implement stage-specific adapters, contract validation and isolated
 `runs/<run-id>/<number>_<stage>` output for stages 01–05. Then compare a
 fresh baseline run against the frozen historical outputs before enabling a
 new standard execution entrypoint.
+
+## Phase 3: isolated scientific runner (integration tests pending)
+
+A new command is introduced, separate from the legacy run command:
+
+~~~bash
+python -m cme_pipeline run-standard --config configs/standard_baseline.example.yaml --until gates --run-name 20240503_standard_trial_001
+~~~
+
+Before running, edit input.preprocessed_dir in the YAML to point to an existing validated No-MSB North-up RD directory; set input.spatial_metrics_csv explicitly.
+
+To discover the preprocessing path recorded by an existing D4 detection, run:
+
+~~~bash
+python -c 'import json; print(json.load(open("runs/20240503_d4_validation/detection_metadata.json"))["input_dir"])'
+~~~
+
+Recommended first smoke test:
+
+~~~bash
+python -m unittest discover -s tests -p 'test_standard_*.py'
+python -m cme_pipeline run-standard --config configs/standard_baseline.example.yaml --until preprocessing --run-name 20240503_standard_smoke_001
+~~~
+
+New run names must be unique. This first runner imports an explicitly
+selected existing preprocessing output into the new 01_preprocessing/data/
+directory; FITS acquisition and cadence selection from scratch are pending.
+
+It reuses the existing D4 detector, optional normalized P16 spatial QC
+transform, registered A5b tracker with pre-size, Identity Association, Birth
+Gate and consecutive Size-qualified Persistence Gate. It writes each stage's
+artifacts and their SHA-256 checksums under one run folder.
+
+LIMITATIONS: This implementation is unverified on MELONHOUSE; it is not a
+certified replacement for the legacy baseline. It supports standard-run only
+through stage 05, only explicit preprocessed RD input, no resume, and no
+automatic cross-run discovery. Non-off visualization fails explicitly
+until independent diagnostic renderers are integrated. Legacy entrypoints
+remain unchanged. Compare exact patch arrays, QC statuses, ownership masks
+and admitted Family IDs before trusting scientific equivalence.
