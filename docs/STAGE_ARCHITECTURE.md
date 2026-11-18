@@ -502,3 +502,50 @@ This new acquisition capability does not yet remove the separate integrated
 runner's 01–05 `--until` limit or enable stage-specific `--visualize all`.
 Those remain separate implementation work. Tests mock the science functions;
 real May 10 Stage 01 must be tested on the user's raw local files.
+
+## One-command full 2024-05-10 Run with per-stage PNGs (new; needs live test)
+
+`run-standard --until validation` with **no** `--input-run` now uses a full
+orchestrator. The original `--input-run` stage-specific workflow is unchanged.
+The new orchestrator creates one unique top-level Run directory containing
+immutable internal `stage_runs/` children and `visualizations/01_...09_/`
+folders. The 01–02 runner shares its internal Run, then each downstream
+stage uses the preceding completed Run as its explicit parent. All stage
+outputs are checked with `verify_stage` before proceeding. It never
+recomputes earlier stages merely to run a later one.
+
+`--visualize all` requests saved diagnostic PNGs at every stage:
+01 original RD, 02 D4 detection, 03 A5b tracking, 04 Association track
+membership, 05 Gate admission and patch size, 06 Recovery framewise RD +
+mask overlay and occupancy, 07 Segmentation framewise RD + pixel mask and
+occupancy, 08 event height-time plot, 09 SEEDS matching IoU comparison.
+Visualization reads saved arrays/tables; plotting is not part of scientific
+candidate selection. A visualization failure fails the overall Run visibly.
+
+For 2024-05-10, clone the locally verified prior scientific configuration
+and update:
+- `experiment.date: "20240510"`
+- `input.raw_dir: /home/aababc/stereo_cor2/DATA_1M/STEREO_DATA/STA/d7`
+- `input.warmup_days: 2`; omit `input.preprocessed_dir`
+- Remove the **old date's** `catalog.rsun_px` so it is computed from the
+  first evaluation-day Raw FITS `RSUN/CDELT1/CUNIT1` header, or specify an
+  independently verified May 10 value.
+- Remove the **old date's** `validation.seeds_frames_csv`; official May 10
+  SEEDS reference is downloaded/parsed automatically if missing.
+- If D4 P16 QC is configured, supply an independently computed **May 10**
+  `input.spatial_metrics_csv`. Never reuse the May 3 metrics or silently
+  disable the P16 QC threshold: date-specific metrics are required.
+
+~~~bash
+python -m cme_pipeline run-standard \
+  --config configs/20240510_full.yaml \
+  --until validation \
+  --visualize all \
+  --run-name 20240510_full_001
+~~~
+
+The complete top-level Run summary is
+`runs/20240510_full_001/full_run_summary.json`. The SEEDS reference is
+post-hoc only. Downloads are source acquisition, not ground truth. Tests
+for the full orchestrator mock algorithm execution; the actual 2024-05-10
+execution and PNGs remain to be verified on the local scientific environment.
