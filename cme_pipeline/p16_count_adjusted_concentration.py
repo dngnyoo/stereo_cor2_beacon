@@ -117,7 +117,7 @@ def run(cases, output_dir, *, permutations=1000, seed=20261117, tile_size=4):
             if z is None:
                 scores, valid16 = np.full((16,16),np.nan), np.zeros((16,16),bool)
             else:
-                scores, valid16 = _scores(z,mask,16)
+                scores, valid16 = _scores(z,mask,16,score_mode=meta.get("score_mode","abs"))
             t24 = float(summary.iloc[i].T24_p16)
             measure, _, active, _, _ = spatial_metrics(scores,valid16,t24)
             for key in ("p16_active_fraction","p16_weighted_tile_variance",
