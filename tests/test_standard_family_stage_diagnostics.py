@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from cme_pipeline.family_stage_diagnostics import _family_id, _indices, _xy
+from cme_pipeline.family_stage_diagnostics import _family_id, _indices, _xy, _palette
 
 
 class FamilyStageDiagnosticTests(unittest.TestCase):
@@ -41,7 +41,6 @@ class FamilyStageDiagnosticTests(unittest.TestCase):
         self.assertEqual(_palette("FAM_T21"), track_color(21))
 
     def test_bad_family_palette_fails(self):
-        from cme_pipeline.family_stage_diagnostics import _palette
         with self.assertRaises(ValueError):
             _palette("unresolved")
         self.assertEqual(_palette("FAM_T03"), _palette("FAM_T03"))
