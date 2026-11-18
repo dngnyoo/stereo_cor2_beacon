@@ -1,0 +1,25 @@
+# Aggressive, high-precision candidate experiment.
+# D4 score_mode=positive is encoded in detection metadata, not this YAML.
+# Apply normalized weighted P16 variance < 5.0 upstream via
+# cme_pipeline.p16_qc_tracking_input; then run A5b using this config.
+detection:
+  method: d4
+  denoiser: gaussian
+  floor_mode: outer_p95
+  absolute_p04_floor: 0.5
+tracking:
+  method: a5b
+  outward_gate_enabled: true
+  outward_gate_tolerance_px: 4.0
+  parameters:
+    birth_gate_threshold_px: 30.0
+  max_cadence_gap_sec: 4500.0
+pre_size_gate:
+  enabled: true
+  connectivity: 8
+  min_component_patches: 8
+birth_gate:
+  max_birth_radius_px: 30.0
+size_gate:
+  min_detected_patches: 10
+  min_observed_pairs: 3
