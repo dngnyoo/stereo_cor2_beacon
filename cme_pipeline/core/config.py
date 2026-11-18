@@ -106,6 +106,7 @@ class PreSizeGateConfig:
 class SizeGateConfig:
     min_detected_patches: int = 5
     min_observed_pairs: int = 1
+    size_qualified_persistence: bool = False
 
 
 @dataclass
