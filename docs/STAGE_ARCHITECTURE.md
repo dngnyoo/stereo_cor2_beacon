@@ -188,3 +188,34 @@ This code has not yet passed a live MELONHOUSE regression. Compare its
 05_gates/data/tables/04_full_day_family_summary.csv against the verified
 20240503_standard_gates_001 result (12 admitted families) before relying on
 the new input-run path for science.
+
+## Phase 6: Association Run -> Gates-only Run (needs live parity check)
+
+A completed Association Run can now be used as the explicit input. No
+Detection, Tracking, or Association computation occurs in the new child.
+
+~~~bash
+python -m cme_pipeline run-standard \
+  --config configs/standard_baseline.example.yaml \
+  --input-run runs/20240503_child_association_001 \
+  --until gates \
+  --run-name 20240503_association_to_gates_001
+~~~
+
+The new Run should have only 05_gates plus its manifest and config snapshot.
+Its parent Association membership CSV is verified against recorded SHA-256;
+Tracking and Detection ancestor stages are also verified. Saved Identity
+Membership rows must match every observed Tracking pair/track assignment.
+
+The original Association family IDs are retained. Birth eligibility is
+re-evaluated from the saved Tracking birth_r_min_px using the *child* Gate
+threshold, enabling experiments on birth radius without rerunning Association.
+The saved anchor flags are checked against the original Association Run's
+threshold to detect inconsistent source artifacts.
+
+Expected baseline parity: 31 candidate families and 12 admitted; compare
+the child 05_gates/data/tables/04_full_day_family_summary.csv to the verified
+20240503_standard_gates_001 file, including individual family IDs.
+
+**Important:** This implementation and its regression tests are committed,
+but the new route has not been run or certified on MELONHOUSE yet.
