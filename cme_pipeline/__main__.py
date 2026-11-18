@@ -50,6 +50,19 @@ def parse_args() -> argparse.Namespace:
     plan_parser.add_argument("--visualize", choices=("off", "diagnostic", "all"),
                              default=None)
 
+    # Read-only replay of Family stage figures from an existing full Run.
+    family_viz = subparsers.add_parser(
+        "visualize-family-stages",
+        help="Render Stage 05-07 Family diagnostics from saved full-run artifacts only."
+    )
+    family_viz.add_argument("--run-root", required=True)
+    family_viz.add_argument("--stages", nargs="+",
+                            choices=("gates", "recovery", "segmentation"),
+                            default=("gates", "recovery", "segmentation"))
+    family_viz.add_argument("--mode", choices=("diagnostic", "all"), default="diagnostic")
+    family_viz.add_argument("--output-dir", default=None,
+                            help="Fresh directory; default <run-root>/visualizations_family_v2")
+
     # 'run' subcommand
     run_parser = subparsers.add_parser("run", help="Execute the pipeline or resume from a stage.")
     run_parser.add_argument(
@@ -332,6 +345,34 @@ def main() -> None:
         import json
         cfg = StandardConfig.load(args.config)
         print(json.dumps(build_plan(cfg, args.until, args.visualize), indent=2))
+        return
+
+    if args.command == "visualize-family-stages":
+        import json
+        from cme_pipeline.core.standard_config import StandardConfig
+        from cme_pipeline.core.run_layout import verify_stage
+        from cme_pipeline.family_stage_diagnostics import render_stage
+        root = Path(args.run_root).expanduser().resolve()
+        if not (root / "full_run_summary.json").is_file():
+            raise FileNotFoundError("Expected completed or partially completed full standard Run")
+        snapshot = root / "stage_runs/01_02_preprocessing_detection/config_snapshot.json"
+        if not snapshot.is_file():
+            raise FileNotFoundError(snapshot)
+        config = StandardConfig(path=snapshot, data=json.loads(snapshot.read_text()))
+        dest = (Path(args.output_dir).expanduser().resolve() if args.output_dir else
+                root / "visualizations_family_v2")
+        if dest.exists():
+            raise FileExistsError(f"Visualization destination already exists: {dest}")
+        for name in args.stages:
+            stage = {"gates": "05", "recovery": "06", "segmentation": "07"}[name]
+            source = root / "stage_runs" / f"{stage}_{name}"
+            verify_stage(source, name)
+        dest.mkdir(parents=True, exist_ok=False)
+        for name in args.stages:
+            stage = {"gates": "05", "recovery": "06", "segmentation": "07"}[name]
+            source = root / "stage_runs" / f"{stage}_{name}"
+            paths = render_stage(config, name, source, dest / f"{stage}_{name}", args.mode)
+            print(f"{name}: {len(paths)} figures -> {dest / f'{stage}_{name}'}")
         return
 
     if args.command == "run-data":
