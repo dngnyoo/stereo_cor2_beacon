@@ -26,6 +26,7 @@ def run_saved_a5b_gates(
     min_detected_patches: int = 5,
     min_observed_pairs: int = 1,
     size_qualified_persistence: bool = False,
+    consecutive_size_qualified: bool = False,
 ) -> Path:
     """Reconstruct saved A5b TrackingOutput and execute only the pure Gates."""
     run = Path(tracking_run).expanduser().resolve()
@@ -82,6 +83,7 @@ def run_saved_a5b_gates(
     cfg.size_gate.min_detected_patches = int(min_detected_patches)
     cfg.size_gate.min_observed_pairs = int(min_observed_pairs)
     cfg.size_gate.size_qualified_persistence = bool(size_qualified_persistence)
+    cfg.size_gate.consecutive_size_qualified = bool(consecutive_size_qualified)
     cfg.run_name = run_name
     tracking = TrackingOutput(
         manifest_df=detected.manifest_df,
@@ -117,6 +119,7 @@ def run_saved_a5b_gates(
         "min_detected_patches": int(min_detected_patches),
         "min_observed_pairs": int(min_observed_pairs),
         "size_qualified_persistence": bool(size_qualified_persistence),
+        "consecutive_size_qualified": bool(consecutive_size_qualified),
         "tracks": int(meta["total_tracks"]),
         "candidate_families": int(assoc.candidate_family_count),
         "birth_gate_pass": len(birth.birth_gated_family_ids),
