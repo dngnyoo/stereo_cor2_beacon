@@ -30,6 +30,22 @@ class TestMonthlyParser(unittest.TestCase):
         self.assertEqual(rows.iloc[2]["speed_km_s"], 2901.0)
         self.assertTrue(rows.iloc[2]["auxiliary_raw"].startswith("-"))
 
+    def test_2024_unwrapped_position_angles_keep_source_ids(self):
+        sample = (
+            "2024/05/03 01:53:30   3  99 113    90     7.2\\n"
+            "2024/05/03 03:53:30   3 399 123  1023   251.8\\n"
+            "2024/05/03 06:53:30   2 374  71  1217 -------\\n"
+        )
+        df = parse_monthly(sample, "20240503")
+        self.assertEqual(df.pa_deg.tolist(), [99, 399, 374])
+        self.assertTrue(df.iloc[1].event_id.endswith("_P399"))
+        self.assertTrue(df.iloc[2].event_id.endswith("_P374"))
+        self.assertEqual([int(p) % 360 for p in df.pa_deg], [99, 39, 14])
+
+    def test_rejects_pa_outside_three_digit_source_field(self):
+        with self.assertRaisesRegex(ValueError, "geometry"):
+            parse_monthly("2024/05/03 03:53:30 3 1000 123 1023 251.8", "20240503")
+
     def test_rejects_unexpected_schema(self):
         with self.assertRaisesRegex(ValueError, "Malformed"):
             parse_monthly("2010/12/12 04:54:00 8 91 138\n", "20101212")
