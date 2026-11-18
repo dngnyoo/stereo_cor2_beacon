@@ -17,6 +17,24 @@ class StandardPlanTests(unittest.TestCase):
             forced = build_plan(c, "gates", "off")
             self.assertTrue(all(x["visualization"] == "off" for x in forced["stages"]))
 
+    def test_yaml_off_boolean_and_quoted(self):
+        with TemporaryDirectory() as tmp:
+            f = Path(tmp) / "unquoted.yaml"
+            f.write_text('experiment:\\n  date: "20240503"\\nvisualization:\\n  default: off\\npreprocessing:\\n  visualization: {mode: off}\\n')
+            c = StandardConfig.load(f)
+            self.assertEqual(c.vis_mode("preprocessing"), "off")
+            self.assertEqual(c.vis_mode("tracking"), "off")
+            f.write_text('experiment:\\n  date: "20240503"\\nvisualization:\\n  default: "off"\\n')
+            c = StandardConfig.load(f)
+            self.assertEqual(c.vis_mode("tracking"), "off")
+
+    def test_yaml_on_boolean_rejected(self):
+        with TemporaryDirectory() as tmp:
+            f = Path(tmp) / "invalid.yaml"
+            f.write_text('experiment:\\n  date: "20240503"\\nvisualization:\\n  default: on\\n')
+            with self.assertRaises(ValueError):
+                StandardConfig.load(f)
+
     def test_unknown_key_rejected(self):
         with TemporaryDirectory() as tmp:
             f = Path(tmp) / "bad.yaml"
