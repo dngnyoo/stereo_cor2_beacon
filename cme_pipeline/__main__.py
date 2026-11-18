@@ -146,6 +146,8 @@ def parse_args() -> argparse.Namespace:
                               help="Minimum unique OBSERVED frames for family admission")
     gates_parser.add_argument("--size-qualified-persistence", action="store_true",
                               help="Require >= min-detected-patches in >= min-observed-pairs distinct OBSERVED frames")
+    gates_parser.add_argument("--consecutive-size-qualified", action="store_true",
+                              help="Require size-qualified OBSERVED frames to form an uninterrupted consecutive run")
 
     recovery_parser = subparsers.add_parser(
         "run-recovery", help="Execute Recovery from saved Gate decisions; never rerun Gates."
@@ -372,6 +374,7 @@ def main() -> None:
             min_detected_patches=args.min_detected_patches,
             min_observed_pairs=args.min_observed_pairs,
             size_qualified_persistence=args.size_qualified_persistence,
+            consecutive_size_qualified=args.consecutive_size_qualified,
         )
         print(f"Gate decisions (no Recovery): {out}")
         return
