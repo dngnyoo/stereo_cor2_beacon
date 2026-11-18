@@ -96,12 +96,25 @@ def execute_to_gates(
     info = data.get("input") or {}
     if not isinstance(info, dict):
         raise ValueError("input must be a mapping")
-    # Explicit source import is deliberate. No best-effort auto-discovery from runs/.
-    if set(info) - {"preprocessed_dir", "spatial_metrics_csv"}:
-        raise ValueError("Only input.preprocessed_dir and input.spatial_metrics_csv are supported initially")
-    if not info.get("preprocessed_dir"):
-        raise ValueError("Explicit input.preprocessed_dir is required for this initial adapter")
-    source = Path(info["preprocessed_dir"]).expanduser().resolve()
+    # Explicit raw path takes priority. Without one, acquire fresh raw FITS
+    # from the existing dual-archive downloader. The historical preprocessed
+    # import route is retained for already completed experiments.
+    allowed_input = {"raw_dir", "preprocessed_dir", "spatial_metrics_csv",
+                     "warmup_days", "mask_path", "phase_sec", "raw_root"}
+    if set(info) - allowed_input:
+        raise ValueError(f"Unsupported standard input keys: {sorted(set(info) - allowed_input)}")
+    if info.get("preprocessed_dir") and info.get("raw_dir"):
+        raise ValueError("Choose either raw_dir or preprocessed_dir, not both")
+    if info.get("preprocessed_dir") and set(info).intersection(
+        {"warmup_days", "mask_path", "phase_sec", "raw_root"}
+    ):
+        raise ValueError("Raw preparation options cannot accompany preprocessed_dir")
+    source = (Path(info["preprocessed_dir"]).expanduser().resolve()
+              if info.get("preprocessed_dir") else None)
+    raw_dir = (Path(info["raw_dir"]).expanduser().resolve()
+               if info.get("raw_dir") else None)
+    if raw_dir is not None and not raw_dir.is_dir():
+        raise FileNotFoundError(f"Explicit raw_dir does not exist; refusing implicit download: {raw_dir}")
     metrics = (Path(info["spatial_metrics_csv"]).expanduser().resolve()
                if info.get("spatial_metrics_csv") else None)
 
@@ -147,24 +160,61 @@ def execute_to_gates(
 
     date = str(data["experiment"]["date"])
     run = Path(run_dir).expanduser().resolve()
-    if not source.is_dir():
-        raise FileNotFoundError(source)
-    source_meta = json.loads((source / "preprocessing_metadata.json").read_text())
-    if str(source_meta.get("requested_date", date)) != date:
-        raise ValueError("Preprocessed input date differs from experiment.date")
+    if source is not None:
+        if not source.is_dir():
+            raise FileNotFoundError(source)
+        source_meta = json.loads((source / "preprocessing_metadata.json").read_text())
+        if str(source_meta.get("requested_date", date)) != date:
+            raise ValueError("Preprocessed input date differs from experiment.date")
     if metrics is not None and not metrics.is_file():
         raise FileNotFoundError(metrics)
     if run.exists():
         raise FileExistsError(f"Refusing to overwrite existing run: {run}")
+    mode = ("explicit_preprocessed_import" if source is not None else
+            "explicit_local_raw" if raw_dir is not None else "download_raw")
     provenance = {
-        "explicit_preprocessed_dir": str(source),
+        "explicit_preprocessed_dir": str(source) if source is not None else None,
+        "explicit_raw_dir": str(raw_dir) if raw_dir is not None else None,
         "explicit_spatial_metrics_csv": str(metrics) if metrics else None,
-        "mode": "explicit_preprocessed_import",
+        "mode": mode,
     }
     initialize_run(run, config.data, _revision(), provenance)
-    pre, pre_outputs = _preprocess_import(run, source)
-    complete_stage(run, "preprocessing", {"fits_sources": str(source)},
-                   pre_outputs, "dual_archive_rd:explicit_import", {"mode": "import"})
+    if source is not None:
+        pre, pre_outputs = _preprocess_import(run, source)
+        pre_inputs = {"fits_sources": str(source)}
+        implementation = "dual_archive_rd:explicit_import"
+        pre_settings = {"mode": "import"}
+    else:
+        from cme_pipeline.data_preparation import prepare_source
+        from cme_pipeline.north_up_preprocessing import run_no_msb_north_up
+        preparation_root = run / "01_preprocessing" / "data" / "acquisition"
+        warmup = int(info.get("warmup_days", 2))
+        if not 0 <= warmup <= 7:
+            raise ValueError("input.warmup_days must be between 0 and 7")
+        phase = info.get("phase_sec")
+        mask = info.get("mask_path")
+        raw_root = info.get("raw_root")
+        if raw_root is not None and raw_dir is not None:
+            raise ValueError("input.raw_root is for download mode only")
+        manifest = prepare_source(
+            date=date, source="local" if raw_dir is not None else "download",
+            product="d7", input_dir=str(raw_dir) if raw_dir is not None else None,
+            output_dir=preparation_root, warmup_days=warmup, phase_sec=phase,
+            raw_root=raw_root,
+        )
+        pre = run_no_msb_north_up(manifest, mask_path=mask)
+        pre_outputs = _stage_outputs(run, {
+            key: pre / filename for key, filename in PREPROCESSING_FILES.items()
+        })
+        pre_inputs = {"fits_sources": str(raw_dir) if raw_dir is not None else "official_dual_archive",
+                      "input_manifest": str(manifest.relative_to(run))}
+        implementation = "dual_archive_rd:raw_local" if raw_dir is not None else "dual_archive_rd:raw_download"
+        pre_settings = {"mode": mode, "warmup_days": warmup,
+                        "mask_path": str(mask) if mask else None,
+                        "phase_sec": phase}
+        pre_outputs["acquisition_manifest"] = str(manifest.relative_to(run))
+    complete_stage(run, "preprocessing", pre_inputs,
+                   pre_outputs, implementation, pre_settings)
     if len(order) == 1:
         return run
 
