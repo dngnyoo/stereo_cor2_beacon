@@ -121,3 +121,43 @@ automatic cross-run discovery. Non-off visualization fails explicitly
 until independent diagnostic renderers are integrated. Legacy entrypoints
 remain unchanged. Compare exact patch arrays, QC statuses, ownership masks
 and admitted Family IDs before trusting scientific equivalence.
+
+## Phase 4: explicit input-run branching (new, requires local integration test)
+
+The standard-run CLI now accepts --input-run. When supplied with a completed
+standard Detection Run, it reads the verified stage-02 artifacts without
+re-running or copying Detection and creates a NEW run containing only the
+executed stages (03 Tracking, 04 Association and/or 05 Gates).
+
+Example after a completed standard Detection Run:
+
+~~~bash
+python -m cme_pipeline run-standard --config configs/standard_baseline.example.yaml --input-run runs/20240503_standard_detection_001 --until tracking --run-name 20240503_child_a5b_001
+python -m cme_pipeline run-standard --config configs/standard_baseline.example.yaml --input-run runs/20240503_standard_detection_001 --until gates --run-name 20240503_child_gates_001
+~~~
+
+To compare Tracking variants, duplicate the baseline YAML, change
+tracking.method to a3 or a4, and provide a distinct new output --run-name.
+
+Rules:
+- Exactly one explicit parent Run; no global discovery, resume, or overwrite.
+- Parent must have completed stage 02, its referenced contract files must
+  match recorded SHA-256 hashes, and its date and Detection configuration
+  must match the new config.
+- Child manifest records parent path, selected stage, source revision and
+  pinned parent artifact checksums. The underlying Detection folder is
+  read-only; the child does not copy it into the child run.
+- Parent must be kept intact for descendants to remain reproducible.
+- Current adapter accepts Detection parent only; parent Tracking or Gates
+  branching is not yet implemented. CLI --until is supported only to Gates.
+- Visualization other than off still requires a separate renderer.
+- Baseline science parity for a full 01–05 run was confirmed by MELONHOUSE:
+  old/new D4 arrays and QC, A5b ownership/states, and Gate summary matched.
+  **The verified current Gate summary admitted 12 of 31 families**, not 9.
+- Input-run branching itself still needs local integration testing and
+  old/new ownership and Gate parity validation.
+
+Smoke tests:
+~~~bash
+python -m unittest discover -s tests -p 'test_standard_*.py'
+~~~
