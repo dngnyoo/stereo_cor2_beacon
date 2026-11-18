@@ -17,6 +17,7 @@ def save_tracking_diagnostics(
     tracking_run: str | Path, *, date: str | None = None,
     output_dir: str | Path | None = None,
     included_track_ids: set[int] | None = None,
+    track_family_ids: dict[int, str] | None = None,
 ) -> Path:
     root = Path(tracking_run).resolve()
     meta = json.loads((root / "tracking_metadata.json").read_text())
@@ -112,7 +113,8 @@ def save_tracking_diagnostics(
             ax.scatter(t["front_x"], t["front_y"], marker="*", s=65,
                        color="yellow", edgecolors="black", linewidths=.5, zorder=5)
             midx, midy = xy(min(123., rad + 3.), start + t["pa_span_deg"] / 2.)
-            ax.text(midx, midy, f"T{tid} F {rad:.0f}px", fontsize=7,
+            family_label = track_family_ids.get(tid, f"T{tid}") if track_family_ids else f"T{tid}"
+            ax.text(midx, midy, f"{family_label} / T{tid} F {rad:.0f}px" if track_family_ids else f"T{tid} F {rad:.0f}px", fontsize=7,
                     color=colour, ha="center", va="center", path_effects=stroke)
             records.append({
                 "pair_index": pair, "end_time": manifest.iloc[i]["end_time"],
