@@ -278,7 +278,6 @@ def main() -> None:
     if args.command == "run-standard":
         from cme_pipeline.core.standard_config import StandardConfig
         from cme_pipeline.standard_runner import execute_to_gates
-        from pathlib import Path
         from cme_pipeline.core.standard_stages import VIS_MODES
         if (args.run_name in (".", "..") or "/" in args.run_name
                 or "\\\\" in args.run_name or args.run_name.startswith(".")):
@@ -360,14 +359,23 @@ def main() -> None:
             raise FileNotFoundError(snapshot)
         config = StandardConfig(path=snapshot, data=json.loads(snapshot.read_text()))
         dest = (Path(args.output_dir).expanduser().resolve() if args.output_dir else
-                root / "visualizations_family_v2")
-        if dest.exists():
-            raise FileExistsError(f"Visualization destination already exists: {dest}")
+                root / "visualizations")
+        # A standard Run may already have visualizations for other stages.
+        # Only selected Stage destinations must be new; never overwrite them.
+        if dest.exists() and not dest.is_dir():
+            raise NotADirectoryError(dest)
+        for name in args.stages:
+            ordinal = {"gates": "05", "recovery": "06", "segmentation": "07"}[name]
+            if (dest / f"{ordinal}_{name}").exists():
+                raise FileExistsError(
+                    f"Selected Stage visualization already exists: {dest / f'{ordinal}_{name}'}; "
+                    "use --output-dir with a new destination to preserve previous PNGs"
+                )
         for name in args.stages:
             stage = {"gates": "05", "recovery": "06", "segmentation": "07"}[name]
             source = root / "stage_runs" / f"{stage}_{name}"
             verify_stage(source, name)
-        dest.mkdir(parents=True, exist_ok=False)
+        dest.mkdir(parents=True, exist_ok=True)
         for name in args.stages:
             stage = {"gates": "05", "recovery": "06", "segmentation": "07"}[name]
             source = root / "stage_runs" / f"{stage}_{name}"
