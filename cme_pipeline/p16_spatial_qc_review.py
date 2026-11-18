@@ -13,7 +13,9 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Circle, Rectangle
+
+from cme_pipeline.stages.segmentation.visualization import draw_rd_background
 import numpy as np
 import pandas as pd
 
@@ -104,20 +106,42 @@ def make_review(detection_dir, metrics_csv, output_dir, *,
         _, v16, a16, raw16, clipped16 = spatial_metrics(scores16, accepted16, t24)
         if int(a16.sum()) != int(metrics.loc[pair].n_active_p16):
             raise ValueError(f"P16 recomputation does not match saved metrics for pair {pair}")
-        fig, axes = plt.subplots(1, 4, figsize=(18, 5), constrained_layout=True)
-        raw_image = np.ma.masked_where(~mask, image)
+        # Project standard: signed North-up RD; coolwarm +/-600 DN/s;
+        # black invalid pixels; white figure background; solar reference circles.
+        fig, axes = plt.subplots(1, 4, figsize=(19, 6), constrained_layout=True)
+        fig.patch.set_facecolor("white")
+        for a in axes:
+            a.set_facecolor("white")
+            a.set_box_aspect(1)
         for a in axes[:2]:
-            a.imshow(raw_image, origin="lower", cmap="gray", vmin=-600, vmax=600)
-            a.set_xlim(-.5,255.5)
-            a.set_ylim(-.5,255.5)
-        axes[0].set_title("RD (DN/s), no overlay")
-        axes[1].set_title("RD + original D4 P04 detection")
+            rd_artist = draw_rd_background(a, image, mask)
+            a.set_xlim(0, 256)
+            a.set_ylim(0, 256)
+            a.set_xlabel("X (pixel)")
+            a.set_ylabel("Y (pixel)")
+            a.set_aspect("equal")
+            # The 22-px occulter and solar reference radii are in image pixels.
+            sx, sy = 126.618, 127.503
+            for rr, color, style, width in (
+                (22., "white", "--", 1.0),
+                (8.163, "#FFD700", "--", 1.0),
+                (5*8.163, "white", ":", .65),
+                (10*8.163, "white", ":", .65),
+                (15*8.163, "white", ":", .65),
+            ):
+                a.add_patch(Circle((sx, sy), rr, fill=False,
+                                   edgecolor=color, linestyle=style,
+                                   linewidth=width, alpha=.65))
+        fig.colorbar(rd_artist, ax=axes[:2], orientation="vertical",
+                     fraction=.018, pad=.015, label="RD (DN/s)", shrink=.75)
+        axes[0].set_title("Signed North-up RD (DN/s)")
+        axes[1].set_title("RD + saved D4 P04 detections")
         yy,xx = np.where(np.asarray(p04[i]) == 1)
         for y,x in zip(yy,xx):
-            axes[1].add_patch(Rectangle((x*4-.5,y*4-.5),4,4,
-                                        facecolor="none",edgecolor="red",
-                                        linewidth=.65,alpha=.85))
-        # QC-rejected D4 frames have all -1 sentinels: no P04 detections to draw.
+            axes[1].add_patch(Rectangle((x*4,y*4),4,4,
+                                        facecolor="none",edgecolor="#FF00FF",
+                                        linewidth=.65,alpha=.9))
+        # Original QC-rejected frames have -1 sentinels, not P04 detections.
         axes[2].imshow(np.ma.masked_where(~v16,a16.astype(float)),
                        origin="lower",interpolation="nearest",vmin=0,vmax=1,cmap="viridis")
         axes[2].set_title("P16 binary activation")
@@ -125,16 +149,16 @@ def make_review(detection_dir, metrics_csv, output_dir, *,
                             origin="lower",interpolation="nearest",cmap="viridis",
                             vmin=0,vmax=max(0.1,float(np.nanmax(clipped16))))
         axes[3].set_title("P16 clipped excess")
-        fig.colorbar(im,ax=axes[3],shrink=.65)
-        for a in axes:
-            a.set_xticks([])
-            a.set_yticks([])
+        fig.colorbar(im,ax=axes[3],shrink=.75, label="P16 excess above T24")
+        for a in axes[2:]:
+            a.set_xlabel("P16 grid X")
+            a.set_ylabel("P16 grid Y")
         fig.suptitle(
-            f"Pair {pair} | {row['end_time']} | {row['candidate_status']}\n"
+            f"Pair {pair} | {pd.to_datetime(row['end_time'], utc=True).strftime('%Y-%m-%d %H:%M:%S UTC')} | {row['candidate_status']}\\n"
             f"P16 active={row['p16_active_fraction']:.3f}, "
             f"weighted variance={row['p16_weighted_tile_variance']:.4f} "
             f"(thresholds >= {active_min:.2f}, <= {variance_max:.2f})",
-            fontsize=12,
+            fontsize=11,
         )
         fig.savefig(output_frames / f"pair_{pair:03d}.png",dpi=140)
         plt.close(fig)
