@@ -25,14 +25,14 @@ def parse_args() -> argparse.Namespace:
 
     # New isolated standard run. Legacy 'run' remains unchanged.
     standard_run_parser = subparsers.add_parser(
-        "run-standard", help="Execute isolated standard stages 01-05; never overwrite old runs."
+        "run-standard", help="Execute isolated standard stages through Recovery; never overwrite old runs."
     )
     standard_run_parser.add_argument("--config", required=True)
     standard_run_parser.add_argument("--until", required=True, choices=(
         "preprocessing", "detection", "tracking", "association", "gates", "recovery",
     ))
     standard_run_parser.add_argument("--input-run", default=None,
-                                     help="Explicit completed Detection Run to branch from (no auto-search)")
+                                     help="Explicit completed Detection/Tracking/Association/Gates Run to branch from")
     standard_run_parser.add_argument("--run-name", required=True,
                                      help="Unique name for one new folder under runs/")
     standard_run_parser.add_argument("--visualize", choices=("off", "diagnostic", "all"),
