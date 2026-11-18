@@ -60,3 +60,24 @@ Stage directories exist only for executed stages. Visualization outputs are not 
 - Archive old `runs/` directories only after results and provenance are verified.
 
 **Status:** Contract and metadata primitives landed on the refactor branch. The new orchestrator, migration, and full local parity tests are NOT yet complete.
+
+## Phase 2: executable read-only preflight (implemented)
+
+The new `plan` subcommand is available on the refactor branch:
+
+```bash
+python -m cme_pipeline plan --config configs/standard_baseline.example.yaml --until gates
+python -m cme_pipeline plan --config configs/standard_baseline.example.yaml --until tracking --visualize diagnostic
+python -m unittest discover -s tests -p "test_standard_*.py"
+```
+
+Preflight validates top-level stage names and visualization values, then prints
+ordered stage IDs, algorithms, contract input/output keys and effective
+visualization modes. It creates **no run** and executes **no science computation**.
+Legacy `python -m cme_pipeline run` is intentionally unchanged and
+does **not** yet implement the new `--until` interface.
+
+Next: implement stage-specific adapters, contract validation and isolated
+`runs/<run-id>/<number>_<stage>` output for stages 01–05. Then compare a
+fresh baseline run against the frozen historical outputs before enabling a
+new standard execution entrypoint.
