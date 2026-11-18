@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     )
     standard_run_parser.add_argument("--config", required=True)
     standard_run_parser.add_argument("--until", required=True, choices=(
-        "preprocessing", "detection", "tracking", "association", "gates",
+        "preprocessing", "detection", "tracking", "association", "gates", "recovery",
     ))
     standard_run_parser.add_argument("--input-run", default=None,
                                      help="Explicit completed Detection Run to branch from (no auto-search)")
@@ -276,7 +276,12 @@ def main() -> None:
             import json
             parent_manifest = json.loads((Path(args.input_run) / "run_manifest.json").read_text())
             parent_stages = parent_manifest["stages"]
-            if parent_stages.get("association") == "COMPLETED":
+            if parent_stages.get("gates") == "COMPLETED":
+                from cme_pipeline.standard_recovery_parent import execute_from_gates
+                finished = execute_from_gates(
+                    cfg, input_run=args.input_run, until=args.until,
+                    run_dir=root, visualize=args.visualize)
+            elif parent_stages.get("association") == "COMPLETED":
                 from cme_pipeline.standard_association_parent import execute_from_association
                 finished = execute_from_association(
                     cfg, input_run=args.input_run, until=args.until,
