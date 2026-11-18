@@ -131,7 +131,10 @@ def execute_to_gates(
 
     tr = _params(config, "tracking")
     tr_params = tr.get("parameters") or {}
-    get_tracking_spec("a5b")
+    spec = get_tracking_spec("a5b")
+    unknown_tracking = set(tr_params) - spec.supported_parameters
+    if unknown_tracking:
+        raise ValueError(f"Unsupported A5b tracking parameters: {sorted(unknown_tracking)}")
     if tr.get("pre_size", {}).get("connectivity", 8) != 8:
         raise ValueError("Only 8-connectivity pre-size is supported")
     if tr.get("pre_size", {}).get("min_component_patches", 8) < 1:
@@ -140,6 +143,12 @@ def execute_to_gates(
         raise ValueError("Outward split is not part of the baseline")
 
     run = Path(run_dir).expanduser().resolve()
+    if not source.is_dir():
+        raise FileNotFoundError(source)
+    if metrics is not None and not metrics.is_file():
+        raise FileNotFoundError(metrics)
+    if run.exists():
+        raise FileExistsError(f"Refusing to overwrite existing run: {run}")
     provenance = {
         "explicit_preprocessed_dir": str(source),
         "explicit_spatial_metrics_csv": str(metrics) if metrics else None,
@@ -155,13 +164,16 @@ def execute_to_gates(
 
     target = run / "02_detection" / "data"
     raw_dir = target / "raw"
+    target.mkdir(parents=True, exist_ok=False)
     run_detection(pre, method="d4", denoiser="gaussian",
                   requested_date=date, output_dir=raw_dir,
                   floor_mode="outer_p95",
                   score_mode="abs",
                   t24_mad_multiplier=float(det.get("t24_mad_multiplier", 3.0)),
                   qc_max_active_fraction=float(qc.get("global_activation_threshold", .70)),
-                  absolute_p04_floor=float(det.get("absolute_p04_floor", .5)))
+                  absolute_p04_floor=float(det.get("absolute_p04_floor", .5)),
+                  outer_floor_inner_px=float(det.get("outer_floor_inner_px", 88)),
+                  outer_floor_outer_px=float(det.get("outer_floor_outer_px", 116)))
     detector_dir = raw_dir
     if metrics is not None:
         detector_dir = apply_spatial_qc(
