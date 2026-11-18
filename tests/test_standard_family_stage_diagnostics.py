@@ -34,6 +34,12 @@ class FamilyStageDiagnosticTests(unittest.TestCase):
         self.assertAlmostEqual(x, 126.5)
         self.assertAlmostEqual(y, 147.5)
 
+    def test_palette_is_contrasting_and_does_not_repeat_at_20(self):
+        from cme_pipeline.family_colors import track_color
+        self.assertNotEqual(track_color(1), track_color(21))
+        self.assertNotEqual(track_color(15), "#c7c7c7")
+        self.assertEqual(_palette("FAM_T21"), track_color(21))
+
     def test_bad_family_palette_fails(self):
         from cme_pipeline.family_stage_diagnostics import _palette
         with self.assertRaises(ValueError):
