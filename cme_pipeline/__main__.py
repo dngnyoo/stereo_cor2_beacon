@@ -23,6 +23,18 @@ def parse_args() -> argparse.Namespace:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    # Read-only preflight for the new nine-stage runner (legacy run unchanged).
+    plan_parser = subparsers.add_parser(
+        "plan", help="Validate standard YAML and print stage plan; performs no execution."
+    )
+    plan_parser.add_argument("--config", required=True)
+    plan_parser.add_argument("--until", required=True, choices=(
+        "preprocessing", "detection", "tracking", "association", "gates",
+        "recovery", "segmentation", "catalog", "validation",
+    ))
+    plan_parser.add_argument("--visualize", choices=("off", "diagnostic", "all"),
+                             default=None)
+
     # 'run' subcommand
     run_parser = subparsers.add_parser("run", help="Execute the pipeline or resume from a stage.")
     run_parser.add_argument(
@@ -235,6 +247,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.command == "plan":
+        from cme_pipeline.core.standard_config import StandardConfig
+        from cme_pipeline.standard_plan import build_plan
+        import json
+        cfg = StandardConfig.load(args.config)
+        print(json.dumps(build_plan(cfg, args.until, args.visualize), indent=2))
+        return
+
     if args.command == "run-data":
         cfg = PipelineConfig.from_yaml(args.config)
         if cfg.tracking.method.lower() == "e1":
