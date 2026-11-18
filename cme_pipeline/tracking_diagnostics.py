@@ -18,6 +18,7 @@ def save_tracking_diagnostics(
     output_dir: str | Path | None = None,
     included_track_ids: set[int] | None = None,
     track_family_ids: dict[int, str] | None = None,
+    allowed_family_pairs: dict[str, set[int]] | None = None,
 ) -> Path:
     root = Path(tracking_run).resolve()
     meta = json.loads((root / "tracking_metadata.json").read_text())
@@ -81,6 +82,12 @@ def save_tracking_diagnostics(
         owner_grid = np.asarray(owners[i])
         if included_track_ids is not None:
             owner_grid = np.where(np.isin(owner_grid, list(included_track_ids)), owner_grid, 0)
+        if allowed_family_pairs is not None:
+            if track_family_ids is None:
+                raise ValueError('allowed_family_pairs requires track_family_ids')
+            keep_ids = [tid for tid, fid in track_family_ids.items()
+                        if pair in allowed_family_pairs.get(fid, set())]
+            owner_grid = np.where(np.isin(owner_grid, keep_ids), owner_grid, 0)
         tracks = _frame_tracks(owner_grid, rasters["patch_pa"], rasters["patch_rad"])
         observed = states[(states["pair_index"] == pair) & (states["state"] == "OBSERVED")]
         by_id = {int(r["track_id"]): r for _, r in observed.iterrows()}
