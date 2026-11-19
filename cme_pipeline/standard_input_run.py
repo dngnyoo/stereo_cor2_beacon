@@ -74,8 +74,8 @@ def execute_from_detection(
 
     tr = _params(config, "tracking")
     method = config.method("tracking")
-    if method not in ("a3", "a4", "a5b"):
-        raise ValueError("Supported input-run Tracking methods: a3, a4, a5b")
+    if method not in ("a3", "a4", "a5b", "a5b_n"):
+        raise ValueError("Supported input-run Tracking methods: a3, a4, a5b, a5b_n")
     params = tr.get("parameters") or {}
     if not isinstance(params, dict):
         raise ValueError("tracking.parameters must be a mapping")
