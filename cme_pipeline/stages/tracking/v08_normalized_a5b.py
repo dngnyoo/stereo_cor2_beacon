@@ -90,6 +90,7 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
         next_track_id = 1
 
         all_decision_records: List[MultiComponentDecisionRecord] = []
+        normalized_score_rows: List[Dict[str, Any]] = []
         track_state_rows: List[Dict[str, Any]] = []
         comp_state_rows: List[Dict[str, Any]] = []
         leading_front_rows: List[Dict[str, Any]] = []
@@ -227,6 +228,24 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                             "normalized_terms": normalized_terms,
                             "info": cdata,
                         }
+                        normalized_score_rows.append({
+                            "pair_index": p_curr,
+                            "timestamp": ts_curr.isoformat(),
+                            "track_id": t.track_id,
+                            "component_id": c_id,
+                            "direct_overlap_patches": do_cnt,
+                            "adjacent_overlap_patches": adj_cnt,
+                            "raw_overlap": float(ov),
+                            "raw_angular": float(ang),
+                            "raw_kinematic": float(kin),
+                            "raw_front_bonus": float(front_bonus),
+                            "O": normalized_terms["O"],
+                            "A": normalized_terms["A"],
+                            "K": normalized_terms["K"],
+                            "F": normalized_terms["F"],
+                            "has_spatial_contact": bool(do_cnt > 0 or adj_cnt > 0),
+                            "normalized_geometric_score": float(total_score),
+                        })
                         track_cands[t.track_id].append(cand_rec)
                         comp_claims[c_id].append((t.track_id, cand_rec))
 
@@ -753,6 +772,12 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
         setattr(out, "decision_records", all_decision_records)
         setattr(out, "decisions_df", df_decisions)
         setattr(out, "contested_allocation_df", df_contested)
+        setattr(out, "normalized_candidate_scores_df", pd.DataFrame(normalized_score_rows, columns=[
+            "pair_index", "timestamp", "track_id", "component_id",
+            "direct_overlap_patches", "adjacent_overlap_patches",
+            "raw_overlap", "raw_angular", "raw_kinematic", "raw_front_bonus",
+            "O", "A", "K", "F", "has_spatial_contact", "normalized_geometric_score",
+        ]))
 
         return adapt_tracking_output(out, max_birth_radius_px=birth_gate_px)
 
