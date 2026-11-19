@@ -140,11 +140,19 @@ def execute_from_detection(
         "parameters": result.tracking_parameters, "pre_size": pre,
         "parent_run": str(parent),
     }, indent=2))
-    track_files = _stage_outputs(run, {
+    tracking_artifacts = {
         "track_states": ctx.tables_dir / "live_tracking_states.csv",
         "track_ownership": ctx.arrays_dir / "track_ownership_masks.npy",
         "tracking_provenance": ctx.run_dir / "tracking_metadata.json",
-    })
+    }
+    if method == "a5b_n":
+        diagnostic = getattr(result, "normalized_candidate_scores_df", None)
+        if diagnostic is None:
+            raise RuntimeError("A5b-N missing normalized score diagnostics")
+        diagnostic_path = ctx.tables_dir / "normalized_candidate_scores.csv"
+        diagnostic.to_csv(diagnostic_path, index=False)
+        tracking_artifacts["normalized_candidate_scores"] = diagnostic_path
+    track_files = _stage_outputs(run, tracking_artifacts)
     complete_stage(run, "tracking", {
         "patch_activation": parent_meta["outputs"]["patch_activation"]["path"],
         "parent_run": str(parent),
