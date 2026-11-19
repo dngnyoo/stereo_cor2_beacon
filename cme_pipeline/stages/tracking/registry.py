@@ -52,6 +52,7 @@ def _ensure_defaults_registered() -> None:
     from cme_pipeline.stages.tracking.v04_component_first import ComponentFirstAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
+    from cme_pipeline.stages.tracking.v08_normalized_a5b import PAWidthWeightedCPANormalizedTrackingStage
     from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v06_pa_width_proportional import PAWidthProportionalAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.birth_anchored_tracking import BirthAnchoredTrackingStage
@@ -118,6 +119,16 @@ def _ensure_defaults_registered() -> None:
             supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
             default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
             description="A5b PA-Width-Normalized CPA Distance Multi-Component Tracking (20 tracks w/ outward_gate=True).",
+        )
+    )
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="a5b_n",
+            stage_cls=PAWidthWeightedCPANormalizedTrackingStage,
+            aliases=("normalized_a5b",),
+            supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
+            default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
+            description="Experimental A5b-N: bounded match terms + equal-weight geometric mean.",
         )
     )
     register_tracking_method(
