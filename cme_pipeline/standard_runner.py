@@ -122,8 +122,8 @@ def execute_to_gates(
         raise ValueError("Only preprocessing dual_archive_rd is supported (importing its saved RD)")
     if config.method("detection") != "d4":
         raise ValueError("Only D4 detection is supported in the first integrated baseline")
-    if config.method("tracking") != "a5b":
-        raise ValueError("Only A5b tracking is supported in the first integrated baseline")
+    if config.method("tracking") not in ("a5b", "a5b_n"):
+        raise ValueError("Only A5b and experimental A5b-N tracking are supported")
     if config.method("association") != "identity":
         raise ValueError("Only identity association is supported")
     if config.method("gates") != "consecutive_size_qualified":
@@ -144,10 +144,11 @@ def execute_to_gates(
 
     tr = _params(config, "tracking")
     tr_params = tr.get("parameters") or {}
-    spec = get_tracking_spec("a5b")
+    tracking_method = config.method("tracking")
+    spec = get_tracking_spec(tracking_method)
     unknown_tracking = set(tr_params) - spec.supported_parameters
     if unknown_tracking:
-        raise ValueError(f"Unsupported A5b tracking parameters: {sorted(unknown_tracking)}")
+        raise ValueError(f"Unsupported {tracking_method} tracking parameters: {sorted(unknown_tracking)}")
     pre_size = tr.get("pre_size", {"connectivity": 8, "min_component_patches": 8})
     if not isinstance(pre_size, dict):
         raise ValueError("tracking.pre_size must be a mapping")
@@ -306,7 +307,7 @@ def execute_to_gates(
     cfg.date_str = int(date)
     cfg.detection.method = "d4"
     cfg.detection.denoiser = "gaussian"
-    cfg.tracking.method = "a5b"
+    cfg.tracking.method = tracking_method
     cfg.tracking.parameters = dict(tr_params)
     cfg.association.method = "identity"
     gates = _params(config, "gates")
@@ -319,28 +320,36 @@ def execute_to_gates(
     cfg.size_gate.size_qualified_persistence = True
     cfg.size_gate.consecutive_size_qualified = True
     track_ctx = _context(run, "tracking")
-    tracker = get_tracking_stage("a5b")
+    tracker = get_tracking_stage(tracking_method)
     tracked = tracker.run(detected, cfg, track_ctx)
     if tracked.track_ownership_masks is None:
-        raise RuntimeError("A5b returned no track ownership")
+        raise RuntimeError(f"{tracking_method} returned no track ownership")
     np.save(track_ctx.arrays_dir / "track_ownership_masks.npy", tracked.track_ownership_masks)
     np.save(track_ctx.arrays_dir / "tracking_input_activation_p04.npy", detected.patch_activation_grid4)
     np.save(track_ctx.arrays_dir / "tracking_input_component_labels.npy", detected.raw_component_labels)
     tracked.track_states_df.to_csv(track_ctx.tables_dir / "live_tracking_states.csv", index=False)
     tracked.manifest_df.to_csv(track_ctx.tables_dir / "live_observation_manifest.csv", index=False)
     tracking_meta = {
-        "requested_date": date, "method": "a5b", "detection_dir": str(detector_dir),
+        "requested_date": date, "method": tracking_method, "detection_dir": str(detector_dir),
         "total_tracks": int(tracked.total_tracks), "parameters": tracked.tracking_parameters,
         "pre_size": pre_size,
     }
     (track_ctx.run_dir / "tracking_metadata.json").write_text(json.dumps(tracking_meta, indent=2))
-    track_outputs = _stage_outputs(run, {
+    track_artifacts = {
         "track_states": track_ctx.tables_dir / "live_tracking_states.csv",
         "track_ownership": track_ctx.arrays_dir / "track_ownership_masks.npy",
         "tracking_provenance": track_ctx.run_dir / "tracking_metadata.json",
-    })
+    }
+    if tracking_method == "a5b_n":
+        diagnostic = getattr(tracked, "normalized_candidate_scores_df", None)
+        if diagnostic is None:
+            raise RuntimeError("A5b-N missing normalized candidate diagnostics")
+        diagnostic_path = track_ctx.tables_dir / "normalized_candidate_scores.csv"
+        diagnostic.to_csv(diagnostic_path, index=False)
+        track_artifacts["normalized_candidate_scores"] = diagnostic_path
+    track_outputs = _stage_outputs(run, track_artifacts)
     complete_stage(run, "tracking", {"patch_activation": det_outputs["patch_activation"]},
-                   track_outputs, "a5b", tr)
+                   track_outputs, tracking_method, tr)
     if len(order) == 3:
         return run
 
