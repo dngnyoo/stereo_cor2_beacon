@@ -74,8 +74,8 @@ def execute_from_detection(
 
     tr = _params(config, "tracking")
     method = config.method("tracking")
-    if method not in ("a3", "a4", "a5b", "a5b_n"):
-        raise ValueError("Supported input-run Tracking methods: a3, a4, a5b, a5b_n")
+    if method not in ("a3", "a4", "a5b", "a5b_n", "a5b_nr1", "a5b_nr2"):
+        raise ValueError("Supported input-run Tracking methods: a3, a4, a5b, a5b_n, a5b_nr1, a5b_nr2")
     params = tr.get("parameters") or {}
     if not isinstance(params, dict):
         raise ValueError("tracking.parameters must be a mapping")
@@ -145,10 +145,10 @@ def execute_from_detection(
         "track_ownership": ctx.arrays_dir / "track_ownership_masks.npy",
         "tracking_provenance": ctx.run_dir / "tracking_metadata.json",
     }
-    if method == "a5b_n":
+    if method in ("a5b_n", "a5b_nr1", "a5b_nr2"):
         diagnostic = getattr(result, "normalized_candidate_scores_df", None)
         if diagnostic is None:
-            raise RuntimeError("A5b-N missing normalized score diagnostics")
+            raise RuntimeError(f"{method} missing normalized score diagnostics")
         diagnostic_path = ctx.tables_dir / "normalized_candidate_scores.csv"
         diagnostic.to_csv(diagnostic_path, index=False)
         tracking_artifacts["normalized_candidate_scores"] = diagnostic_path

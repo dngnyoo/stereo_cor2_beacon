@@ -53,6 +53,8 @@ def _ensure_defaults_registered() -> None:
     from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v08_normalized_a5b import PAWidthWeightedCPANormalizedTrackingStage
+    from cme_pipeline.stages.tracking.v11_redesigned_normalized_a5b import PAWidthWeightedCPARedesignedTrackingStage
+    from cme_pipeline.stages.tracking.v12_score_aware_redesigned_a5b import PAWidthWeightedCPAScoreAwareTrackingStage
     from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v06_pa_width_proportional import PAWidthProportionalAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.birth_anchored_tracking import BirthAnchoredTrackingStage
@@ -129,6 +131,26 @@ def _ensure_defaults_registered() -> None:
             supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
             default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
             description="Experimental A5b-N: bounded match terms + equal-weight geometric mean.",
+        )
+    )
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="a5b_nr1",
+            stage_cls=PAWidthWeightedCPARedesignedTrackingStage,
+            aliases=("redesigned_normalized_a5b", "nr1"),
+            supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
+            default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
+            description="Experimental A5b-NR1: redesigned normalized multiplicative evidence scoring (C, A, K, D).",
+        )
+    )
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="a5b_nr2",
+            stage_cls=PAWidthWeightedCPAScoreAwareTrackingStage,
+            aliases=("score_aware_redesigned_a5b", "nr2"),
+            supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg", "score_weight_beta"}),
+            default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0, "score_weight_beta": 1.0},
+            description="Experimental A5b-NR2: score-aware contested Voronoi arbitration with redesigned evidence.",
         )
     )
     register_tracking_method(

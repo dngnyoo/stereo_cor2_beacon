@@ -340,10 +340,10 @@ def execute_to_gates(
         "track_ownership": track_ctx.arrays_dir / "track_ownership_masks.npy",
         "tracking_provenance": track_ctx.run_dir / "tracking_metadata.json",
     }
-    if tracking_method == "a5b_n":
+    if tracking_method in ("a5b_n", "a5b_nr1", "a5b_nr2"):
         diagnostic = getattr(tracked, "normalized_candidate_scores_df", None)
         if diagnostic is None:
-            raise RuntimeError("A5b-N missing normalized candidate diagnostics")
+            raise RuntimeError(f"{tracking_method} missing normalized candidate diagnostics")
         diagnostic_path = track_ctx.tables_dir / "normalized_candidate_scores.csv"
         diagnostic.to_csv(diagnostic_path, index=False)
         track_artifacts["normalized_candidate_scores"] = diagnostic_path
