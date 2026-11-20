@@ -209,10 +209,52 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                         kin = 1.0 if rad_disp >= 0 else max(0.0, 1.0 - abs(rad_disp) / 15.0)
                         front_bonus = cdata["r_front"] / 100.0
 
+                        if do_cnt > 0:
+                            elig_cat = "DIRECT_OVERLAP"
+                        elif adj_cnt > 0:
+                            elig_cat = "ADJACENT_OVERLAP"
+                        elif in_roi and in_rad:
+                            elig_cat = "ROI_RADIAL_CORRIDOR"
+                        else:
+                            elig_cat = "INELIGIBLE"
+
+                        if do_cnt > 0 or adj_cnt > 0:
+                            a5b_score = 4.0 * ov + 2.0 * ang + 6.0 * kin + 3.0 * front_bonus
+                        else:
+                            a5b_score = 1.0 * ang + 3.0 * kin + 2.0 * front_bonus
+
                         total_score, normalized_terms = normalized_candidate_score(
                             ov, ang, kin, cdata["r_front"], observable_radius,
                             has_spatial_contact=(do_cnt > 0 or adj_cnt > 0),
                         )
+
+                        cand_diag = {
+                            "frame_index": step_idx,
+                            "pair_index": p_curr,
+                            "timestamp": ts_curr.isoformat(),
+                            "track_id": t.track_id,
+                            "component_id": c_id,
+                            "direct_overlap_patches": do_cnt,
+                            "adjacent_overlap_patches": adj_cnt,
+                            "raw_overlap": float(ov),
+                            "raw_angular": float(ang),
+                            "raw_kinematic": float(kin),
+                            "raw_front_bonus": float(front_bonus),
+                            "O": float(normalized_terms["O"]),
+                            "A": float(normalized_terms["A"]),
+                            "K": float(normalized_terms["K"]),
+                            "F": float(normalized_terms["F"]),
+                            "has_spatial_contact": bool(do_cnt > 0 or adj_cnt > 0),
+                            "candidate_score": float(total_score),
+                            "normalized_geometric_score": float(total_score),
+                            "raw_a5b_score": float(a5b_score),
+                            "candidate_eligibility_category": elig_cat,
+                            "candidate_rank": -1,
+                            "selected_rejected_outcome": "REJECTED",
+                            "final_ownership_outcome": "PENDING",
+                            "rejection_reason": "PENDING",
+                        }
+                        normalized_score_rows.append(cand_diag)
 
                         cand_rec = {
                             "comp_id": c_id,
@@ -227,25 +269,9 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                             "total_score": total_score,
                             "normalized_terms": normalized_terms,
                             "info": cdata,
+                            "diag": cand_diag,
+                            "is_partitioned": False,
                         }
-                        normalized_score_rows.append({
-                            "pair_index": p_curr,
-                            "timestamp": ts_curr.isoformat(),
-                            "track_id": t.track_id,
-                            "component_id": c_id,
-                            "direct_overlap_patches": do_cnt,
-                            "adjacent_overlap_patches": adj_cnt,
-                            "raw_overlap": float(ov),
-                            "raw_angular": float(ang),
-                            "raw_kinematic": float(kin),
-                            "raw_front_bonus": float(front_bonus),
-                            "O": normalized_terms["O"],
-                            "A": normalized_terms["A"],
-                            "K": normalized_terms["K"],
-                            "F": normalized_terms["F"],
-                            "has_spatial_contact": bool(do_cnt > 0 or adj_cnt > 0),
-                            "normalized_geometric_score": float(total_score),
-                        })
                         track_cands[t.track_id].append(cand_rec)
                         comp_claims[c_id].append((t.track_id, cand_rec))
 
@@ -261,6 +287,11 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                     # Drop candidates from non-overlapping tracks
                     non_overlapping_tids = [cl[0] for cl in claim_list if cl[1]["do_cnt"] == 0]
                     for tid in non_overlapping_tids:
+                        for cd in track_cands[tid]:
+                            if cd["comp_id"] == c_id:
+                                cd["diag"]["selected_rejected_outcome"] = "REJECTED"
+                                cd["diag"]["final_ownership_outcome"] = "LOST_CONTEST"
+                                cd["diag"]["rejection_reason"] = "CONTESTED_LOST_TO_DIRECT_OVERLAP"
                         track_cands[tid] = [cd for cd in track_cands[tid] if cd["comp_id"] != c_id]
 
                     c_mask = comp_info[c_id]["mask"]
@@ -315,6 +346,11 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                     # 4. Update candidate record for each partitioned track with its sub-component
                     for tid, sub_m in part_masks.items():
                         if sub_m.sum() == 0:
+                            for cd in track_cands[tid]:
+                                if cd["comp_id"] == c_id:
+                                    cd["diag"]["selected_rejected_outcome"] = "REJECTED"
+                                    cd["diag"]["final_ownership_outcome"] = "LOST_CONTEST"
+                                    cd["diag"]["rejection_reason"] = "CONTESTED_ZERO_PATCHES"
                             track_cands[tid] = [cd for cd in track_cands[tid] if cd["comp_id"] != c_id]
                             continue
 
@@ -333,6 +369,7 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
 
                             for cand in track_cands[tid]:
                                 if cand["comp_id"] == c_id:
+                                    cand["is_partitioned"] = True
                                     cand["info"] = {
                                         "mask": sub_best_m,
                                         "n_patches": int(sub_best_m.sum()),
@@ -346,17 +383,28 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                                     cand["do_cnt"] = int(np.logical_and(pm, sub_best_m).sum())
                                     cand["adj_cnt"] = int(np.logical_and(binary_dilation(pm, STRUCT_8), sub_best_m).sum())
                         else:
+                            for cd in track_cands[tid]:
+                                if cd["comp_id"] == c_id:
+                                    cd["diag"]["selected_rejected_outcome"] = "REJECTED"
+                                    cd["diag"]["final_ownership_outcome"] = "LOST_CONTEST"
+                                    cd["diag"]["rejection_reason"] = "CONTESTED_ZERO_PATCHES"
                             track_cands[tid] = [cd for cd in track_cands[tid] if cd["comp_id"] != c_id]
                 elif len(overlapping_claims) == 1:
                     winner_tid = overlapping_claims[0][0]
                     for tid, cand in claim_list:
                         if tid != winner_tid:
+                            cand["diag"]["selected_rejected_outcome"] = "REJECTED"
+                            cand["diag"]["final_ownership_outcome"] = "LOST_CONTEST"
+                            cand["diag"]["rejection_reason"] = "CONTESTED_LOST_TO_DIRECT_OVERLAP"
                             track_cands[tid] = [cd for cd in track_cands[tid] if cd["comp_id"] != c_id]
                 else:
-                    # No tracks have direct overlap! Pick track with highest total score
-                    winner_tid = max(claim_list, key=lambda cl: cl[1]["total_score"])[0]
+                    # No tracks have direct overlap! Pick track with highest total score with deterministic tie-breaking
+                    winner_tid = max(claim_list, key=lambda cl: (cl[1]["total_score"], -cl[0]))[0]
                     for tid, cand in claim_list:
                         if tid != winner_tid:
+                            cand["diag"]["selected_rejected_outcome"] = "REJECTED"
+                            cand["diag"]["final_ownership_outcome"] = "LOST_CONTEST"
+                            cand["diag"]["rejection_reason"] = "CONTESTED_LOST_TO_HIGHER_SCORE"
                             track_cands[tid] = [cd for cd in track_cands[tid] if cd["comp_id"] != c_id]
 
             # -------------------------------------------------------------
@@ -364,13 +412,20 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
             # -------------------------------------------------------------
             claimed_patches_this_frame: Dict[Tuple[int, int], int] = {}
 
-            # Sort active tracks by candidate match quality priority
+            # Assign candidate rank within each active track's candidates
+            for t in active_tracks:
+                track_all_cands = [r for r in normalized_score_rows if r["track_id"] == t.track_id and r["pair_index"] == p_curr]
+                track_all_cands.sort(key=lambda r: (r["candidate_score"], -r["component_id"]), reverse=True)
+                for rank, r in enumerate(track_all_cands, 1):
+                    r["candidate_rank"] = rank
+
+            # Sort active tracks by candidate match quality priority (deterministic tie-breaking on track_id)
             track_priority = []
             for t in active_tracks:
                 cands = track_cands[t.track_id]
                 best_score = max([c["total_score"] for c in cands]) if cands else -1.0
                 track_priority.append((best_score, t))
-            track_priority.sort(key=lambda x: x[0], reverse=True)
+            track_priority.sort(key=lambda x: (x[0], -x[1].track_id), reverse=True)
 
             for _, t in track_priority:
                 cands = track_cands[t.track_id]
@@ -382,8 +437,8 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
 
                 accepted_components: List[A4ComponentRecord] = []
 
-                # Evaluate all candidate components for this track
-                for cd in sorted(cands, key=lambda x: x["total_score"], reverse=True):
+                # Evaluate all candidate components for this track (deterministic tie-breaking on comp_id)
+                for cd in sorted(cands, key=lambda x: (x["total_score"], -x["comp_id"]), reverse=True):
                     c_mask = cd["info"]["mask"]
                     rcs = list(zip(*np.nonzero(c_mask)))
 
@@ -395,6 +450,9 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                                 new_m[rc] = False
                         n_rem = int(new_m.sum())
                         if n_rem == 0:
+                            cd["diag"]["selected_rejected_outcome"] = "REJECTED"
+                            cd["diag"]["final_ownership_outcome"] = "UNCLAIMED_COLLISION"
+                            cd["diag"]["rejection_reason"] = "ALL_PATCHES_CLAIMED"
                             all_decision_records.append(
                                 MultiComponentDecisionRecord(
                                     pair_index=p_curr, timestamp=ts_curr.isoformat(),
@@ -431,6 +489,9 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                     )
 
                     if has_overlap or in_corridor:
+                        cd["diag"]["selected_rejected_outcome"] = "SELECTED"
+                        cd["diag"]["final_ownership_outcome"] = "PARTITIONED" if cd.get("is_partitioned") else "EXCLUSIVE"
+                        cd["diag"]["rejection_reason"] = "NONE"
                         comp_rec = A4ComponentRecord(
                             pair_index=p_curr,
                             track_id=t.track_id,
@@ -465,6 +526,9 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                             )
                         )
                     else:
+                        cd["diag"]["selected_rejected_outcome"] = "REJECTED"
+                        cd["diag"]["final_ownership_outcome"] = "REJECTED"
+                        cd["diag"]["rejection_reason"] = "INSUFFICIENT_CONTINUITY"
                         all_decision_records.append(
                             MultiComponentDecisionRecord(
                                 pair_index=p_curr, timestamp=ts_curr.isoformat(),
@@ -740,6 +804,13 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
                         "is_leading_front": True,
                     })
 
+            # Resolve any remaining pending candidate statuses for this frame
+            for r in normalized_score_rows:
+                if r["pair_index"] == p_curr and r["final_ownership_outcome"] == "PENDING":
+                    r["selected_rejected_outcome"] = "REJECTED"
+                    r["final_ownership_outcome"] = "REJECTED"
+                    r["rejection_reason"] = "UNCLAIMED"
+
         context.info(
             f"A5b-N Normalized-Score Tracking complete. Total tracks: {len(tracks)}, "
             f"Decisions logged: {len(all_decision_records)}, Contested allocations: {len(contested_allocation_rows)}."
@@ -772,12 +843,16 @@ class PAWidthWeightedCPANormalizedTrackingStage(PipelineStage):
         setattr(out, "decision_records", all_decision_records)
         setattr(out, "decisions_df", df_decisions)
         setattr(out, "contested_allocation_df", df_contested)
-        setattr(out, "normalized_candidate_scores_df", pd.DataFrame(normalized_score_rows, columns=[
-            "pair_index", "timestamp", "track_id", "component_id",
+        norm_diag_cols = [
+            "frame_index", "pair_index", "timestamp", "track_id", "component_id",
             "direct_overlap_patches", "adjacent_overlap_patches",
             "raw_overlap", "raw_angular", "raw_kinematic", "raw_front_bonus",
-            "O", "A", "K", "F", "has_spatial_contact", "normalized_geometric_score",
-        ]))
+            "O", "A", "K", "F", "has_spatial_contact",
+            "candidate_score", "normalized_geometric_score", "raw_a5b_score",
+            "candidate_eligibility_category", "candidate_rank",
+            "selected_rejected_outcome", "final_ownership_outcome", "rejection_reason",
+        ]
+        setattr(out, "normalized_candidate_scores_df", pd.DataFrame(normalized_score_rows, columns=norm_diag_cols))
 
         return adapt_tracking_output(out, max_birth_radius_px=birth_gate_px)
 

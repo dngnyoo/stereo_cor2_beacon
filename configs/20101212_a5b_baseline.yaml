@@ -1,0 +1,53 @@
+# Baseline B0 (A5b) Tracking Configuration on 2010-12-12.
+# Canonical additive component matching score:
+# Direct/adjacent: 4*O + 2*A + 6*K + 3*F
+# No-contact:      1*A + 3*K + 2*F
+experiment:
+  name: cor2_20101212_a5b_baseline
+  date: "20101212"
+  source: dual_archive
+
+input:
+  preprocessed_dir: /home/aababc/stereo_cor2_clean/runs/dual_archive_20101212/preprocessed
+
+visualization:
+  default: "off"
+
+preprocessing:
+  method: dual_archive_rd
+
+detection:
+  method: d4
+  denoiser: gaussian
+  score_mode: abs
+  gaussian_sigma: 1.0
+  threshold_method: causal_t24
+  t24_mad_multiplier: 3.0
+  floor_mode: outer_p95
+  absolute_p04_floor: 0.5
+  qc:
+    global_activation_threshold: 0.70
+    normalized_weighted_tile_variance_min: 1.5
+
+tracking:
+  method: a5b
+  pre_size:
+    connectivity: 8
+    min_component_patches: 8
+  parameters:
+    max_missed_frames: 1
+    terminate_on_qc: true
+    outward_gate_enabled: true
+    outward_gate_tolerance_px: 4.0
+
+association:
+  method: identity
+
+gates:
+  birth_max_radius_px: 30.0
+  persistence:
+    method: consecutive_size_qualified
+    min_detected_patches: 10
+    min_observed_pairs: 3
+  outward_split:
+    enabled: false
