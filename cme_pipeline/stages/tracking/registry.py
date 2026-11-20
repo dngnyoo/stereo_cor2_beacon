@@ -52,6 +52,8 @@ def _ensure_defaults_registered() -> None:
     from cme_pipeline.stages.tracking.v04_component_first import ComponentFirstAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
+    from cme_pipeline.stages.tracking.v08_temporal_cpa_prior_tracking import H3TemporalCPAPriorTrackingStage
+    from cme_pipeline.stages.tracking.v09_temporal_evidence_association_tracking import H4TemporalEvidenceAssociationTrackingStage
     from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v06_pa_width_proportional import PAWidthProportionalAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.birth_anchored_tracking import BirthAnchoredTrackingStage
@@ -118,6 +120,66 @@ def _ensure_defaults_registered() -> None:
             supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
             default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
             description="A5b PA-Width-Normalized CPA Distance Multi-Component Tracking (20 tracks w/ outward_gate=True).",
+        )
+    )
+
+    h3_params = a3_a4_params | frozenset({
+        "min_pa_width_deg",
+        "temporal_variant",
+        "temporal_mode",
+        "temporal_tau",
+        "temporal_half_life_min",
+        "temporal_radial_speed_px_30m",
+        "ambiguity_threshold",
+        "prior_weight",
+        "prior_sigma_deg",
+        "outlier_rejection_deg",
+    })
+    h3_defaults = {
+        **a3_a4_defaults,
+        "min_pa_width_deg": 8.0,
+        "temporal_variant": "H2",
+        "temporal_mode": "linear_zpos",
+        "temporal_tau": 3.0,
+        "temporal_half_life_min": 45.0,
+        "temporal_radial_speed_px_30m": 8.0,
+        "ambiguity_threshold": 1.5,
+        "prior_weight": 1.0,
+        "prior_sigma_deg": 15.0,
+        "outlier_rejection_deg": 45.0,
+    }
+
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="h3",
+            stage_cls=H3TemporalCPAPriorTrackingStage,
+            aliases=("h3_temporal_cpa_prior", "h3_h1", "h3_h2"),
+            supported_parameters=h3_params,
+            default_parameters=dict(h3_defaults),
+            description="H3 Temporal CPA Prior-Guided Tracking (H1/H2).",
+        )
+    )
+
+    h4_params = h3_params | frozenset({
+        "association_strategy",
+        "temporal_support_weight",
+        "min_kinematic_confirmation",
+    })
+    h4_defaults = {
+        **h3_defaults,
+        "association_strategy": "tie_breaker",
+        "temporal_support_weight": 1.5,
+        "min_kinematic_confirmation": 0.1,
+    }
+
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="h4",
+            stage_cls=H4TemporalEvidenceAssociationTrackingStage,
+            aliases=("h4_temporal_evidence_association", "h4_h1", "h4_h2"),
+            supported_parameters=h4_params,
+            default_parameters=dict(h4_defaults),
+            description="H4 Temporal Evidence-Guided Association Tracking (H1/H2).",
         )
     )
     register_tracking_method(

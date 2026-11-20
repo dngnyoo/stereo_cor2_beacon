@@ -1,0 +1,8 @@
+variant,total_tracks,total_obs_states,mean_cpa_jitter_deg,median_cpa_jitter_deg,mean_lifespan_frames,max_lifespan_frames,identity_switch_proxies,outward_consistency_pct,num_interventions,track1_cpa_mean,track1_obs_count,track2_cpa_mean,track2_obs_count,admitted_families,admitted_tracks,total_segmented_pixels,tracking_runtime_sec,downstream_runtime_sec
+a5b_baseline,19,84,0.61,0.25,4.42,20,0,98.5,0,112.1,20,41.9,20,11,11,52559,0.11,34.18
+h3_h1,19,84,0.6,0.25,4.42,20,0,98.5,8,112.1,20,41.9,20,11,11,52553,0.15,32.31
+h3_h2,19,84,0.6,0.25,4.42,20,0,98.5,6,112.1,20,41.9,20,11,11,52553,0.2,32.1
+h4_h1_tie,18,82,0.63,0.26,4.56,20,0,98.4,1,112.1,20,41.9,20,10,10,52578,0.19,31.63
+h4_h2_tie,18,82,0.63,0.26,4.56,20,0,98.4,1,112.1,20,41.9,20,10,10,52578,0.25,31.39
+h4_h1_direct,18,82,0.63,0.26,4.56,20,0,98.4,1,112.1,20,41.9,20,10,10,52578,0.19,31.67
+h4_h2_direct,18,82,0.63,0.26,4.56,20,0,98.4,1,112.1,20,41.9,20,10,10,52578,0.25,31.23
