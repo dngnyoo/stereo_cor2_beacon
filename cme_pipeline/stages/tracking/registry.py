@@ -55,6 +55,9 @@ def _ensure_defaults_registered() -> None:
     from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v06_pa_width_proportional import PAWidthProportionalAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.birth_anchored_tracking import BirthAnchoredTrackingStage
+    from cme_pipeline.stages.tracking.v11_spt0_temporal_association import SPT0TemporalAssociationTrackingStage
+    from cme_pipeline.stages.tracking.v12_spt1_motion_prediction import SPT1MotionPredictionTrackingStage
+    from cme_pipeline.stages.tracking.v13_spt2_patch_ownership import SPT2PatchOwnershipTrackingStage
 
     a3_a4_params = frozenset({
         "patch_size",
@@ -161,6 +164,66 @@ def _ensure_defaults_registered() -> None:
                 "lock_consecutive_frames": 2, "max_direction_deviation_deg": 45.0,
             },
             description="Legacy Birth-Anchored Directional Tracking.",
+        )
+    )
+
+    spt_params = frozenset({
+        "patch_size",
+        "max_cadence_gap_sec",
+        "outward_gate_enabled",
+        "outward_gate_tolerance_px",
+        "seed_min_radius_px",
+        "seed_max_radius_px",
+        "seed_score_cutoff",
+        "max_missed_frames",
+        "min_confirmation_pairs",
+        "min_component_patches",
+        "bridge_margin_threshold",
+        "separation_mode",
+    })
+    spt_defaults = {
+        "patch_size": 4,
+        "max_cadence_gap_sec": 4500.0,
+        "outward_gate_enabled": True,
+        "outward_gate_tolerance_px": 4.0,
+        "seed_min_radius_px": 22.0,
+        "seed_max_radius_px": 30.0,
+        "seed_score_cutoff": 0.0,
+        "max_missed_frames": 3,
+        "min_confirmation_pairs": 2,
+        "min_component_patches": 1,
+        "bridge_margin_threshold": 0.05,
+        "separation_mode": "marker_geodesic",
+    }
+
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="spt0",
+            stage_cls=SPT0TemporalAssociationTrackingStage,
+            aliases=("spt_0", "spt_baseline"),
+            supported_parameters=spt_params,
+            default_parameters=dict(spt_defaults),
+            description="SPT-0 Independent Seed-Origin Temporal Association Tracking Stage.",
+        )
+    )
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="spt1",
+            stage_cls=SPT1MotionPredictionTrackingStage,
+            aliases=("spt_1", "spt_prediction"),
+            supported_parameters=spt_params,
+            default_parameters=dict(spt_defaults),
+            description="SPT-1 Independent Seed-Origin Motion Prediction Tracking Stage.",
+        )
+    )
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="spt2",
+            stage_cls=SPT2PatchOwnershipTrackingStage,
+            aliases=("spt_2", "spt_ownership", "spt_full"),
+            supported_parameters=spt_params,
+            default_parameters=dict(spt_defaults),
+            description="SPT-2 Independent Seed-Origin Patch Ownership & Competing-Track Separation Stage.",
         )
     )
 
