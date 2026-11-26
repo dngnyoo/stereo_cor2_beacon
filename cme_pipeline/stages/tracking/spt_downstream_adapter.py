@@ -16,8 +16,8 @@ Guarantees:
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass, replace
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass, field, replace
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -67,6 +67,81 @@ class SPTDownstreamPipelineResult:
     frame_measurements_df: pd.DataFrame
     admitted_track_ids: List[int]
     admitted_family_ids: List[str]
+    warmup_classification: Dict[str, Any] = field(default_factory=dict)
+
+
+def classify_track_warmup_status(
+    track_states_df: pd.DataFrame,
+    manifest_df: pd.DataFrame,
+    admitted_track_ids: Sequence[int],
+) -> Dict[str, Any]:
+    """Classifies admitted tracks into warmup and evaluation categories without modifying gate logic.
+
+    Categories:
+    1. Warmup-only tracks: All observed observations fall within the WARMUP window.
+    2. Warmup-born tracks continuing into the evaluation window: First observed in WARMUP,
+       with subsequent observations continuing into EVALUATION.
+    3. Evaluation-born tracks: First observed in EVALUATION.
+
+    Total admitted tracks = Warmup-only + Warmup-born continuing + Evaluation-born
+    Evaluation-active tracks = Warmup-born continuing + Evaluation-born
+    """
+    man = manifest_df.reset_index(drop=True)
+    if "warmup_or_eval" not in man.columns:
+        tids = list(sorted(admitted_track_ids))
+        return {
+            "warmup_only_tracks": [],
+            "warmup_born_continuing_tracks": [],
+            "evaluation_born_tracks": tids,
+            "evaluation_active_tracks": tids,
+            "total_admitted_tracks": tids,
+            "n_warmup_only": 0,
+            "n_warmup_born_continuing": 0,
+            "n_evaluation_born": len(tids),
+            "n_evaluation_active": len(tids),
+            "n_total_admitted": len(tids),
+        }
+
+    warmup_pairs = set(man[man["warmup_or_eval"] == "WARMUP"]["pair_index"].tolist())
+    eval_pairs = set(man[man["warmup_or_eval"] == "EVALUATION"]["pair_index"].tolist())
+
+    obs_df = track_states_df[track_states_df["state"] == "OBSERVED"]
+
+    warmup_only: List[int] = []
+    warmup_born_continuing: List[int] = []
+    eval_born: List[int] = []
+
+    for tid in sorted(admitted_track_ids):
+        tdf = obs_df[obs_df["track_id"] == tid]
+        if tdf.empty:
+            continue
+        pairs = set(tdf["pair_index"].tolist())
+        has_eval = bool(pairs & eval_pairs)
+        first_pair = tdf["pair_index"].min()
+        born_in_eval = first_pair in eval_pairs
+
+        if not has_eval:
+            warmup_only.append(int(tid))
+        elif born_in_eval:
+            eval_born.append(int(tid))
+        else:
+            warmup_born_continuing.append(int(tid))
+
+    eval_active = sorted(warmup_born_continuing + eval_born)
+    total_admitted = sorted(warmup_only + eval_active)
+
+    return {
+        "warmup_only_tracks": warmup_only,
+        "warmup_born_continuing_tracks": warmup_born_continuing,
+        "evaluation_born_tracks": eval_born,
+        "evaluation_active_tracks": eval_active,
+        "total_admitted_tracks": total_admitted,
+        "n_warmup_only": len(warmup_only),
+        "n_warmup_born_continuing": len(warmup_born_continuing),
+        "n_evaluation_born": len(eval_born),
+        "n_evaluation_active": len(eval_active),
+        "n_total_admitted": len(total_admitted),
+    }
 
 
 def adapt_spt_tracking_output(
@@ -212,6 +287,19 @@ def run_spt_downstream_pipeline(
     admitted_tids = sorted(size_out.admitted_track_ids)
     context.info(f"SPT Downstream: Gates admitted {len(admitted_fids)} families / {len(admitted_tids)} tracks.")
 
+    warmup_class = classify_track_warmup_status(
+        adapted_tracking.track_states_df,
+        adapted_tracking.manifest_df,
+        admitted_tids,
+    )
+    context.info(
+        f"SPT Downstream Warmup Classification: {warmup_class['n_total_admitted']} total admitted "
+        f"({warmup_class['n_warmup_only']} warmup-only, "
+        f"{warmup_class['n_warmup_born_continuing']} warmup-born continuing, "
+        f"{warmup_class['n_evaluation_born']} eval-born -> "
+        f"{warmup_class['n_evaluation_active']} eval-active)."
+    )
+
     # 4. Stage 06: Signed Dynamic PA Recovery
     context.info("SPT Downstream: Running ApplyRecoveryAfterGatesStage...")
     recovery_stage = ApplyRecoveryAfterGatesStage()
@@ -242,4 +330,5 @@ def run_spt_downstream_pipeline(
         frame_measurements_df=frame_df,
         admitted_track_ids=admitted_tids,
         admitted_family_ids=admitted_fids,
+        warmup_classification=warmup_class,
     )

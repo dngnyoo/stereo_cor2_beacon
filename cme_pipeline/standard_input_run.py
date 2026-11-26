@@ -152,7 +152,11 @@ def execute_from_detection(
     if len(selected) == 3:
         return run
 
-    result = adapt_tracking_output(result, max_birth_radius_px=cfg.birth_gate.max_birth_radius_px)
+    if method.startswith("spt"):
+        from cme_pipeline.stages.tracking.spt_downstream_adapter import adapt_spt_tracking_output
+        result = adapt_spt_tracking_output(result, date_str=cfg.date_str, max_birth_radius_px=cfg.birth_gate.max_birth_radius_px)
+    else:
+        result = adapt_tracking_output(result, max_birth_radius_px=cfg.birth_gate.max_birth_radius_px)
     assoc_ctx = _context(run, "association")
     associated = IdentityAssociationStage().run(result, cfg, assoc_ctx)
     assoc_files = _stage_outputs(run, {

@@ -11,6 +11,7 @@ from cme_pipeline.core.config import PipelineConfig
 from cme_pipeline.core.context import PipelineContext
 from cme_pipeline.stages.tracking.spt_downstream_adapter import (
     adapt_spt_tracking_output,
+    classify_track_warmup_status,
     run_spt_downstream_pipeline,
     VERIFIED_RSUN_PX,
 )
@@ -107,6 +108,37 @@ class TestSPTDownstreamAdapter(unittest.TestCase):
         # Check catalog kinematic columns
         expected_cols = {"event_id", "family_id", "cpa_deg", "angular_width_deg", "plane_of_sky_speed_km_s"}
         self.assertTrue(expected_cols.issubset(result.event_catalog_df.columns))
+
+    def test_classify_track_warmup_status(self):
+        """Verifies correct tripartite classification of admitted tracks."""
+        manifest_df = pd.DataFrame([
+            {"pair_index": 0, "warmup_or_eval": "WARMUP"},
+            {"pair_index": 1, "warmup_or_eval": "WARMUP"},
+            {"pair_index": 2, "warmup_or_eval": "EVALUATION"},
+            {"pair_index": 3, "warmup_or_eval": "EVALUATION"},
+        ])
+
+        track_states_df = pd.DataFrame([
+            {"track_id": 101, "pair_index": 0, "state": "OBSERVED"},
+            {"track_id": 101, "pair_index": 1, "state": "OBSERVED"},
+            {"track_id": 102, "pair_index": 1, "state": "OBSERVED"},
+            {"track_id": 102, "pair_index": 2, "state": "OBSERVED"},
+            {"track_id": 103, "pair_index": 2, "state": "OBSERVED"},
+            {"track_id": 103, "pair_index": 3, "state": "OBSERVED"},
+        ])
+
+        admitted = [101, 102, 103]
+        res = classify_track_warmup_status(track_states_df, manifest_df, admitted)
+
+        self.assertEqual(res["warmup_only_tracks"], [101])
+        self.assertEqual(res["warmup_born_continuing_tracks"], [102])
+        self.assertEqual(res["evaluation_born_tracks"], [103])
+        self.assertEqual(res["evaluation_active_tracks"], [102, 103])
+        self.assertEqual(res["n_warmup_only"], 1)
+        self.assertEqual(res["n_warmup_born_continuing"], 1)
+        self.assertEqual(res["n_evaluation_born"], 1)
+        self.assertEqual(res["n_evaluation_active"], 2)
+        self.assertEqual(res["n_total_admitted"], 3)
 
 
 if __name__ == "__main__":
