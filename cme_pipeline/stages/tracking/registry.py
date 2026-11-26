@@ -52,6 +52,8 @@ def _ensure_defaults_registered() -> None:
     from cme_pipeline.stages.tracking.v04_component_first import ComponentFirstAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v05_multi_component import MultiComponentAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v07_pa_width_weighted_cpa import PAWidthWeightedCPAAdaptiveROITrackingStage
+    from cme_pipeline.stages.tracking.v09_seed_guided_birth import SeedGuidedBirthTrackingStage
+    from cme_pipeline.stages.tracking.v10_seed_aware_association import SeedAwareAssociationTrackingStage
     from cme_pipeline.stages.tracking.v02_adaptive_pa_roi import BirthSeededAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.v06_pa_width_proportional import PAWidthProportionalAdaptiveROITrackingStage
     from cme_pipeline.stages.tracking.birth_anchored_tracking import BirthAnchoredTrackingStage
@@ -121,6 +123,52 @@ def _ensure_defaults_registered() -> None:
             supported_parameters=a3_a4_params | frozenset({"min_pa_width_deg"}),
             default_parameters={**a3_a4_defaults, "min_pa_width_deg": 8.0},
             description="A5b PA-Width-Normalized CPA Distance Multi-Component Tracking (20 tracks w/ outward_gate=True).",
+        )
+    )
+    s1_params = a3_a4_params | frozenset({
+        "min_pa_width_deg",
+        "seed_min_radius_px",
+        "seed_max_radius_px",
+        "seed_score_cutoff",
+        "strict_seeded_birth",
+    })
+    s1_defaults = {
+        **a3_a4_defaults,
+        "min_pa_width_deg": 8.0,
+        "seed_min_radius_px": 22.0,
+        "seed_max_radius_px": 30.0,
+        "seed_score_cutoff": 0.0,
+        "strict_seeded_birth": True,
+    }
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="s1",
+            stage_cls=SeedGuidedBirthTrackingStage,
+            aliases=("seed_birth", "v09_seed_guided_birth", "s1_seed_guided_birth"),
+            supported_parameters=s1_params,
+            default_parameters=s1_defaults,
+            description="S1 Seed-Guided Track Birth Adaptive PA-ROI Tracking.",
+        )
+    )
+    s2_params = s1_params | frozenset({
+        "seed_aware_association_enabled",
+        "seed_pa_tolerance_deg",
+        "ambiguity_tau",
+    })
+    s2_defaults = {
+        **s1_defaults,
+        "seed_aware_association_enabled": True,
+        "seed_pa_tolerance_deg": 15.0,
+        "ambiguity_tau": 0.25,
+    }
+    register_tracking_method(
+        TrackingMethodSpec(
+            canonical_name="s2",
+            stage_cls=SeedAwareAssociationTrackingStage,
+            aliases=("seed_association", "v10_seed_aware_association", "s2_seed_association"),
+            supported_parameters=s2_params,
+            default_parameters=s2_defaults,
+            description="S2 Seed-Guided Track Birth + Seed-Aware Association Adaptive PA-ROI Tracking.",
         )
     )
     register_tracking_method(
