@@ -36,7 +36,8 @@ from experiments.ret_tracking.ret_evidence_engine import (
 @dataclass
 class RETConfig:
     """Configuration for Radial Evidence Tracker (RET)."""
-    variant: str = "RET-1"  # 'RET-0', 'RET-1', 'RET-2', 'RET-3'
+    variant: str = "RET-1"  # 'RET-0', 'RET-1', 'RET-2', 'RET-3', 'RET-B0', 'RET-V1'
+    lobe_width_mode: str = "prominence"  # 'prominence' or 'valley_symmetric'
     sigma_s: float = 2.0  # Gaussian spreading scale (0.0 = raw)
     evidence_formulation: str = "positive"  # 'positive' or 'compressed'
     min_prominence: float = 3.0  # Angular peak prominence threshold
@@ -63,6 +64,12 @@ class RETConfig:
     w_width: float = 0.5  # Angular width similarity weight
     gating_cost_threshold: float = 40.0  # Max acceptable association cost
 
+    def __post_init__(self):
+        if self.variant == "RET-B0":
+            self.lobe_width_mode = "prominence"
+        elif self.variant == "RET-V1":
+            self.lobe_width_mode = "valley_symmetric"
+
 
 @dataclass
 class RETTrackObservation:
@@ -86,6 +93,12 @@ class RETTrackObservation:
     v_r_smoothed: float  # px/hr
     predicted_r: Optional[float] = None
     association_cost: float = 0.0
+    left_valley_pa_deg: Optional[float] = None
+    right_valley_pa_deg: Optional[float] = None
+    left_valley_dist_deg: Optional[float] = None
+    right_valley_dist_deg: Optional[float] = None
+    selected_half_width_deg: Optional[float] = None
+    fallback_used: bool = False
 
 
 @dataclass
@@ -256,6 +269,7 @@ class RadialEvidenceTracker:
             max_lobe_width_deg=self.config.max_lobe_width_deg,
             front_evidence_quantile=self.config.front_evidence_quantile,
             front_min_threshold=self.config.front_min_threshold,
+            lobe_width_mode=self.config.lobe_width_mode,
         )
 
         ev_result = FrameRadialEvidenceResult(
@@ -340,7 +354,7 @@ class RadialEvidenceTracker:
                 last_obs = trk.latest
 
                 # Predict expected front radius
-                if self.config.variant in ("RET-2", "RET-3"):
+                if self.config.variant in ("RET-2", "RET-3", "RET-B0", "RET-V1"):
                     # Discovered motion prediction
                     v_pred = trk.current_vr if abs(trk.current_vr) > 0.1 else 10.0
                     r_pred = last_obs.r_front_px + v_pred * dt_hours
@@ -373,7 +387,7 @@ class RadialEvidenceTracker:
                     cost = 0.0
                     cost += self.config.w_pa * (d_cpa / 5.0)
 
-                    if self.config.variant in ("RET-2", "RET-3"):
+                    if self.config.variant in ("RET-2", "RET-3", "RET-B0", "RET-V1"):
                         pred_err = abs(cand.r_front_px - r_pred)
                         cost += self.config.w_front * (pred_err / 5.0)
                     else:
@@ -409,7 +423,7 @@ class RadialEvidenceTracker:
 
                     r_pred_val = (
                         trk.latest.r_front_px + trk.current_vr * dt_hours
-                        if self.config.variant in ("RET-2", "RET-3")
+                        if self.config.variant in ("RET-2", "RET-3", "RET-B0", "RET-V1")
                         else None
                     )
 
@@ -433,6 +447,12 @@ class RadialEvidenceTracker:
                         v_r_smoothed=vr_smooth,
                         predicted_r=r_pred_val,
                         association_cost=float(cost_matrix[r_idx, c_idx]),
+                        left_valley_pa_deg=cand.left_valley_pa_deg,
+                        right_valley_pa_deg=cand.right_valley_pa_deg,
+                        left_valley_dist_deg=cand.left_valley_dist_deg,
+                        right_valley_dist_deg=cand.right_valley_dist_deg,
+                        selected_half_width_deg=cand.selected_half_width_deg,
+                        fallback_used=cand.fallback_used,
                     )
                     trk.observations.append(obs)
                     trk.missed_count = 0
@@ -496,6 +516,12 @@ class RadialEvidenceTracker:
                         v_r_smoothed=0.0,
                         predicted_r=None,
                         association_cost=0.0,
+                        left_valley_pa_deg=cand.left_valley_pa_deg,
+                        right_valley_pa_deg=cand.right_valley_pa_deg,
+                        left_valley_dist_deg=cand.left_valley_dist_deg,
+                        right_valley_dist_deg=cand.right_valley_dist_deg,
+                        selected_half_width_deg=cand.selected_half_width_deg,
+                        fallback_used=cand.fallback_used,
                     )
                     new_track.observations.append(obs)
                     self.tracks[tid] = new_track
@@ -541,6 +567,12 @@ class RadialEvidenceTracker:
                     "v_r_smoothed_px_hr": obs.v_r_smoothed,
                     "predicted_r_px": obs.predicted_r,
                     "association_cost": obs.association_cost,
+                    "left_valley_pa_deg": obs.left_valley_pa_deg,
+                    "right_valley_pa_deg": obs.right_valley_pa_deg,
+                    "left_valley_dist_deg": obs.left_valley_dist_deg,
+                    "right_valley_dist_deg": obs.right_valley_dist_deg,
+                    "selected_half_width_deg": obs.selected_half_width_deg,
+                    "fallback_used": obs.fallback_used,
                     "mean_cpa": trk.mean_cpa,
                     "cpa_jitter": trk.cpa_jitter,
                     "outward_consistency": trk.outward_consistency,

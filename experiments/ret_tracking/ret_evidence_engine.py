@@ -84,6 +84,12 @@ class RadialCandidate:
     radial_profile: np.ndarray  # (n_r_bins,)
     front_profile: np.ndarray  # front radius per PA in lobe
     lobe_pa_indices: np.ndarray
+    left_valley_pa_deg: Optional[float] = None
+    right_valley_pa_deg: Optional[float] = None
+    left_valley_dist_deg: Optional[float] = None
+    right_valley_dist_deg: Optional[float] = None
+    selected_half_width_deg: Optional[float] = None
+    fallback_used: bool = False
 
 
 @dataclass
@@ -232,11 +238,13 @@ def detect_angular_candidates(
     max_lobe_width_deg: float = 120.0,
     front_evidence_quantile: float = 0.20,
     front_min_threshold: float = 0.35,
+    lobe_width_mode: str = "prominence",
 ) -> List[RadialCandidate]:
     """Identifies significant angular evidence lobes and extracts radial CME fronts.
 
-    Performs circular peak detection on S^1, merges overlapping minor peaks within
-    the same lobe, and estimates representative CPA and outward front positions.
+    Supports:
+    - 'prominence': Baseline prominence-based width with 1.5x expansion (capped at max_lobe_width_deg).
+    - 'valley_symmetric': Symmetric nearest-side inter-peak valley-based width.
     """
     n_pa = len(a_smooth)
     # Replicate array across circular boundary for seamless peak detection
@@ -278,23 +286,127 @@ def detect_angular_candidates(
     if not valid_peaks:
         return []
 
-    # Sort descending by prominence
+    # Precompute valley-based lobe widths if requested
+    valley_info: Dict[int, Dict[str, Any]] = {}
+    if lobe_width_mode == "valley_symmetric":
+        peaks_by_angle = sorted(valid_peaks, key=lambda item: item[1])
+        K = len(peaks_by_angle)
+        for k, (pk_ext, orig_pa_idx, prom, width_deg, left_ip, right_ip) in enumerate(peaks_by_angle):
+            theta_p = float(grid.pa_bins[orig_pa_idx])
+            if K < 2:
+                # Step 6: Single-peak fallback to prominence
+                half_w_fallback = max(min_lobe_width_deg / 2.0, min(max_lobe_width_deg / 2.0, width_deg * 0.75))
+                valley_info[orig_pa_idx] = {
+                    "h": float(half_w_fallback),
+                    "w": float(half_w_fallback * 2.0),
+                    "theta_L": None,
+                    "theta_R": None,
+                    "d_L": None,
+                    "d_R": None,
+                    "fallback": True,
+                    "valid": True,
+                }
+                continue
+
+            prev_orig_idx = peaks_by_angle[(k - 1) % K][1]
+            next_orig_idx = peaks_by_angle[(k + 1) % K][1]
+
+            # Step 2 — Find Left and Right Valleys
+            n_left = (orig_pa_idx - prev_orig_idx) % n_pa
+            n_right = (next_orig_idx - orig_pa_idx) % n_pa
+
+            if n_left <= 1 or n_right <= 1:
+                # Missing valley interval on one side -> fallback
+                half_w_fallback = max(min_lobe_width_deg / 2.0, min(max_lobe_width_deg / 2.0, width_deg * 0.75))
+                valley_info[orig_pa_idx] = {
+                    "h": float(half_w_fallback),
+                    "w": float(half_w_fallback * 2.0),
+                    "theta_L": None,
+                    "theta_R": None,
+                    "d_L": None,
+                    "d_R": None,
+                    "fallback": True,
+                    "valid": True,
+                }
+                continue
+
+            # Left interval strictly between adjacent peaks
+            indices_left = [(prev_orig_idx + s) % n_pa for s in range(1, n_left)]
+            vals_left = a_smooth[indices_left]
+            min_left_val = float(np.min(vals_left))
+            min_left_cands = [i for i in indices_left if a_smooth[i] == min_left_val]
+            # Tie breaking: pick position closest to current peak
+            v_left_idx = min(min_left_cands, key=lambda i: (orig_pa_idx - i) % n_pa)
+            theta_L = float(grid.pa_bins[v_left_idx])
+            d_L = float((theta_p - theta_L) % 360.0)
+
+            # Right interval strictly between adjacent peaks
+            indices_right = [(orig_pa_idx + s) % n_pa for s in range(1, n_right)]
+            vals_right = a_smooth[indices_right]
+            min_right_val = float(np.min(vals_right))
+            min_right_cands = [i for i in indices_right if a_smooth[i] == min_right_val]
+            # Tie breaking: pick position closest to current peak
+            v_right_idx = min(min_right_cands, key=lambda i: (i - orig_pa_idx) % n_pa)
+            theta_R = float(grid.pa_bins[v_right_idx])
+            d_R = float((theta_R - theta_p) % 360.0)
+
+            # Step 4 — Select the Smaller Distance
+            h = min(d_L, d_R)
+            W = 2.0 * h
+
+            # Step 6 — Edge case: Narrow-lobe rejection
+            if W < min_lobe_width_deg:
+                valley_info[orig_pa_idx] = {"valid": False}
+                continue
+
+            valley_info[orig_pa_idx] = {
+                "h": float(h),
+                "w": float(W),
+                "theta_L": theta_L,
+                "theta_R": theta_R,
+                "d_L": d_L,
+                "d_R": d_R,
+                "fallback": False,
+                "valid": True,
+            }
+
+    # Sort descending by prominence (consistent ranking)
     valid_peaks.sort(key=lambda item: item[2], reverse=True)
 
     candidates: List[RadialCandidate] = []
     cand_id = 1
 
     for pk_ext, pk_orig, prom, width_deg, left_ip, right_ip in valid_peaks:
-        if width_deg < min_lobe_width_deg:
-            continue
+        theta_p = float(grid.pa_bins[pk_orig])
 
-        # Determine lobe angular support indices on circular grid
-        half_w = max(min_lobe_width_deg / 2.0, min(max_lobe_width_deg / 2.0, width_deg * 0.75))
-        lobe_start_deg = (grid.pa_bins[pk_orig] - half_w) % 360.0
-        lobe_end_deg = (grid.pa_bins[pk_orig] + half_w) % 360.0
+        if lobe_width_mode == "valley_symmetric":
+            v_data = valley_info.get(pk_orig)
+            if not v_data or not v_data["valid"]:
+                continue
+            half_w = v_data["h"]
+            lobe_width = v_data["w"]
+            theta_L = v_data["theta_L"]
+            theta_R = v_data["theta_R"]
+            d_L = v_data["d_L"]
+            d_R = v_data["d_R"]
+            fallback_used = v_data["fallback"]
+        else:
+            if width_deg < min_lobe_width_deg:
+                continue
+            half_w = max(min_lobe_width_deg / 2.0, min(max_lobe_width_deg / 2.0, width_deg * 0.75))
+            lobe_width = float(half_w * 2.0)
+            theta_L = None
+            theta_R = None
+            d_L = None
+            d_R = None
+            fallback_used = False
+
+        # Determine symmetric lobe boundaries around original peak PA
+        lobe_start_deg = (theta_p - half_w) % 360.0
+        lobe_end_deg = (theta_p + half_w) % 360.0
 
         # Collect PA indices in this lobe
-        d_pa_all = circular_diff_deg(grid.pa_bins, grid.pa_bins[pk_orig])
+        d_pa_all = circular_diff_deg(grid.pa_bins, theta_p)
         lobe_mask = np.abs(d_pa_all) <= half_w
         lobe_indices = np.where(lobe_mask)[0]
 
@@ -346,9 +458,9 @@ def detect_angular_candidates(
 
         cand = RadialCandidate(
             candidate_id=cand_id,
-            peak_pa_deg=float(grid.pa_bins[pk_orig]),
+            peak_pa_deg=theta_p,
             weighted_cpa_deg=weighted_cpa,
-            pa_width_deg=float(half_w * 2.0),
+            pa_width_deg=lobe_width,
             pa_start_deg=lobe_start_deg,
             pa_end_deg=lobe_end_deg,
             total_lobe_evidence=lobe_evidence,
@@ -360,6 +472,12 @@ def detect_angular_candidates(
             radial_profile=rad_profile,
             front_profile=front_profile,
             lobe_pa_indices=lobe_indices,
+            left_valley_pa_deg=theta_L,
+            right_valley_pa_deg=theta_R,
+            left_valley_dist_deg=d_L,
+            right_valley_dist_deg=d_R,
+            selected_half_width_deg=half_w,
+            fallback_used=fallback_used,
         )
         candidates.append(cand)
         cand_id += 1
