@@ -169,6 +169,7 @@ def add_coronagraph_rings(ax, grid: PolarGridGeometry, sx: float, sy: float, r_b
 def plot_single_variant_panel(
     variant_name: str,
     pair_num: int,
+    frame_idx: int,
     ts: datetime,
     rd_img: np.ndarray,
     val_m: np.ndarray,
@@ -258,7 +259,6 @@ def plot_single_variant_panel(
         tid = matched_cand_ids.get(cand.candidate_id)
 
         # Draw front arc across lobe span
-        # Handle wraparound
         span = cand.pa_width_deg
         theta_lobe = np.linspace(-span / 2.0, span / 2.0, 20)
         arc_angles = (cand.peak_pa_deg + theta_lobe) % 360.0
@@ -282,9 +282,12 @@ def plot_single_variant_panel(
                 bbox=dict(boxstyle="round,pad=0.15", facecolor="darkred", alpha=0.7, edgecolor="crimson")
             )
 
-    # Overlay active tracks
+    # Overlay active confirmed tracks using current frame observation
     for trk in active_confirmed:
-        obs = trk.latest
+        cur_obs = [o for o in trk.observations if o.frame_idx == frame_idx]
+        if not cur_obs:
+            continue
+        obs = cur_obs[0]
         cpa_rad = np.radians(obs.cpa_deg)
         x_ray = sx - grid.r_max_px * np.sin(cpa_rad)
         y_ray = sy + grid.r_max_px * np.cos(cpa_rad)
@@ -295,20 +298,23 @@ def plot_single_variant_panel(
         axes[3].plot(x_front, y_front, "^", color="lime", markersize=8, markeredgecolor="black")
 
         axes[3].annotate(
-            f"Trk {trk.track_id}\nCPA {obs.cpa_deg:.0f}°\nr={obs.r_front_px:.0f}px",
+            f"Trk {trk.track_id} (C{obs.candidate_id})\nCPA {obs.cpa_deg:.0f}°\nr={obs.r_front_px:.0f}px",
             (x_front + 4, y_front - 4),
             color="white", fontsize=7.5, fontweight="bold",
             bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.75, edgecolor="lime")
         )
 
     for trk in active_tentative:
-        obs = trk.latest
+        cur_obs = [o for o in trk.observations if o.frame_idx == frame_idx]
+        if not cur_obs:
+            continue
+        obs = cur_obs[0]
         cpa_rad = np.radians(obs.cpa_deg)
         x_front = sx - obs.r_front_px * np.sin(cpa_rad)
         y_front = sy + obs.r_front_px * np.cos(cpa_rad)
         axes[3].plot(x_front, y_front, "d", color="gold", markersize=7, markeredgecolor="black")
         axes[3].annotate(
-            f"Tent Trk {trk.track_id}\n({obs.cpa_deg:.0f}°)",
+            f"Tent Trk {trk.track_id} (C{obs.candidate_id})\n({obs.cpa_deg:.0f}°, r={obs.r_front_px:.0f}px)",
             (x_front + 4, y_front + 4),
             color="black", fontsize=6.5, fontweight="bold",
             bbox=dict(boxstyle="round,pad=0.2", facecolor="gold", alpha=0.8, edgecolor="black")
@@ -317,13 +323,15 @@ def plot_single_variant_panel(
     # Check missing tracks (active before but not matched this step)
     for tid, tinfo in active_before.items():
         if tid not in matched_track_ids:
-            # Temporarily missing track
+            # Temporarily missing track: compute predicted radius
+            dt_since = (ts - tinfo["last_obs_timestamp"]).total_seconds() / 3600.0
+            r_pred = tinfo["latest_r_front"] + tinfo["current_vr"] * dt_since
             cpa_rad = np.radians(tinfo["latest_cpa"])
-            x_f = sx - tinfo["latest_r_front"] * np.sin(cpa_rad)
-            y_f = sy + tinfo["latest_r_front"] * np.cos(cpa_rad)
-            axes[3].plot(x_f, y_f, "o", color="orange", markersize=8, markeredgecolor="red", fillstyle="none", markeredgewidth=1.8)
+            x_f = sx - r_pred * np.sin(cpa_rad)
+            y_f = sy + r_pred * np.cos(cpa_rad)
+            axes[3].plot(x_f, y_f, "o", color="orange", markersize=8, markeredgecolor="orange", fillstyle="none", markeredgewidth=2.0)
             axes[3].annotate(
-                f"MISS Trk {tid}\n(miss={tinfo['missed_count'] + 1})",
+                f"MISS Trk {tid}\nPred r={r_pred:.0f}px (M={tinfo['missed_count'] + 1})",
                 (x_f - 25, y_f + 12),
                 color="orange", fontsize=6.5, fontweight="bold",
                 bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.8, edgecolor="orange")
@@ -398,42 +406,89 @@ def plot_side_by_side_comparison(
             txt = f"C{cand.candidate_id}: {cand.weighted_cpa_deg:.0f}°\n$W={cand.pa_width_deg:.0f}°$ (fallback)"
         ax_a_v1.text(cand.weighted_cpa_deg, cand.peak_evidence + 2, txt, color="teal", fontsize=8, fontweight="bold", ha="center")
 
-    # Bottom-Left: Baseline Tracking Overlay
-    ax_o_b0 = axes[1, 0]
     vlim = float(np.nanpercentile(np.abs(rd_img[val_m]), 98)) if np.any(val_m) else 1.0
     vlim = max(0.1, vlim)
-    ax_o_b0.imshow(rd_img, cmap="gray", vmin=-vlim, vmax=vlim)
-    add_coronagraph_rings(ax_o_b0, grid, sx, sy, r_birth=r_birth_max)
-    ax_o_b0.set_title(f"C. RET-B0 Tracking Overlay (Pair {pair_num:02d})\nActive Confirmed Tracks: {len(b0_res.active_confirmed_tracks)}", fontsize=11, fontweight="bold")
 
-    b0_matched_tids = {tid for tid, cid in b0_res.matched_tracks}
-    for trk in b0_res.active_confirmed_tracks:
-        obs = trk.latest
-        cpa_rad = np.radians(obs.cpa_deg)
-        x_ray = sx - grid.r_max_px * np.sin(cpa_rad)
-        y_ray = sy + grid.r_max_px * np.cos(cpa_rad)
-        ax_o_b0.plot([sx, x_ray], [sy, y_ray], color="cyan", linestyle="--", linewidth=1.2, alpha=0.7)
-        x_front = sx - obs.r_front_px * np.sin(cpa_rad)
-        y_front = sy + obs.r_front_px * np.cos(cpa_rad)
-        ax_o_b0.plot(x_front, y_front, "^", color="lime", markersize=8, markeredgecolor="black")
-        ax_o_b0.annotate(f"Trk {trk.track_id} ({obs.cpa_deg:.0f}°)\nr={obs.r_front_px:.0f}px", (x_front + 4, y_front - 4), color="white", fontsize=8, fontweight="bold", bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.75, edgecolor="lime"))
+    # Helper to draw bottom overlay panel with rigorous candidate and track rendering
+    def render_overlay(ax, snap, variant_title):
+        res = snap["res"]
+        active_bef = snap["active_before"]
+        f_idx = snap["frame_idx"]
+        matched_cand_to_track = {cid: tid for tid, cid in res.matched_tracks}
+        matched_track_to_cand = {tid: cid for tid, cid in res.matched_tracks}
 
-    # Bottom-Right: RET-V1 Tracking Overlay
-    ax_o_v1 = axes[1, 1]
-    ax_o_v1.imshow(rd_img, cmap="gray", vmin=-vlim, vmax=vlim)
-    add_coronagraph_rings(ax_o_v1, grid, sx, sy, r_birth=r_birth_max)
-    ax_o_v1.set_title(f"D. RET-V1 Tracking Overlay (Pair {pair_num:02d})\nActive Confirmed Tracks: {len(v1_res.active_confirmed_tracks)}", fontsize=11, fontweight="bold")
+        ax.imshow(rd_img, cmap="gray", vmin=-vlim, vmax=vlim)
+        add_coronagraph_rings(ax, grid, sx, sy, r_birth=r_birth_max)
 
-    for trk in v1_res.active_confirmed_tracks:
-        obs = trk.latest
-        cpa_rad = np.radians(obs.cpa_deg)
-        x_ray = sx - grid.r_max_px * np.sin(cpa_rad)
-        y_ray = sy + grid.r_max_px * np.cos(cpa_rad)
-        ax_o_v1.plot([sx, x_ray], [sy, y_ray], color="cyan", linestyle="--", linewidth=1.2, alpha=0.7)
-        x_front = sx - obs.r_front_px * np.sin(cpa_rad)
-        y_front = sy + obs.r_front_px * np.cos(cpa_rad)
-        ax_o_v1.plot(x_front, y_front, "^", color="lime", markersize=8, markeredgecolor="black")
-        ax_o_v1.annotate(f"Trk {trk.track_id} ({obs.cpa_deg:.0f}°)\nr={obs.r_front_px:.0f}px", (x_front + 4, y_front - 4), color="white", fontsize=8, fontweight="bold", bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.75, edgecolor="lime"))
+        # 1. Candidate arcs and fronts
+        for cand in res.evidence_result.candidates:
+            span = cand.pa_width_deg
+            theta_lobe = np.linspace(-span / 2.0, span / 2.0, 25)
+            arc_angles = (cand.peak_pa_deg + theta_lobe) % 360.0
+            arc_rad = np.radians(arc_angles)
+            arc_x = sx - cand.r_front_px * np.sin(arc_rad)
+            arc_y = sy + cand.r_front_px * np.cos(arc_rad)
+
+            cpa_rad = np.radians(cand.weighted_cpa_deg)
+            xf = sx - cand.r_front_px * np.sin(cpa_rad)
+            yf = sy + cand.r_front_px * np.cos(cpa_rad)
+
+            if cand.candidate_id in matched_cand_to_track:
+                ax.plot(arc_x, arc_y, color="lime", linewidth=1.8, alpha=0.85)
+                ax.plot(xf, yf, "s", color="lime", markersize=6, markeredgecolor="black")
+            else:
+                ax.plot(arc_x, arc_y, color="crimson", linestyle="--", linewidth=1.2, alpha=0.7)
+                ax.plot(xf, yf, "x", color="crimson", markersize=7, markeredgewidth=2)
+                ax.annotate(
+                    f"Rej C{cand.candidate_id}\n({cand.weighted_cpa_deg:.0f}°, r={cand.r_front_px:.0f}px)",
+                    (xf + 3, yf - 3), color="pink", fontsize=6.5, fontweight="bold",
+                    bbox=dict(boxstyle="round,pad=0.15", facecolor="darkred", alpha=0.75, edgecolor="crimson")
+                )
+
+        # 2. Confirmed active tracks (rendered using observation in CURRENT frame)
+        n_matched = 0
+        for trk in res.active_confirmed_tracks:
+            cur_obs = [o for o in trk.observations if o.frame_idx == f_idx]
+            if cur_obs:
+                n_matched += 1
+                obs = cur_obs[0]
+                cpa_rad = np.radians(obs.cpa_deg)
+                x_ray = sx - grid.r_max_px * np.sin(cpa_rad)
+                y_ray = sy + grid.r_max_px * np.cos(cpa_rad)
+                ax.plot([sx, x_ray], [sy, y_ray], color="cyan", linestyle="--", linewidth=1.2, alpha=0.7)
+
+                x_front = sx - obs.r_front_px * np.sin(cpa_rad)
+                y_front = sy + obs.r_front_px * np.cos(cpa_rad)
+                ax.plot(x_front, y_front, "^", color="lime", markersize=8, markeredgecolor="black")
+                ax.annotate(
+                    f"Trk {trk.track_id} (C{obs.candidate_id})\nCPA {obs.cpa_deg:.0f}° | r={obs.r_front_px:.0f}px",
+                    (x_front + 4, y_front - 4), color="white", fontsize=7.5, fontweight="bold",
+                    bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.75, edgecolor="lime")
+                )
+
+        # 3. Missing/Coasting tracks (active before step, but not matched this step)
+        for tid, tinfo in active_bef.items():
+            if tid not in matched_track_to_cand:
+                dt_since = (ts - tinfo["last_obs_timestamp"]).total_seconds() / 3600.0
+                r_pred = tinfo["latest_r_front"] + tinfo["current_vr"] * dt_since
+                cpa_rad = np.radians(tinfo["latest_cpa"])
+                x_ray = sx - grid.r_max_px * np.sin(cpa_rad)
+                y_ray = sy + grid.r_max_px * np.cos(cpa_rad)
+                ax.plot([sx, x_ray], [sy, y_ray], color="orange", linestyle=":", linewidth=1.2, alpha=0.7)
+
+                x_f = sx - r_pred * np.sin(cpa_rad)
+                y_f = sy + r_pred * np.cos(cpa_rad)
+                ax.plot(x_f, y_f, "o", markerfacecolor="none", markeredgecolor="orange", markersize=8, markeredgewidth=2.0)
+                ax.annotate(
+                    f"MISS Trk {tid}\nPred r={r_pred:.0f}px (M={tinfo['missed_count'] + 1})",
+                    (x_f + 4, y_f - 4), color="orange", fontsize=7.0, fontweight="bold",
+                    bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.8, edgecolor="orange")
+                )
+
+        ax.set_title(f"{variant_title} (Pair {pair_num:02d})\nMatched Tracks: {n_matched} | Active Confirmed: {len(res.active_confirmed_tracks)}", fontsize=11, fontweight="bold")
+
+    render_overlay(axes[1, 0], b0_snap, "C. RET-B0 Tracking Overlay")
+    render_overlay(axes[1, 1], v1_snap, "D. RET-V1 Tracking Overlay")
 
     plt.suptitle(f"Direct Architecture Comparison: Pair {pair_num:02d} ({ts.strftime('%Y-%m-%d %H:%M UTC')})\nRET-B0 (Prominence 1.5x) vs RET-V1 (Symmetric Nearest-Side Valley)", fontsize=13, fontweight="bold", y=0.98)
     plt.tight_layout()
@@ -603,9 +658,12 @@ def generate_animated_gifs(
         ax.imshow(rd_img, cmap="gray", vmin=-vlim, vmax=vlim)
         add_coronagraph_rings(ax, runner.grid, runner.sx, runner.sy, r_birth=48.0)
 
-        # Plot confirmed tracks
+        # Plot confirmed tracks using observation in CURRENT frame
         for trk in res.active_confirmed_tracks:
-            obs = trk.latest
+            cur_obs = [o for o in trk.observations if o.frame_idx == idx]
+            if not cur_obs:
+                continue
+            obs = cur_obs[0]
             cpa_rad = np.radians(obs.cpa_deg)
             x_ray = runner.sx - runner.grid.r_max_px * np.sin(cpa_rad)
             y_ray = runner.sy + runner.grid.r_max_px * np.cos(cpa_rad)
@@ -614,7 +672,7 @@ def generate_animated_gifs(
             x_front = runner.sx - obs.r_front_px * np.sin(cpa_rad)
             y_front = runner.sy + obs.r_front_px * np.cos(cpa_rad)
             ax.plot(x_front, y_front, "^", color="lime", markersize=8, markeredgecolor="black")
-            ax.annotate(f"Trk {trk.track_id} ({obs.cpa_deg:.0f}°)", (x_front + 4, y_front - 4), color="white", fontsize=8, fontweight="bold", bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.7, edgecolor="lime"))
+            ax.annotate(f"Trk {trk.track_id} ({obs.cpa_deg:.0f}°)\nr={obs.r_front_px:.0f}px", (x_front + 4, y_front - 4), color="white", fontsize=8, fontweight="bold", bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.7, edgecolor="lime"))
 
         ax.text(8, 20, f"RET-V1 (Valley) | Pair {pair_num:02d}\n{ts.strftime('%Y-%m-%d %H:%M UTC')}\nActive Confirmed: {len(res.active_confirmed_tracks)}", color="white", fontsize=9, fontweight="bold", bbox=dict(boxstyle="round,pad=0.3", facecolor="navy", alpha=0.8))
         ax.axis("off")
@@ -669,6 +727,7 @@ def run_experiment_main():
         plot_single_variant_panel(
             variant_name="RET-B0",
             pair_num=p_num,
+            frame_idx=idx,
             ts=ts,
             rd_img=rd_img,
             val_m=val_m,
@@ -689,6 +748,7 @@ def run_experiment_main():
         plot_single_variant_panel(
             variant_name="RET-V1",
             pair_num=p_num,
+            frame_idx=idx,
             ts=ts,
             rd_img=rd_img,
             val_m=val_m,
