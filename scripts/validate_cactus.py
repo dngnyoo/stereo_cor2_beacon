@@ -66,7 +66,12 @@ def _prepare(table, id_col, time_col, name):
     return table
 
 
-def validate_cactus(reference, frames, *, max_onset_delta_min=120.0, min_iou=0.0):
+def validate_cactus(reference, frames, *, max_onset_delta_min=120.0, min_iou=0.0,
+                    time_mode="onset", evaluation_date=None):
+    if time_mode not in ("onset", "liftoff"):
+        raise ValueError("Unknown time mode")
+    if evaluation_date is not None and time_mode != "liftoff":
+        raise ValueError("evaluation_date requires liftoff mode")
     if (not math.isfinite(max_onset_delta_min) or max_onset_delta_min < 0
             or not math.isfinite(min_iou) or not 0 <= min_iou <= 1):
         raise ValueError("Invalid matching thresholds")
@@ -80,14 +85,34 @@ def validate_cactus(reference, frames, *, max_onset_delta_min=120.0, min_iou=0.0
         raise ValueError("Duplicate CACTus event IDs")
     if (pd.to_numeric(refs.angular_width_deg) <= 0).any():
         raise ValueError("CACTus width must be positive")
+    if time_mode == "liftoff":
+        if "liftoff_duration_hours" not in refs:
+            raise ValueError("CACTus missing liftoff_duration_hours")
+        durations = pd.to_numeric(refs.liftoff_duration_hours, errors="raise")
+        if not np.isfinite(durations).all() or (durations < 0).any():
+            raise ValueError("Invalid liftoff duration")
+        refs["liftoff_end"] = refs.onset_utc + pd.to_timedelta(durations, unit="h")
     frames = _prepare(frames, "event_id", "timestamp", "Detection")
+    if evaluation_date is not None:
+        from datetime import datetime
+        day = datetime.strptime(evaluation_date, "%Y%m%d")
+        if day.strftime("%Y%m%d") != evaluation_date:
+            raise ValueError("Expected evaluation_date YYYYMMDD")
+        start = pd.Timestamp(day, tz="UTC")
+        end = start + pd.Timedelta(days=1)
+        refs = refs.loc[(refs.onset_utc >= start) & (refs.onset_utc < end)]
+        eligible = frames.loc[(frames.timestamp >= start) & (frames.timestamp < end), "event_id"]
+        frames = frames.loc[frames.event_id.isin(eligible)]
+        # Preserve later frames if an event liftoff interval crosses midnight.
     detections = {}
+    groups = {}
     for ident, group in frames.groupby("event_id", sort=True):
         intervals = merge_intervals([
             interval for row in group.itertuples(index=False)
             for interval in sector(row.cpa_deg, row.angular_width_deg)
         ])
         detections[ident] = (group.timestamp.min(), intervals)
+        groups[ident] = group
     refs = refs.sort_values("catalog_event_id").reset_index(drop=True)
     ids = list(detections)
     weights = np.zeros((len(refs), len(ids)), dtype=float)
@@ -97,7 +122,19 @@ def validate_cactus(reference, frames, *, max_onset_delta_min=120.0, min_iou=0.0
         for j, ident in enumerate(ids):
             onset, intervals = detections[ident]
             delta = abs((onset - ref.onset_utc).total_seconds()) / 60
-            if delta > max_onset_delta_min:
+            extra = {}
+            if time_mode == "liftoff":
+                group = groups[ident]
+                common = group.loc[(group.timestamp >= ref.onset_utc) &
+                                   (group.timestamp <= ref.liftoff_end)]
+                if common.empty:
+                    continue
+                intervals = merge_intervals([
+                    interval for row in common.itertuples(index=False)
+                    for interval in sector(row.cpa_deg, row.angular_width_deg)
+                ])
+                extra = {"common_frames": len(common)}
+            elif delta > max_onset_delta_min:
                 continue
             iou = angular_iou(intervals, ref_sector)
             if iou > 0 and iou >= min_iou:
@@ -105,7 +142,7 @@ def validate_cactus(reference, frames, *, max_onset_delta_min=120.0, min_iou=0.0
             pair_rows.append({
                 "catalog_event_id": ref.catalog_event_id, "event_id": ident,
                 "onset_delta_min": delta, "angular_iou": iou,
-                "matched": False,
+                "matched": False, **extra,
             })
     matched = set()
     if weights.size:
@@ -116,7 +153,7 @@ def validate_cactus(reference, frames, *, max_onset_delta_min=120.0, min_iou=0.0
         row["matched"] = (row["catalog_event_id"], row["event_id"]) in matched
     pairs = pd.DataFrame(pair_rows, columns=[
         "catalog_event_id", "event_id", "onset_delta_min", "angular_iou", "matched"
-    ])
+    ] + (["common_frames"] if time_mode == "liftoff" else []))
     matched_refs = {r for r, _ in matched}
     matched_dets = {d for _, d in matched}
     statuses = pd.DataFrame([
@@ -137,6 +174,11 @@ def validate_cactus(reference, frames, *, max_onset_delta_min=120.0, min_iou=0.0
         "metric": "event_angular_sector_union_iou",
         "note": "Matched-only mean; null if no match. Input scope is caller-selected; unmatched is not proof of false detection. No frame-level or pixel accuracy inferred.",
     }
+    if time_mode == "liftoff":
+        summary.pop("max_onset_delta_min")
+        summary.update(time_mode="liftoff", evaluation_date=evaluation_date,
+                       metric="liftoff_window_angular_sector_union_iou",
+                       note="Matched-only mean; null if no match. Closed t0 to t0+dt0 liftoff window, not full CME visibility. Zero duration requires an exact timestamp. No frame-level CACTus accuracy inferred.")
     return pairs, statuses, summary
 
 
@@ -147,11 +189,14 @@ def main(argv=None):
     ap.add_argument("--output-dir", type=Path, required=True)
     ap.add_argument("--max-onset-delta-min", type=float, default=120)
     ap.add_argument("--min-iou", type=float, default=0)
+    ap.add_argument("--time-mode", choices=["onset", "liftoff"], default="onset")
+    ap.add_argument("--evaluation-date", help="YYYYMMDD; liftoff mode only")
     args = ap.parse_args(argv)
     ref = pd.read_csv(args.cactus_csv, dtype={"catalog_event_id": str})
     frames = pd.read_csv(args.frames_csv, dtype={"event_id": str})
     pairs, statuses, summary = validate_cactus(
-        ref, frames, max_onset_delta_min=args.max_onset_delta_min, min_iou=args.min_iou)
+        ref, frames, max_onset_delta_min=args.max_onset_delta_min, min_iou=args.min_iou,
+        time_mode=args.time_mode, evaluation_date=args.evaluation_date)
     summary["inputs"] = {
         key: {"path": str(path.resolve()), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
         for key, path in (("frames", args.frames_csv), ("cactus", args.cactus_csv))
