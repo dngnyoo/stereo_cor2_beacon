@@ -1,0 +1,5 @@
+run_name,variant,sigma_s,formulation,min_confirm_hits,total_tracks_born,confirmed_tracks,tentative_tracks,total_candidates,mean_lifespan_frames,max_lifespan_frames,mean_cpa_jitter_deg,mean_radial_velocity_px_hr,mean_outward_consistency,runtime_sec
+RET0_EvidenceOnly,RET-0,2.0,positive,2,0,0,0,504,0.0,0,0.0,0.0,0.0,0.34
+RET1_OutwardConfirm,RET-1,2.0,positive,2,74,41,1,0,3.44,9,5.49,31.61,0.948,0.34
+RET2_MotionPred,RET-2,2.0,positive,2,74,41,1,0,3.44,12,5.26,31.63,0.951,0.34
+RET3_MultiLobe,RET-3,2.0,positive,2,75,40,1,0,3.4,12,5.24,31.37,0.989,0.34

@@ -697,7 +697,7 @@ def generate_animated_gifs(
 
 
 def run_experiment_main():
-    root = Path("/home/aababc/stereo_cor2_retv")
+    root = Path(__file__).resolve().parents[2]
     runner = RETV1ExperimentRunner(root)
 
     print("\n=== Running Baseline RET-B0 ===")

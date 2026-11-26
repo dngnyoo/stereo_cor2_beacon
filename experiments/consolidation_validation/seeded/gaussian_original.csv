@@ -1,0 +1,41 @@
+scenario_id,scenario_name,variant,n_ground_truth_objects,n_confirmed_tracks,n_tentative_tracks,n_false_births,n_fragmentations,n_false_merges,track_completeness,cpa_rmse_deg,vr_rmse_px_hr,status,notes
+1,Single Outward Gaussian Blob,G0,1,1,0,0,0,0,1.0,0.016297492437317374,0.014343941593693899,PASS,Tracked 10/10 frames
+1,Single Outward Gaussian Blob,G1,1,1,0,0,0,0,1.0,0.006667361222767454,0.053195230649418335,PASS,Tracked 10/10 frames
+1,Single Outward Gaussian Blob,G2,1,1,0,0,0,0,1.0,0.0011149747780621055,0.8969308219457801,PASS,Tracked 10/10 frames
+1,Single Outward Gaussian Blob,G3,1,1,0,0,0,0,1.0,0.01905097532335276,0.04693894483028771,PASS,Tracked 10/10 frames
+2,Spatially Extended Moving Arc,G0,1,1,0,0,0,0,1.0,0.008997366379603022,0.1924049634555054,PASS,"Arc PA span ~45 deg, tracks=1"
+2,Spatially Extended Moving Arc,G1,1,1,0,0,0,0,1.0,0.00773375565393053,0.18773404466445598,PASS,"Arc PA span ~45 deg, tracks=1"
+2,Spatially Extended Moving Arc,G2,1,1,0,0,0,0,1.0,0.0291842820290924,0.8808596207969579,PASS,"Arc PA span ~45 deg, tracks=1"
+2,Spatially Extended Moving Arc,G3,1,1,0,0,0,0,1.0,0.011358334849020935,0.18362595920832092,PASS,"Arc PA span ~45 deg, tracks=1"
+3,Two Simultaneous Moving Objects (45 & 135 deg),G0,2,2,0,0,0,0,1.0,0.015117916987183122,0.013737594802267772,PASS,Found 2/2 distinct objects
+3,Two Simultaneous Moving Objects (45 & 135 deg),G1,2,2,0,0,0,0,1.0,0.010757593758707884,0.031019597803664034,PASS,Found 2/2 distinct objects
+3,Two Simultaneous Moving Objects (45 & 135 deg),G2,2,2,0,0,0,0,1.0,0.010124707827483093,0.8234807869828318,PASS,Found 2/2 distinct objects
+3,Two Simultaneous Moving Objects (45 & 135 deg),G3,2,2,0,0,0,0,1.0,0.01406153589946868,0.02644088839599945,PASS,Found 2/2 distinct objects
+4,Two Crossing / Adjacent Trajectories,G0,2,1,0,0,0,1,0.5,999.0,999.0,FAIL,"Radial overtaking test, conf_tracks=1, merges=1"
+4,Two Crossing / Adjacent Trajectories,G1,2,1,0,0,0,1,0.5,999.0,999.0,FAIL,"Radial overtaking test, conf_tracks=1, merges=1"
+4,Two Crossing / Adjacent Trajectories,G2,2,2,0,0,0,0,0.85,2.4959468225985546,4.918644853121748,PASS,"Radial overtaking test, conf_tracks=2, merges=0"
+4,Two Crossing / Adjacent Trajectories,G3,2,1,0,0,0,1,0.5,999.0,999.0,FAIL,"Radial overtaking test, conf_tracks=1, merges=1"
+5,Stationary Bright Artifact (Streamer),G0,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Near-Sun gate correctly suppresses stationary artifact outside birth zone
+5,Stationary Bright Artifact (Streamer),G1,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Near-Sun gate correctly suppresses stationary artifact outside birth zone
+5,Stationary Bright Artifact (Streamer),G2,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Near-Sun gate correctly suppresses stationary artifact outside birth zone
+5,Stationary Bright Artifact (Streamer),G3,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Near-Sun gate correctly suppresses stationary artifact outside birth zone
+6,Single-Frame Noise Spike (Cosmic Ray),G0,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Transient rejected by confirmation gate
+6,Single-Frame Noise Spike (Cosmic Ray),G1,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Transient rejected by confirmation gate
+6,Single-Frame Noise Spike (Cosmic Ray),G2,0,1,0,1,0,0,0.0,0.0,0.0,FAIL,Cosmic ray created false confirmed track
+6,Single-Frame Noise Spike (Cosmic Ray),G3,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Transient rejected by confirmation gate
+7,Temporary Signal Dropout (1 Frame Missing),G0,1,1,0,0,0,0,1.0,0.0008860084874271479,0.027323924135881583,PASS,Tracks across dropout: 1 (single unified track=True)
+7,Temporary Signal Dropout (1 Frame Missing),G1,1,1,0,0,0,0,1.0,0.009193167125502555,0.024538076617513838,PASS,Tracks across dropout: 1 (single unified track=True)
+7,Temporary Signal Dropout (1 Frame Missing),G2,1,1,0,0,0,0,1.1111111111111112,0.010485126292707037,0.8634172694774112,PASS,Tracks across dropout: 1 (single unified track=True)
+7,Temporary Signal Dropout (1 Frame Missing),G3,1,1,0,0,0,0,1.0,0.01945268837358327,0.044527918357637475,PASS,Tracks across dropout: 1 (single unified track=True)
+8,Irregular Observation Cadence,G0,1,1,0,0,0,0,1.0,0.025871720092936812,0.005921142164860171,PASS,"Non-uniform dt correctly evaluated, vr_err=0.01 px/hr"
+8,Irregular Observation Cadence,G1,1,1,0,0,0,0,1.0,0.028859580942338425,0.03142536686475239,PASS,"Non-uniform dt correctly evaluated, vr_err=0.03 px/hr"
+8,Irregular Observation Cadence,G2,1,2,0,1,1,0,0.0,999.0,999.0,FAIL,"Non-uniform dt correctly evaluated, vr_err=999.00 px/hr"
+8,Irregular Observation Cadence,G3,1,1,0,0,0,0,1.0,0.02379183855018141,0.033525190801000804,PASS,"Non-uniform dt correctly evaluated, vr_err=0.03 px/hr"
+9,Long Observation Gap (>2 Hours),G0,1,1,0,0,0,0,1.0,0.0,0.0,PASS,Correctly severed active track across 150m outage
+9,Long Observation Gap (>2 Hours),G1,1,1,0,0,0,0,1.0,0.0,0.0,PASS,Correctly severed active track across 150m outage
+9,Long Observation Gap (>2 Hours),G2,1,1,0,0,0,0,1.0,0.0,0.0,PASS,Correctly severed active track across 150m outage
+9,Long Observation Gap (>2 Hours),G3,1,1,0,0,0,0,1.0,0.0,0.0,PASS,Correctly severed active track across 150m outage
+10,Occulter Boundary Emergence (r ~ 23 px),G0,1,1,0,0,0,0,1.0,0.0458247445853317,0.3303113313365227,PASS,"Tracked from r=23 px, hits=10/10"
+10,Occulter Boundary Emergence (r ~ 23 px),G1,1,1,0,0,0,0,1.0,0.013919504603922661,0.361628930022043,PASS,"Tracked from r=23 px, hits=10/10"
+10,Occulter Boundary Emergence (r ~ 23 px),G2,1,1,0,0,0,0,1.0,0.009333585115179233,1.2224669050815535,PASS,"Tracked from r=23 px, hits=10/10"
+10,Occulter Boundary Emergence (r ~ 23 px),G3,1,1,0,0,0,0,1.0,0.03988143969312574,0.36147001920510213,PASS,"Tracked from r=23 px, hits=10/10"

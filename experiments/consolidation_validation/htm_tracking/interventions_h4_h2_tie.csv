@@ -1,0 +1,2 @@
+pair_index,timestamp,intervention_type,track_id,component_id,baseline_decision,h4_decision,score_baseline,score_h4,temporal_support,kinematic_confirmation,directional_alignment,reason
+61,2010-12-12T22:54:24.006000,CONTESTED_TIE_BREAK,17,24,TRACK_15,TRACK_17,4.14168907636656,3.9256226385350166,0.847409154924853,0.6366358387724563,0.9305348696862477,Ambiguity (4.14 vs 3.93 <= 1.5); Track 17 has higher temporal support

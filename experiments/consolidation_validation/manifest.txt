@@ -1,0 +1,86 @@
+RET CONSOLIDATION VALIDATION MANIFEST
+
+Generated: 2026-11-26T12:56:03-05:00
+Branch: experiment/ret
+Validated source: 96f58548f1bfba1daeac56545320cb22c24ed6bd
+Synthetic random seed: 42
+
+========== ARCHIVE COMMITS ==========
+archive/htm-pixel-temporal d4159251141efd95f4dbbce58a8277a4bc7e3496
+archive/gaussian-evidence-tracking c615f0b05a43db2b3d655d2945d68462156ee3fa
+archive/radial-evidence-tracking 6a49f688d508824ac3f789cc95c3b979ebc04fe0
+archive/ret-valley-symmetric bf8470c73557ac89d087bba06654943286bf33ea
+
+========== PYTHON ENVIRONMENT ==========
+Python: 3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]
+numpy 2.4.4
+scipy 1.17.1
+pandas 3.0.2
+astropy 7.2.0
+matplotlib 3.10.8
+PIL 13.0.0
+
+========== BENCHMARK INPUT CHECKSUMS ==========
+
+--- runs/dual_archive_20101212/preprocessed ---
+87ee2cd5f1053245ed2959cd4f38341635df37ba70860b6ec5e2be417b902f71  runs/dual_archive_20101212/preprocessed/01_rd_manifest.csv
+37d35e227821dd1cd565fbabb17a772956dafb5984538558f93ab04fa1b8c941  runs/dual_archive_20101212/preprocessed/north_up_RD_DNs_per_second.npy
+f5559295e81c13dc39763fdf56bb4b2a9db59e9f568b3609aaef25ee25f23ef7  runs/dual_archive_20101212/preprocessed/north_up_pair_valid_masks.npy
+c33994ac4675da187d4ad6083a2a7d75e9fa2915dcc77178f2dfc9572398fad3  runs/dual_archive_20101212/preprocessed/preprocessing_metadata.json
+02d3160633739fd9a104755581d16ab6edf804edd2ba6f67e747d097e59891bc  runs/dual_archive_20101212/preprocessed/target_wcs_header.txt
+
+--- runs/clean_cor2a_verify/detection ---
+b3c0c57681229455e33a795f1b21b692c96cbdccd5c2075f61ff6a95744c1f64  runs/clean_cor2a_verify/detection/detection_metadata.json
+e10d5f834e90799f47f3d9b164966ccf5cae0c4a520ee0a3047a7a2a546fc2d3  runs/clean_cor2a_verify/detection/frame_detection_summary.csv
+dddd7a835a4267023f83e4549c910265c0993aefae31860d53aa4db4030ba79c  runs/clean_cor2a_verify/detection/patch_component_labels.npy
+93a47ace95f9448e48354bd875de358469e9a383b6c615851bcfe9d22d04a90a  runs/clean_cor2a_verify/detection/patch_state_p04.npy
+
+--- runs/clean_cor2a_verify/acquisition/preprocessed ---
+e96e8d452427b4f6d94dd8b3ae0dce2eec7db05402838f694a05814b3a44377f  runs/clean_cor2a_verify/acquisition/preprocessed/01_rd_manifest.csv
+e9ef12ebbb37ead63c7f1ed9b5c4d5fdf446443ad5c6cf7b6eef4e677ff8555f  runs/clean_cor2a_verify/acquisition/preprocessed/north_up_RD_DNs_per_second.npy
+5d6c1878b6b5d8537ce18f746ba68a7c914743bfcc9006f600a5da5133d824a0  runs/clean_cor2a_verify/acquisition/preprocessed/north_up_pair_valid_masks.npy
+0f35ba271beb567c72694af34837672ae2cfd002a8701a55f30cf9435cf0d8e0  runs/clean_cor2a_verify/acquisition/preprocessed/preprocessing_metadata.json
+02d3160633739fd9a104755581d16ab6edf804edd2ba6f67e747d097e59891bc  runs/clean_cor2a_verify/acquisition/preprocessed/target_wcs_header.txt
+
+========== EXECUTION RECORD ==========
+
+Synthetic:
+    experiments.gaussian_tracking.synthetic_suite.run_full_synthetic_suite()
+    experiments.ret_tracking.synthetic_suite.run_full_synthetic_suite()
+    np.random.seed(42) before each fixed-seed suite
+
+Real data:
+    Gaussian G0, G1, G2, G3 primary configurations
+    RET-0, RET-1, RET-2, RET-3 primary configurations
+    Input: runs/dual_archive_20101212/preprocessed
+
+RET-V1:
+    python -m experiments.ret_tracking.run_ret_v1_experiment
+    Isolated repository root used for output generation.
+    Input: runs/dual_archive_20101212/preprocessed
+
+HTM pilot:
+    python -m experiments.htm_pixel_temporal.htm_pixel_temporal_pilot \
+        --detection-dir runs/clean_cor2a_verify/detection \
+        --output-dir experiments/reproduced_htm_pilot \
+        --tau 3.0 --mode softmax_z \
+        --half-life 45.0 --radial-speed 8.0
+
+HTM tracking:
+    python -m experiments.htm_pixel_temporal.run_tracking_experiments
+
+HTM sandbox detection metadata input_dir was redirected
+to the copied acquisition/preprocessed directory.
+
+Numeric comparison:
+    rtol=1e-8
+    atol=1e-10
+
+Visual comparison:
+    Decoded RGBA pixel equality.
+    GIF frame counts and frame pixels compared.
+
+Storage:
+    Original research artifacts remain unchanged.
+    Reproduced PNG and GIF files are retained locally.
+    CSVs and validation documentation are retained in Git.

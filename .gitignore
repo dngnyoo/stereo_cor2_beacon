@@ -40,3 +40,7 @@ dist/
 .DS_Store
 Thumbs.db
 /Calibration/cor2_mask.fts
+
+# Consolidation regression: locally preserved visual artifacts
+/experiments/consolidation_validation/**/*.png
+/experiments/consolidation_validation/**/*.gif

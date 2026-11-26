@@ -1,0 +1,5 @@
+pair_number,track_id,matched_candidate_id,match_status,missed_count_in_frame,last_successful_timestamp,buggy_displayed_cpa_deg,buggy_displayed_r_front_px,buggy_source_frame,true_frame_cpa_deg,true_frame_r_front_px,true_source_observation,discrepancy_cpa_deg,discrepancy_r_front_px
+39,40,2,matched,0,2010-12-12T08:24:24.007000,105.443,95.365,Terminal track state at Pair 39 (frame 38),105.443,95.365,Current matched observation in Pair 39 (Cand 2),0.0,0.0
+39,41,1,matched,0,2010-12-12T08:24:24.007000,53.326,122.5,Terminal track state at Pair 48 (frame 47),48.452,66.22,Current matched observation in Pair 39 (Cand 1),4.875,56.28
+39,44,3,matched,0,2010-12-12T08:24:24.007000,277.543,50.14,Terminal track state at Pair 40 (frame 39),278.92,42.1,Current matched observation in Pair 39 (Cand 3),-1.377,8.04
+39,45,4,matched,0,2010-12-12T08:24:24.007000,230.114,107.425,Terminal track state at Pair 51 (frame 50),198.175,32.05,Current matched observation in Pair 39 (Cand 4),31.939,75.375

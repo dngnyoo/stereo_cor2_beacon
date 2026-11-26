@@ -1,0 +1,5 @@
+run_name,variant,sigma_s,formulation,threshold,birth_mode,total_tracks_born,confirmed_tracks,tentative_tracks,mean_lifespan_frames,max_lifespan_frames,mean_cpa_jitter_deg,mean_radial_velocity_px_hr,mean_outward_consistency,runtime_sec
+G0_Raw,G0,0.0,positive,0.5,near_sun,429,358,8,6.89,16,62.38,17.97,0.966,6.94
+G1_Spatial_sigma2,G1,2.0,positive,0.5,near_sun,198,170,4,6.04,15,40.24,23.51,0.959,1.73
+G2_Temporal_sigma2,G2,2.0,positive,0.5,near_sun,135,118,1,5.64,16,28.9,19.43,0.924,0.86
+G3_MotionAware_sigma2,G3,2.0,positive,0.5,near_sun,173,149,3,6.33,16,41.49,21.14,0.905,1.65

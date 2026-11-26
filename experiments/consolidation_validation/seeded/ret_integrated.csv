@@ -1,0 +1,41 @@
+scenario_id,scenario_name,variant,n_ground_truth_objects,n_confirmed_tracks,n_tentative_tracks,n_false_births,n_fragmentations,n_false_merges,track_completeness,cpa_rmse_deg,vr_rmse_px_hr,status,notes
+1,Single Outward-Moving Arc,RET-0,1,0,0,0,0,0,1.0,0.5,0.0,PASS,Detected 10/10 candidate fronts
+1,Single Outward-Moving Arc,RET-1,1,1,0,0,0,0,1.0,0.09458881921153761,0.08000013563368213,PASS,Tracked 10/10 frames
+1,Single Outward-Moving Arc,RET-2,1,1,0,0,0,0,1.0,0.04123978282072471,0.08000013563368213,PASS,Tracked 10/10 frames
+1,Single Outward-Moving Arc,RET-3,1,1,0,0,0,0,1.0,0.10033031901173217,0.08000013563368213,PASS,Tracked 10/10 frames
+2,Two CMEs with Distinct CPAs,RET-0,2,0,0,0,0,0,1.0,0.5,0.0,PASS,Found 20 candidate fronts across frames
+2,Two CMEs with Distinct CPAs,RET-1,2,2,0,0,0,0,1.0,0.02207338441195006,0.07499991522894867,PASS,Discovered 2/2 distinct CME directions
+2,Two CMEs with Distinct CPAs,RET-2,2,2,0,0,0,0,1.0,0.044828580671499196,0.07499991522894867,PASS,Discovered 2/2 distinct CME directions
+2,Two CMEs with Distinct CPAs,RET-3,2,2,0,0,0,0,1.0,0.0411147506975027,0.07499991522894867,PASS,Discovered 2/2 distinct CME directions
+3,Similar CPA Different Radii,RET-0,2,0,0,0,0,0,1.0,0.5,0.0,PASS,Radial profile correctly captures multi-peaked radial structure
+3,Similar CPA Different Radii,RET-1,2,1,0,0,0,1,1.0,0.03075320077535082,0.0366668701171875,PASS,Tracks confirmed: 1 (leading front correctly tracked)
+3,Similar CPA Different Radii,RET-2,2,1,0,0,0,1,1.0,0.012638631795638844,0.0366668701171875,PASS,Tracks confirmed: 1 (leading front correctly tracked)
+3,Similar CPA Different Radii,RET-3,2,1,0,0,0,1,1.0,0.001149908627311902,0.18666585286458393,PASS,Tracks confirmed: 1 (leading front correctly tracked)
+4,Different Propagation Speeds,RET-0,2,0,0,0,0,0,1.0,0.5,0.0,PASS,Both speeds cleanly detected on angular rays
+4,Different Propagation Speeds,RET-1,2,2,0,0,0,0,1.0,0.07997998033415854,0.08499956887865778,PASS,"Discovered distinct speeds: fast=24.1, slow=10.0"
+4,Different Propagation Speeds,RET-2,2,2,0,0,0,0,1.0,0.03172609749514521,0.08499956887865778,PASS,"Discovered distinct speeds: fast=24.1, slow=10.0"
+4,Different Propagation Speeds,RET-3,2,2,0,0,0,0,1.0,0.04246938683598955,0.08499956887865778,PASS,"Discovered distinct speeds: fast=24.1, slow=10.0"
+5,Angular Expansion,RET-0,1,0,0,0,0,0,1.0,0.5,0.0,PASS,Lobe width expansion captured cleanly across frames
+5,Angular Expansion,RET-1,1,1,0,0,0,0,1.0,0.062457070038107076,0.0366668701171875,PASS,Track maintained across expansion (width 15->42 deg)
+5,Angular Expansion,RET-2,1,1,0,0,0,0,1.0,0.0638120393530528,0.1866667005750866,PASS,Track maintained across expansion (width 15->42 deg)
+5,Angular Expansion,RET-3,1,1,0,0,0,0,1.0,0.0005326723482994566,0.1866667005750866,PASS,Track maintained across expansion (width 15->42 deg)
+6,Curved / Deflected Propagation,RET-0,1,0,0,0,0,0,1.0,0.5,0.0,PASS,Deflected propagation captured smoothly
+6,Curved / Deflected Propagation,RET-1,1,1,0,0,0,0,1.0,0.0,0.0366668701171875,PASS,Deflection tracked continuously across 10 frames
+6,Curved / Deflected Propagation,RET-2,1,1,0,0,0,0,1.0,0.0,0.0366668701171875,PASS,Deflection tracked continuously across 10 frames
+6,Curved / Deflected Propagation,RET-3,1,1,0,0,0,0,1.0,0.0,0.0366668701171875,PASS,Deflection tracked continuously across 10 frames
+7,Stationary Bright Streamer,RET-0,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Streamer detected in RET-0 (no tracking filter)
+7,Stationary Bright Streamer,RET-1,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Stationary streamer suppressed by birth gate
+7,Stationary Bright Streamer,RET-2,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Stationary streamer suppressed by birth gate
+7,Stationary Bright Streamer,RET-3,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Stationary streamer suppressed by birth gate
+8,Single-Frame Noise Spike,RET-0,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Spike detected as 1-frame candidate in RET-0
+8,Single-Frame Noise Spike,RET-1,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Transient rejected by confirmation gate
+8,Single-Frame Noise Spike,RET-2,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Transient rejected by confirmation gate
+8,Single-Frame Noise Spike,RET-3,0,0,0,0,0,0,1.0,0.0,0.0,PASS,Transient rejected by confirmation gate
+9,Temporary Signal Dropout,RET-0,1,0,0,0,0,0,0.9,0.5,0.0,PASS,Candidates present in all 9 observed frames
+9,Temporary Signal Dropout,RET-1,1,1,0,0,0,0,1.0,0.0348004368249093,0.0366668701171875,PASS,Tracks across dropout: 1 (single unified track=True)
+9,Temporary Signal Dropout,RET-2,1,1,0,0,0,0,1.0,0.0547471420233947,0.0366668701171875,PASS,Tracks across dropout: 1 (single unified track=True)
+9,Temporary Signal Dropout,RET-3,1,1,0,0,0,0,1.0,0.13039701582080454,0.0366668701171875,PASS,Tracks across dropout: 1 (single unified track=True)
+10,Irregular Cadence & Outage,RET-0,1,0,0,0,0,0,1.0,0.5,0.0,PASS,Observed across irregular intervals in RET-0
+10,Irregular Cadence & Outage,RET-1,1,1,0,0,0,0,1.0,0.0,0.0,PASS,Correctly severed track across 150m gap
+10,Irregular Cadence & Outage,RET-2,1,1,0,0,0,0,1.0,0.0,0.0,PASS,Correctly severed track across 150m gap
+10,Irregular Cadence & Outage,RET-3,1,1,0,0,0,0,1.0,0.0,0.0,PASS,Correctly severed track across 150m gap

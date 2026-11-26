@@ -17,7 +17,7 @@ from experiments.ret_tracking.ret_evidence_engine import (
 )
 from experiments.ret_tracking.ret_tracker import RETConfig, RadialEvidenceTracker
 
-root = Path("/home/aababc/stereo_cor2_ret")
+root = Path(__file__).resolve().parent
 data_dir = root / "runs/dual_archive_20101212/preprocessed"
 manifest = pd.read_csv(data_dir / "01_rd_manifest.csv")
 rd_images = np.load(data_dir / "north_up_RD_DNs_per_second.npy", mmap_mode="r")
