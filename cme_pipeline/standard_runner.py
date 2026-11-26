@@ -122,8 +122,8 @@ def execute_to_gates(
         raise ValueError("Only preprocessing dual_archive_rd is supported (importing its saved RD)")
     if config.method("detection") != "d4":
         raise ValueError("Only D4 detection is supported in the first integrated baseline")
-    if config.method("tracking") not in ("a5b", "a5b_n"):
-        raise ValueError("Only A5b and experimental A5b-N tracking are supported")
+    if config.method("tracking") not in ("a5b", "a5b_n", "a5b_nr1", "a5b_nr2"):
+        raise ValueError("Only A5b, A5b-N, A5b-NR1, and A5b-NR2 tracking are supported")
     if config.method("association") != "identity":
         raise ValueError("Only identity association is supported")
     if config.method("gates") != "consecutive_size_qualified":
@@ -228,13 +228,20 @@ def execute_to_gates(
     target = run / "02_detection" / "data"
     raw_dir = target / "raw"
     target.mkdir(parents=True, exist_ok=False)
+    c01_mode = det.get("c01_mode")
+    abs_floor_cfg = det.get("absolute_p04_floor")
+    if abs_floor_cfg is None:
+        abs_floor = 0.0 if c01_mode == "c01_a" else 0.5
+    else:
+        abs_floor = float(abs_floor_cfg)
     run_detection(pre, method="d4", denoiser="gaussian",
                   requested_date=date, output_dir=raw_dir,
                   floor_mode="outer_p95",
                   score_mode="abs",
                   t24_mad_multiplier=float(det.get("t24_mad_multiplier", 3.0)),
                   qc_max_active_fraction=float(qc.get("global_activation_threshold", .70)),
-                  absolute_p04_floor=float(det.get("absolute_p04_floor", .5)),
+                  absolute_p04_floor=abs_floor,
+                  c01_mode=c01_mode,
                   outer_floor_inner_px=float(det.get("outer_floor_inner_px", 88)),
                   outer_floor_outer_px=float(det.get("outer_floor_outer_px", 116)))
     detector_dir = raw_dir

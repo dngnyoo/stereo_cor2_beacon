@@ -163,6 +163,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
                   outer_floor_inner_px: float = 88.0,
                   outer_floor_outer_px: float = 116.0,
                   absolute_p04_floor: float | None = None,
+                  c01_mode: str | None = None,
                   score_mode: str = "abs",
                   output_dir: str | Path | None = None) -> Path:
     """Compute C0, C3 or D4 on saved RD, preserving C3 behavior.
@@ -177,6 +178,8 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
     if method not in {"c0", "c3", "d4"}:
         raise ValueError("Detector must be c0, c3 or d4")
     if method == "d4":
+        if c01_mode == "c01_a" and absolute_p04_floor is None:
+            absolute_p04_floor = 0.0
         if absolute_p04_floor is None or not np.isfinite(absolute_p04_floor) or absolute_p04_floor < 0:
             raise ValueError("D4 requires finite nonnegative absolute_p04_floor")
         if floor_mode != "outer_p95":
@@ -366,6 +369,7 @@ def run_detection(preprocessed_dir: str | Path, *, method: str = "c3",
         "outer_floor_inner_px": outer_floor_inner_px if floor_mode in ("outer_background", "outer_background_mad", "outer_p95") and method in ("c3", "d4") else None,
         "outer_floor_outer_px": outer_floor_outer_px if floor_mode in ("outer_background", "outer_background_mad", "outer_p95") and method in ("c3", "d4") else None,
         **({"absolute_p04_floor": float(absolute_p04_floor)} if method == "d4" else {}),
+        **({"c01_mode": c01_mode} if c01_mode is not None else {}),
         "history_rule": "strictly earlier observations within trailing 24h",
         "status": "DETECTION_READY_TRACKING_NOT_RUN",
     }, indent=2), encoding="utf-8")

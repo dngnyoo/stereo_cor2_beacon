@@ -29,6 +29,19 @@ class TestD4AbsoluteFloor(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "only for D4"):
             run_detection("/does/not/exist", method="c0", absolute_p04_floor=0.5)
 
+    def test_c01_a_mode_allows_none_floor(self):
+        # With c01_mode="c01_a", absolute_p04_floor defaults to 0.0 rather than raising ValueError
+        with self.assertRaises(Exception) as ctx:
+            run_detection("/does/not/exist", method="d4", floor_mode="outer_p95", c01_mode="c01_a")
+        # Must not fail with "requires finite nonnegative absolute_p04_floor"
+        self.assertNotIn("requires finite", str(ctx.exception))
+
+    def test_c01_a_mode_allows_explicit_zero_floor(self):
+        with self.assertRaises(Exception) as ctx:
+            run_detection("/does/not/exist", method="d4", floor_mode="outer_p95",
+                          absolute_p04_floor=0.0, c01_mode="c01_a")
+        self.assertNotIn("requires finite", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
