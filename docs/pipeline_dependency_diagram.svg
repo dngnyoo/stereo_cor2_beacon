@@ -1,0 +1,252 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1050" width="100%" height="100%">
+  <defs>
+    <style>
+      .title { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #1e293b; }
+      .subtitle { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 14px; fill: #64748b; }
+      .stage-title { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #0f172a; }
+      .stage-sub { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; fill: #475569; }
+      .stage-file { font-family: 'Courier New', monospace; font-size: 11px; fill: #0369a1; }
+      .item-text { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11.5px; fill: #334155; }
+      .badge-text { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #ffffff; }
+      .arrow { stroke: #0284c7; stroke-width: 2.2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-alt { stroke: #10b981; stroke-width: 2.2; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrowhead-green); }
+      .arrow-exp { stroke: #f59e0b; stroke-width: 2.0; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrowhead-orange); }
+      .box { rx: 8; ry: 8; stroke-width: 1.5; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06)); }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#0284c7" />
+    </marker>
+    <marker id="arrowhead-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#10b981" />
+    </marker>
+    <marker id="arrowhead-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#f59e0b" />
+    </marker>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1400" height="1050" fill="#f8fafc" />
+
+  <!-- Header Banner -->
+  <rect x="40" y="25" width="1320" height="70" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+  <text x="65" y="58" class="title">Stereo_COR2 End-to-End CME Detection &amp; Tracking Pipeline</text>
+  <text x="65" y="80" class="subtitle">Complete Architectural Dependency Graph &amp; Data Flow — Canonical D4 Detection with Selected A5b-NR1 Tracking</text>
+  <rect x="1170" y="42" width="165" height="34" rx="6" fill="#0284c7" />
+  <text x="1252" y="63" text-anchor="middle" class="badge-text" font-size="12">STATUS: ADOPTED NR1</text>
+
+  <!-- COLUMN 1: STAGES 01 - 03 (Acquisition to Tracking) -->
+
+  <!-- STAGE 01: Preprocessing -->
+  <g transform="translate(60, 120)">
+    <rect width="380" height="180" class="box" fill="#ffffff" stroke="#3b82f6" />
+    <rect width="380" height="32" rx="8" fill="#eff6ff" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#3b82f6" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">01</text>
+    <text x="40" y="21" class="stage-title">STAGE 1: Preprocessing &amp; Calibration</text>
+    <text x="12" y="48" class="stage-file">north_up_preprocessing.py / cadence_selection.py</text>
+    <text x="12" y="68" class="item-text">• Input: Dual-archive FITS (Beacon &amp; Science L1)</text>
+    <text x="12" y="85" class="item-text">• No-MSB SECCHI trim, EXPTIME norm, SEBIP bitshifts, bias</text>
+    <text x="12" y="102" class="item-text">• Target WCS North-up reprojection (256x256, 14.7"/px)</text>
+    <text x="12" y="119" class="item-text">• Strict 30-min cadence pair selection (|Δt - 1800s| ≤ 2s)</text>
+    <text x="12" y="136" class="item-text">• Occulter masking: cor2A_mask.fts downsampled (≥0.95)</text>
+    <rect x="12" y="148" width="356" height="22" rx="4" fill="#f1f5f9" />
+    <text x="190" y="163" text-anchor="middle" class="item-text" font-weight="bold">Output: north_up_RD_DNs_per_second.npy, valid_masks.npy</text>
+  </g>
+
+  <!-- STAGE 02: Detection -->
+  <g transform="translate(60, 335)">
+    <rect width="380" height="235" class="box" fill="#ffffff" stroke="#8b5cf6" />
+    <rect width="380" height="32" rx="8" fill="#f5f3ff" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#8b5cf6" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">02</text>
+    <text x="40" y="21" class="stage-title">STAGE 2: Multi-Scale D4 Detection</text>
+    <text x="12" y="48" class="stage-file">live_detection.py / p16_qc_tracking_input.py</text>
+    <text x="12" y="68" class="item-text">• Denoising: Gaussian normalized convolution (σ = 1.0 px)</text>
+    <text x="12" y="85" class="item-text">• Standardization: Frame z-score z = (I_smooth - μ) / σ</text>
+    <text x="12" y="102" class="item-text">• Patch activity: P95 of |z| in multi-scale (16, 8, 4 px)</text>
+    <text x="12" y="119" class="item-text">• Causal T24 MAD thresholding (Trailing 24h, factor 3.0)</text>
+    <text x="12" y="136" class="item-text">• Outer annulus P95 floor: r ∈ [88, 116] px, abs floor ≥ 0.5</text>
+    <text x="12" y="153" class="item-text">• Hierarchy: Pure nested gating (P16 ➔ P08 ➔ P04)</text>
+    <text x="12" y="170" class="item-text">• Spatial QC: Normalized P16 tile variance cutoff ≥ 1.5</text>
+    <text x="12" y="187" class="item-text">• Pre-Size Gate: Filter components &lt; 8 patches (8-conn)</text>
+    <rect x="12" y="202" width="356" height="22" rx="4" fill="#f1f5f9" />
+    <text x="190" y="217" text-anchor="middle" class="item-text" font-weight="bold">Output: patch_state_p04.npy, patch_component_labels.npy</text>
+  </g>
+
+  <!-- STAGE 03: Tracking -->
+  <g transform="translate(60, 605)">
+    <rect width="380" height="390" class="box" fill="#ffffff" stroke="#0284c7" />
+    <rect width="380" height="32" rx="8" fill="#e0f2fe" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#0284c7" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">03</text>
+    <text x="40" y="21" class="stage-title">STAGE 3: Adaptive PA-ROI Tracking</text>
+    <text x="12" y="48" class="stage-file">v11_redesigned_normalized_a5b.py / a5b_nr_scoring.py</text>
+    
+    <!-- Variant Box: NR1 Selected -->
+    <rect x="12" y="58" width="356" height="120" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.2" />
+    <text x="22" y="75" class="item-text" font-weight="bold" fill="#15803d">ADOPTED: A5b-NR1 Normalized Scoring</text>
+    <text x="22" y="92" class="item-text">• Multiplicative evidence: S_NR = (C · A · K · D)^(1/4) ∈ (0, 1]</text>
+    <text x="22" y="107" class="item-text">• C: Dice overlap (contact) + Exp(-d^2 / 2σ_s^2) (non-contact)</text>
+    <text x="22" y="122" class="item-text">• A: Circular Gaussian kernel on ΔCPA, σ_PA ∈ [12°, 30°]</text>
+    <text x="22" y="137" class="item-text">• K: Causal front prediction r̂_t from median history v_r</text>
+    <text x="22" y="152" class="item-text">• D: D4 threshold excess D = 0.5 + 0.5(1 - exp(-excess / τ))</text>
+    <text x="22" y="167" class="item-text">• Geometric Voronoi arbitration: d = ΔPA / max(W_i, 8°)</text>
+
+    <!-- Variant Box: Baseline and NR2 -->
+    <rect x="12" y="186" width="356" height="60" rx="6" fill="#f8fafc" stroke="#94a3b8" />
+    <text x="22" y="201" class="item-text" font-weight="bold" fill="#475569">Reference Baseline A5b (v07) &amp; Exp Variant NR2 (v12)</text>
+    <text x="22" y="217" class="item-text">• Baseline A5b: Additive heuristic score (4O + 2A + 6K + 3F)</text>
+    <text x="22" y="232" class="item-text">• NR2 (Exp): Score-modulated Voronoi d_eff = ΔPA / (W · S_NR^β)</text>
+
+    <!-- Lifecycle and Gates -->
+    <text x="12" y="265" class="item-text">• Lifecycle: Max missed frames = 1, QC termination = true</text>
+    <text x="12" y="282" class="item-text">• Outward gate: r_front(t) ≥ r_front(t-1) - 4.0 px</text>
+    <text x="12" y="299" class="item-text">• Birth condition: r_min ≤ 30.0 px (Solar root anchor)</text>
+    <text x="12" y="316" class="item-text">• Continuity: Multi-component association within adaptive ROI</text>
+    <rect x="12" y="332" width="356" height="44" rx="4" fill="#f1f5f9" />
+    <text x="190" y="348" text-anchor="middle" class="item-text" font-weight="bold">Output: track_ownership_masks.npy, track_states_df.csv</text>
+    <text x="190" y="366" text-anchor="middle" class="item-text" fill="#0369a1">Exact Bitwise Invariance: NR1 Ownership == Baseline A5b</text>
+  </g>
+
+  <!-- COLUMN 2: STAGES 04 - 06 (Association, Gates, Recovery) -->
+
+  <!-- STAGE 04: Association -->
+  <g transform="translate(510, 120)">
+    <rect width="380" height="180" class="box" fill="#ffffff" stroke="#0d9488" />
+    <rect width="380" height="32" rx="8" fill="#f0fdfa" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#0d9488" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">04</text>
+    <text x="40" y="21" class="stage-title">STAGE 4: Track Association</text>
+    <text x="12" y="48" class="stage-file">v01_identity_association.py / registry.py</text>
+    <text x="12" y="68" class="item-text">• Method: Identity Association (1:1 Track ➔ Family)</text>
+    <text x="12" y="85" class="item-text">• Form: FAM_T{tid:02d} (FAM_T01 = Track 1, etc.)</text>
+    <text x="12" y="102" class="item-text">• Rationale: Multi-component tracking in Stage 3 natively</text>
+    <text x="12" y="119" class="item-text">  handles fragmented CME lobes under one Track ID,</text>
+    <text x="12" y="136" class="item-text">  obviating heuristic parent-child merging (Rule B).</text>
+    <rect x="12" y="148" width="356" height="22" rx="4" fill="#f1f5f9" />
+    <text x="190" y="163" text-anchor="middle" class="item-text" font-weight="bold">Output: family_membership_df.csv, association_summary.json</text>
+  </g>
+
+  <!-- STAGE 05: Gates -->
+  <g transform="translate(510, 335)">
+    <rect width="380" height="235" class="box" fill="#ffffff" stroke="#ea580c" />
+    <rect width="380" height="32" rx="8" fill="#fff7ed" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#ea580c" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">05</text>
+    <text x="40" y="21" class="stage-title">STAGE 5: Downstream Admission Gates</text>
+    <text x="12" y="48" class="stage-file">v01_birth_radius_gate.py / v01_family_size_gate.py</text>
+    <text x="12" y="68" class="item-text">• Substep 5A: Solar Root Birth Radius Gate</text>
+    <text x="24" y="85" class="item-text">- Condition: Earliest observation r_min ≤ 30.0 px</text>
+    <text x="24" y="102" class="item-text">- Rejection reason: NO_SOLAR_ROOT_ANCHOR</text>
+    <text x="12" y="122" class="item-text">• Substep 5B: Size-Qualified Consecutive Persistence Gate</text>
+    <text x="24" y="139" class="item-text">- Condition: Area ≥ 10 patches in ≥ 3 consecutive pairs</text>
+    <text x="24" y="156" class="item-text">- Eliminates transient noise &amp; brief flare flashes</text>
+    <text x="12" y="176" class="item-text">• 2010-12-12 Outcome: 8 raw tracks ➔ exactly 4 admitted</text>
+    <text x="24" y="193" class="item-text">(Admitted: FAM_T01, FAM_T02, FAM_T03, FAM_T04)</text>
+    <rect x="12" y="202" width="356" height="22" rx="4" fill="#f1f5f9" />
+    <text x="190" y="217" text-anchor="middle" class="item-text" font-weight="bold">Output: admitted_family_ids, family_summary_df.csv</text>
+  </g>
+
+  <!-- STAGE 06: Recovery -->
+  <g transform="translate(510, 605)">
+    <rect width="380" height="220" class="box" fill="#ffffff" stroke="#4f46e5" />
+    <rect width="380" height="32" rx="8" fill="#eef2ff" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#4f46e5" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">06</text>
+    <text x="40" y="21" class="stage-title">STAGE 6: Signed Dynamic PA Recovery</text>
+    <text x="12" y="48" class="stage-file">v01_signed_pa_recovery.py / v02_apply_after_gates.py</text>
+    <text x="12" y="68" class="item-text">• Applied ONLY to admitted family tracks post-gates</text>
+    <text x="12" y="85" class="item-text">• Dynamic PA corridor: Enclosing arc of past mask ± 5.0°</text>
+    <text x="12" y="102" class="item-text">• Local sector background: Domain A median + 1.4826 MAD</text>
+    <text x="12" y="119" class="item-text">• Radial gate: r ∈ [16.33, r̂_front + 13.35] px</text>
+    <text x="12" y="136" class="item-text">• Signed condition: Global z-score mean &gt; 0.0 (prevents dark)</text>
+    <text x="12" y="153" class="item-text">• Morphological propagation: 8-connectivity seed dilation</text>
+    <rect x="12" y="180" width="356" height="28" rx="4" fill="#f1f5f9" />
+    <text x="190" y="198" text-anchor="middle" class="item-text" font-weight="bold">Output: recovered_patch_masks.npy (6,549 patches)</text>
+  </g>
+
+  <!-- COLUMN 3: STAGES 07 - 09 (Segmentation, Catalog, Validation) -->
+
+  <!-- STAGE 07: Segmentation -->
+  <g transform="translate(960, 120)">
+    <rect width="380" height="225" class="box" fill="#ffffff" stroke="#c026d3" />
+    <rect width="380" height="32" rx="8" fill="#fdf4ff" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#c026d3" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">07</text>
+    <text x="40" y="21" class="stage-title">STAGE 7: Island-First Segmentation</text>
+    <text x="12" y="48" class="stage-file">v01_island_first_segmentation.py / track_masks.py</text>
+    <text x="12" y="68" class="item-text">• Upsampling: 4x4 patch masks expanded to 256x256 px</text>
+    <text x="12" y="85" class="item-text">• FOV mask: r ∈ [22.0, 122.5] px (Occulter to Outer rim)</text>
+    <text x="12" y="102" class="item-text">• Sub-patch threshold: Global z-score z_global &gt; 0.0</text>
+    <text x="12" y="119" class="item-text">• Island area filter: Remove islands &lt; 16 px (8-conn)</text>
+    <text x="12" y="136" class="item-text">• Hole fill: Fill internal morphological voids ≤ 16 px</text>
+    <text x="12" y="153" class="item-text">• Shared pixel overlap: Preserved across family masks</text>
+    <rect x="12" y="180" width="356" height="32" rx="4" fill="#f1f5f9" />
+    <text x="190" y="195" text-anchor="middle" class="item-text" font-weight="bold">Output: final_pixel_segmentation_union.npy</text>
+    <text x="190" y="207" text-anchor="middle" class="item-text" font-size="10.5">(59,899 active CME pixels on 2010-12-12)</text>
+  </g>
+
+  <!-- STAGE 08: Catalog -->
+  <g transform="translate(960, 380)">
+    <rect width="380" height="240" class="box" fill="#ffffff" stroke="#059669" />
+    <rect width="380" height="32" rx="8" fill="#ecfdf5" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#059669" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">08</text>
+    <text x="40" y="21" class="stage-title">STAGE 8: CME Products &amp; Kinematics</text>
+    <text x="12" y="48" class="stage-file">cme_catalog.py / cme_products.py</text>
+    <text x="12" y="68" class="item-text">• CPA: Central Position Angle from minimal enclosing arc</text>
+    <text x="12" y="85" class="item-text">• Angular width: Arc span in largest segmented frame</text>
+    <text x="12" y="102" class="item-text">• Leading front: Maximum radius in R_sun (r_px / r_sun_px)</text>
+    <text x="12" y="119" class="item-text">• Plane-of-sky velocity: Linear 1st-order polyfit h(t)</text>
+    <text x="12" y="136" class="item-text">• Solar radius calibration: r_sun = 695,700 km</text>
+    <text x="12" y="153" class="item-text">• Quality classification: EXPLORATORY (R^2 ≥ 0.5, v &gt; 0)</text>
+    <text x="12" y="170" class="item-text">  vs LOW_CONFIDENCE vs INSUFFICIENT_FRAMES (&lt; 3)</text>
+    <rect x="12" y="195" width="356" height="32" rx="4" fill="#f1f5f9" />
+    <text x="190" y="210" text-anchor="middle" class="item-text" font-weight="bold">Output: cme_events.csv, cme_frame_measurements.csv</text>
+    <text x="190" y="222" text-anchor="middle" class="item-text" font-size="10.5">Independent Image-Plane CME Catalog</text>
+  </g>
+
+  <!-- STAGE 09: Validation -->
+  <g transform="translate(960, 655)">
+    <rect width="380" height="235" class="box" fill="#ffffff" stroke="#475569" />
+    <rect width="380" height="32" rx="8" fill="#f1f5f9" />
+    <rect x="10" y="7" width="22" height="18" rx="4" fill="#475569" />
+    <text x="21" y="20" text-anchor="middle" class="badge-text">09</text>
+    <text x="40" y="21" class="stage-title">STAGE 9: External Catalog Validation</text>
+    <text x="12" y="48" class="stage-file">v01_external_catalog_validation.py</text>
+    <text x="12" y="68" class="item-text">• Reference catalogs: SEEDS, CACTus, CORSET, Göttingen</text>
+    <text x="12" y="85" class="item-text">• Metric: Circular angular sector IoU on frame timeline</text>
+    <text x="12" y="102" class="item-text">• Verified Benchmark Alignment (2010-12-12):</text>
+    <text x="24" y="119" class="item-text">- SEEDS (Manual Coronal): IoU = 0.5501 (NR1: 0.5501)</text>
+    <text x="24" y="136" class="item-text">- CACTus (CME 0024): IoU = 0.8105 (NR1: 0.8105)</text>
+    <text x="24" y="153" class="item-text">- CORSET / MVCC: IoU = 0.4826 (NR1: 0.4826)</text>
+    <text x="24" y="170" class="item-text">- Göttingen (Manual Track): IoU = 0.6214 (NR1: 0.6214)</text>
+    <rect x="12" y="195" width="356" height="28" rx="4" fill="#f1f5f9" />
+    <text x="190" y="213" text-anchor="middle" class="item-text" font-weight="bold">Output: external_catalog_comparison_metrics.csv</text>
+  </g>
+
+  <!-- INTER-STAGE CONNECTING ARROWS -->
+  <!-- Col 1: 01 -> 02 -->
+  <path d="M 250 300 L 250 335" class="arrow" />
+  <!-- Col 1: 02 -> 03 -->
+  <path d="M 250 570 L 250 605" class="arrow" />
+
+  <!-- Col 1 to Col 2: 03 -> 04 -->
+  <path d="M 440 680 L 475 680 L 475 210 L 510 210" class="arrow" />
+  <!-- Col 2: 04 -> 05 -->
+  <path d="M 700 300 L 700 335" class="arrow" />
+  <!-- Col 2: 05 -> 06 -->
+  <path d="M 700 570 L 700 605" class="arrow" />
+
+  <!-- Col 2 to Col 3: 06 -> 07 -->
+  <path d="M 890 700 L 925 700 L 925 230 L 960 230" class="arrow" />
+  <!-- Col 3: 07 -> 08 -->
+  <path d="M 1150 345 L 1150 380" class="arrow" />
+  <!-- Col 3: 08 -> 09 -->
+  <path d="M 1150 620 L 1150 655" class="arrow" />
+
+  <!-- Auxiliary skip-arrows: Stage 1 Geometry & RD passed forward -->
+  <path d="M 440 180 L 485 180 L 485 730 L 510 730" class="arrow-alt" />
+  <text x="495" y="470" transform="rotate(-90 495 470)" class="item-text" font-size="10" fill="#10b981">RD &amp; Valid Masks (Stage 1 ➔ Stage 6 &amp; 7)</text>
+
+</svg>
