@@ -1,13 +1,15 @@
 import numpy as np
 import hashlib
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 import pandas as pd
 
 def hash_file(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
-ref_dir = Path("runs/shared_d4_20101212/02_detection/data/qc")
-c01_dir = Path("runs/exp_20101212_c01_a/02_detection/data/qc")
+ref_dir = (ROOT / "runs/shared_d4_20101212/02_detection/data/qc")
+c01_dir = (ROOT / "runs/exp_20101212_c01_a/02_detection/data/qc")
 
 print(f"Comparing {ref_dir} vs {c01_dir}")
 for fname in ["patch_state_p04.npy", "patch_component_labels.npy"]:
@@ -20,8 +22,8 @@ for fname in ["patch_state_p04.npy", "patch_component_labels.npy"]:
     equal = np.array_equal(ref_arr, c01_arr)
     print(f"{fname}: equal={equal}, sha={ref_h}")
 
-ref_raw = Path("runs/shared_d4_20101212/02_detection/data/raw/frame_detection_summary.csv")
-c01_raw = Path("runs/exp_20101212_c01_a/02_detection/data/raw/frame_detection_summary.csv")
+ref_raw = (ROOT / "runs/shared_d4_20101212/02_detection/data/raw/frame_detection_summary.csv")
+c01_raw = (ROOT / "runs/exp_20101212_c01_a/02_detection/data/raw/frame_detection_summary.csv")
 
 df_ref = pd.read_csv(ref_raw)
 df_c01 = pd.read_csv(c01_raw)

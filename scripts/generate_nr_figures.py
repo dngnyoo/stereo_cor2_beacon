@@ -2,19 +2,21 @@
 
 import os
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-out_dir = Path("/mnt/c/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/figures")
+out_dir = (ROOT / "validation/diagnostics/a5b_nr")
 out_dir.mkdir(parents=True, exist_ok=True)
 
-b0_dir = Path("/home/aababc/stereo_cor2_a5bn/runs/exp_20101212_a5b_baseline")
-b1_dir = Path("/home/aababc/stereo_cor2_a5bn/runs/exp_20101212_a5b_n")
-nr1_dir = Path("/home/aababc/stereo_cor2_a5bnr/runs/exp_20101212_a5b_nr1")
-nr2_dir = Path("/home/aababc/stereo_cor2_a5bnr/runs/exp_20101212_a5b_nr2")
+b0_dir = (ROOT / "runs/exp_20101212_a5b_baseline")
+b1_dir = (ROOT / "runs/exp_20101212_a5b_n")
+nr1_dir = (ROOT / "runs/exp_20101212_a5b_nr1")
+nr2_dir = (ROOT / "runs/exp_20101212_a5b_nr2")
 
 # Load candidate tables
 df_b1 = pd.read_csv(b1_dir / "03_tracking/data/tables/normalized_candidate_scores.csv")

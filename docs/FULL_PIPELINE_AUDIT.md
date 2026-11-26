@@ -117,7 +117,7 @@ flowchart TD
 
 ## 3. Phase B & C — Parameter Audit & Classification Summary
 
-Across the 9 active stages, **57 scientifically relevant parameters** were identified, audited, and classified into the mandated taxonomy. Complete parameter records, source references, and line numbers are compiled in [pipeline_parameter_registry.csv](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/pipeline_parameter_registry.csv).
+Across the 9 active stages, **57 scientifically relevant parameters** were identified, audited, and classified into the mandated taxonomy. Complete parameter records, source references, and line numbers are compiled in [pipeline_parameter_registry.csv](pipeline_parameter_registry.csv).
 
 ### Parameter Classification Breakdown
 
@@ -146,7 +146,7 @@ pie title Parameter Classification Distribution (57 Parameters)
 
 ## 4. Phase D — Detailed Formula Audit & Observations
 
-All mathematical formulas have been transcribed and audited in [pipeline_formula_registry.md](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/pipeline_formula_registry.md).
+All mathematical formulas have been transcribed and audited in [pipeline_formula_registry.md](pipeline_formula_registry.md).
 
 ### 4.1 A5b-NR1 Formulation Audit
 The adopted tracker evaluates:
@@ -192,7 +192,7 @@ A central mandate of this audit was to resolve the widely diverging historical t
   - `component_labels` SHA256: `d6425d751fe2a2049f78271e07af01ec2aedfacd8e5d51b25a274aa9cf4b864e`
   - `frame_qc` SHA256: `16f6b7030fdaaa47151d731608fe8dfcd9c82caa9014734566fd31c18a5da097`
 - In both runs, exactly 4 families are admitted: `FAM_T01`, `FAM_T02`, `FAM_T04`, `FAM_T05`.
-- Full details are permanently recorded in [reference_benchmark_manifest.json](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/reference_benchmark_manifest.json).
+- Full details are permanently recorded in [reference_benchmark_manifest.json](reference_benchmark_manifest.json).
 
 ---
 
@@ -221,12 +221,12 @@ pytest tests/test_a5b_nr_scoring.py tests/test_a5b_nr_tracker.py tests/test_a5b_
 
 | Artifact Name | Format | Repository Path | Artifact Directory Link |
 | :--- | :---: | :--- | :--- |
-| **A. Full Audit Report** | Markdown | `docs/FULL_PIPELINE_AUDIT.md` | [FULL_PIPELINE_AUDIT.md](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/FULL_PIPELINE_AUDIT.md) |
-| **B. Parameter Registry** | CSV | `docs/pipeline_parameter_registry.csv` | [pipeline_parameter_registry.csv](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/pipeline_parameter_registry.csv) |
-| **C. Formula Registry** | Markdown | `docs/pipeline_formula_registry.md` | [pipeline_formula_registry.md](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/pipeline_formula_registry.md) |
-| **D. Dependency Diagram** | SVG | `docs/pipeline_dependency_diagram.svg` | [pipeline_dependency_diagram.svg](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/pipeline_dependency_diagram.svg) |
-| **E. Benchmark Manifest** | JSON | `docs/reference_benchmark_manifest.json` | [reference_benchmark_manifest.json](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/reference_benchmark_manifest.json) |
-| **F. Improvement Roadmap** | Markdown | `docs/PIPELINE_IMPROVEMENT_ROADMAP.md` | [PIPELINE_IMPROVEMENT_ROADMAP.md](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/PIPELINE_IMPROVEMENT_ROADMAP.md) |
+| **A. Full Audit Report** | Markdown | `docs/FULL_PIPELINE_AUDIT.md` | [FULL_PIPELINE_AUDIT.md](FULL_PIPELINE_AUDIT.md) |
+| **B. Parameter Registry** | CSV | `docs/pipeline_parameter_registry.csv` | [pipeline_parameter_registry.csv](pipeline_parameter_registry.csv) |
+| **C. Formula Registry** | Markdown | `docs/pipeline_formula_registry.md` | [pipeline_formula_registry.md](pipeline_formula_registry.md) |
+| **D. Dependency Diagram** | SVG | `docs/pipeline_dependency_diagram.svg` | [pipeline_dependency_diagram.svg](pipeline_dependency_diagram.svg) |
+| **E. Benchmark Manifest** | JSON | `docs/reference_benchmark_manifest.json` | [reference_benchmark_manifest.json](reference_benchmark_manifest.json) |
+| **F. Improvement Roadmap** | Markdown | `docs/PIPELINE_IMPROVEMENT_ROADMAP.md` | [PIPELINE_IMPROVEMENT_ROADMAP.md](PIPELINE_IMPROVEMENT_ROADMAP.md) |
 
 ### Final Git Status
 All newly generated audit documentation artifacts have been staged and committed cleanly on branch `experiment/full-pipeline-audit` in worktree `~/stereo_cor2_a5bnr`. Protected baseline `~/stereo_cor2_clean` and `main` remain completely pristine.

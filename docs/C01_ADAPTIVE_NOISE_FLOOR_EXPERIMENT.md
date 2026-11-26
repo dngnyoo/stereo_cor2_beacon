@@ -70,7 +70,7 @@ To rigorously evaluate the activity of the 0.50 floor, we replayed all 63 frames
 
 The diagnostic replay time-series is shown below:
 
-![C01 Threshold Time Series](file:///C:/Users/aabab/.gemini/antigravity/brain/1ac3edc5-a8a9-475f-9fa4-c0ef02bb23df/figures/c01_threshold_time_series.png)
+![C01 Threshold Time Series](../validation/diagnostics/c01_threshold_time_series.png)
 
 As evident from the time series:
 - The effective threshold (solid black line) fluctuates between $1.86$ and $2.50$.

@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-b0_dir = Path("/home/aababc/stereo_cor2_a5bn/runs/exp_20101212_a5b_baseline")
-b1_dir = Path("/home/aababc/stereo_cor2_a5bn/runs/exp_20101212_a5b_n")
-nr1_dir = Path("/home/aababc/stereo_cor2_a5bnr/runs/exp_20101212_a5b_nr1")
-nr2_dir = Path("/home/aababc/stereo_cor2_a5bnr/runs/exp_20101212_a5b_nr2")
+ROOT = Path(__file__).resolve().parents[1]
+
+b0_dir = (ROOT / "runs/exp_20101212_a5b_baseline")
+b1_dir = (ROOT / "runs/exp_20101212_a5b_n")
+nr1_dir = (ROOT / "runs/exp_20101212_a5b_nr1")
+nr2_dir = (ROOT / "runs/exp_20101212_a5b_nr2")
 
 # 1. Compare ownership masks
 mask_b0 = np.load(b0_dir / "03_tracking/data/arrays/track_ownership_masks.npy")

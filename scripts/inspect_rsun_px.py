@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 from astropy.io import fits
 import numpy as np
 
@@ -20,7 +22,7 @@ if wcs_path.exists():
         print(" ", line)
 
 # Also check tracking metadata or context in exp_20101212_a5b_baseline or nr1
-trk_meta = Path("/home/aababc/stereo_cor2_a5bnr/runs/exp_20101212_a5b_nr1/03_tracking/data/tracking_metadata.json")
+trk_meta = (ROOT / "runs/exp_20101212_a5b_nr1/03_tracking/data/tracking_metadata.json")
 if trk_meta.exists():
     print("Tracking metadata:", trk_meta.read_text()[:500])
 

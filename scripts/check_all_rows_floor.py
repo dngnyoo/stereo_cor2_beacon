@@ -1,6 +1,9 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 import pandas as pd
 
-qc_csv = "/home/aababc/stereo_cor2_a5bn/runs/shared_d4_20101212/02_detection/data/qc/frame_detection_summary.csv"
+qc_csv = str(ROOT / "runs/shared_d4_20101212/02_detection/data/qc/frame_detection_summary.csv")
 df = pd.read_csv(qc_csv)
 
 print("Checking ALL 63 rows in frame_detection_summary.csv:")

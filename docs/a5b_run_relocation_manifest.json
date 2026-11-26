@@ -1,0 +1,21 @@
+{
+  "integrated_branch": "experiment/a5b",
+  "integration_base_commit": "4a936ae",
+  "path_base": "repository_root",
+  "original_manifest": "docs/reference_benchmark_manifest.json",
+  "runs": {
+    "shared_detection": "runs/shared_d4_20101212",
+    "baseline": "runs/exp_20101212_a5b_baseline",
+    "a5b_n": "runs/exp_20101212_a5b_n",
+    "a5b_nr1": "runs/exp_20101212_a5b_nr1",
+    "a5b_nr2": "runs/exp_20101212_a5b_nr2",
+    "c01_a": "runs/exp_20101212_c01_a",
+    "baseline_rule_b_a5bn": "runs/baseline_rule_b_a5bn",
+    "baseline_rule_b_a5bnr": "runs/baseline_rule_b"
+  },
+  "notes": [
+    "Original benchmark manifest and run metadata are preserved.",
+    "Historical paths are retained as provenance.",
+    "C02 remains preliminary and is not adopted."
+  ]
+}

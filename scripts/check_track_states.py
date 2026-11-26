@@ -1,6 +1,9 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 import pandas as pd
 
-states_csv = "/home/aababc/stereo_cor2_a5bnr/runs/exp_20101212_a5b_nr1/03_tracking/data/tables/live_tracking_states.csv"
+states_csv = str(ROOT / "runs/exp_20101212_a5b_nr1/03_tracking/data/tables/live_tracking_states.csv")
 df = pd.read_csv(states_csv)
 print("States distribution in reference NR1 run:")
 print(df["state"].value_counts())

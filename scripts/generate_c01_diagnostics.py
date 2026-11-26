@@ -2,13 +2,15 @@
 import csv
 import json
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.ndimage import label
 
 # Input paths
-qc_dir = Path("/home/aababc/stereo_cor2_a5bn/runs/shared_d4_20101212/02_detection/data/qc")
+qc_dir = (ROOT / "runs/shared_d4_20101212/02_detection/data/qc")
 summary_csv = qc_dir / "frame_detection_summary.csv"
 states_npy = qc_dir / "patch_state_p04.npy"
 labels_npy = qc_dir / "patch_component_labels.npy"
