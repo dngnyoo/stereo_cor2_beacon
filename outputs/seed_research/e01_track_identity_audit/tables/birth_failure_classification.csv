@@ -1,0 +1,52 @@
+method,track_id,birth_pair,birth_timestamp_utc,init_cpa_deg,init_front_radius_px,seed_rank,seed_score,classification,preceding_track_id,physical_structure,classification_justification
+a5b,1,33,2010-12-12T05:24:24,109.3,37.6,1,21.65,Genuine CME,,East-Limb Major CME,Primary East-Limb CME eruption emerging from inner corona at 05:24 UTC.
+a5b,2,33,2010-12-12T05:24:24,39.1,39.0,16,4.96,Genuine CME,,North-East Streamer Outflow,Persistent North-East streamer outflow emerging concurrently.
+a5b,3,37,2010-12-12T07:24:24,68.3,27.0,19,2.37,Ambiguous,,Secondary Feature,Secondary patch birth.
+a5b,4,49,2010-12-12T13:24:24,186.3,26.2,11,3.76,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+a5b,5,49,2010-12-12T13:24:24,138.6,36.5,15,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+a5b,6,49,2010-12-12T13:24:24,219.6,23.4,16,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+s1,1,33,2010-12-12T05:24:24,109.3,37.6,1,21.65,Genuine CME,,East-Limb Major CME,Primary East-Limb CME eruption emerging from inner corona at 05:24 UTC.
+s1,2,33,2010-12-12T05:24:24,39.1,39.0,16,4.96,Genuine CME,,North-East Streamer Outflow,Persistent North-East streamer outflow emerging concurrently.
+s1,3,37,2010-12-12T07:24:24,68.3,27.0,19,2.37,Ambiguous,,Secondary Feature,Secondary patch birth.
+s1,4,49,2010-12-12T13:24:24,138.6,36.5,15,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+s1,5,49,2010-12-12T13:24:24,186.3,26.2,11,3.76,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+s1,6,49,2010-12-12T13:24:24,219.6,23.4,16,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+s2,1,33,2010-12-12T05:24:24,109.3,37.6,1,21.65,Genuine CME,,East-Limb Major CME,Primary East-Limb CME eruption emerging from inner corona at 05:24 UTC.
+s2,2,33,2010-12-12T05:24:24,39.1,39.0,16,4.96,Genuine CME,,North-East Streamer Outflow,Persistent North-East streamer outflow emerging concurrently.
+s2,3,37,2010-12-12T07:24:24,68.3,27.0,19,2.37,Ambiguous,,Secondary Feature,Secondary patch birth.
+s2,4,49,2010-12-12T13:24:24,138.6,36.5,15,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+s2,5,49,2010-12-12T13:24:24,186.3,26.2,11,3.76,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+s2,6,49,2010-12-12T13:24:24,219.6,23.4,16,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt0,1,33,2010-12-12T05:24:24,109.3,37.6,1,21.65,Genuine CME,,East-Limb Major CME,Primary East-Limb CME eruption emerging from inner corona at 05:24 UTC.
+spt0,2,33,2010-12-12T05:24:24,39.1,39.0,16,4.96,Genuine CME,,North-East Streamer Outflow,Persistent North-East streamer outflow emerging concurrently.
+spt0,3,36,2010-12-12T06:54:24,94.0,72.0,16,3.81,Repeated seed birth,1.0,East-Limb CME Core & Merged NE Streamer,"East-Limb CME core re-seeded after Track 1 front detached and jumped to 93.7px. Strict outward monotonicity prevented Track 1 from absorbing the 72px component; new seed candidate at (PA 43.6 deg, r=24.8px) spawned Track 3 which absorbed all 161 patches."
+spt0,4,37,2010-12-12T07:24:24,106.6,56.1,9,4.83,Repeated seed birth,3.0,North-East Streamer Core,"Streamer core re-seeded at inner boundary (PA 42.6 deg, r=26.4px, score=8.11) after Track 3 center of mass shifted outward to 59.8px."
+spt0,5,39,2010-12-12T08:24:24,114.3,50.2,10,2.95,Repeated seed birth,1.0,East-Limb CME Main Body,"Main East-Limb CME body re-seeded at inner boundary (PA 96.9 deg, r=29.8px, score=8.95) following radial propagation of earlier CME components."
+spt0,6,45,2010-12-12T11:24:24,29.1,33.5,7,2.66,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt0,7,48,2010-12-12T12:54:24,41.5,54.4,5,5.37,Association failure,,Boundary Patch Cluster,Faint boundary activation failing association gates.
+spt0,8,49,2010-12-12T13:24:24,31.5,29.1,5,5.07,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt0,9,49,2010-12-12T13:24:24,186.3,26.2,11,3.76,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt0,10,49,2010-12-12T13:24:24,138.6,36.5,15,3.27,Association failure,,Boundary Patch Cluster,Faint boundary activation failing association gates.
+spt0,11,49,2010-12-12T13:24:24,219.6,23.4,16,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt1,1,33,2010-12-12T05:24:24,109.3,37.6,1,21.65,Genuine CME,,East-Limb Major CME,Primary East-Limb CME eruption emerging from inner corona at 05:24 UTC.
+spt1,2,33,2010-12-12T05:24:24,39.1,39.0,16,4.96,Genuine CME,,North-East Streamer Outflow,Persistent North-East streamer outflow emerging concurrently.
+spt1,3,36,2010-12-12T06:54:24,94.0,72.0,16,3.81,Repeated seed birth,1.0,East-Limb CME Core & Merged NE Streamer,"East-Limb CME core re-seeded after Track 1 front detached and jumped to 93.7px. Strict outward monotonicity prevented Track 1 from absorbing the 72px component; new seed candidate at (PA 43.6 deg, r=24.8px) spawned Track 3 which absorbed all 161 patches."
+spt1,4,37,2010-12-12T07:24:24,106.6,56.1,9,4.83,Repeated seed birth,3.0,North-East Streamer Core,"Streamer core re-seeded at inner boundary (PA 42.6 deg, r=26.4px, score=8.11) after Track 3 center of mass shifted outward to 59.8px."
+spt1,5,39,2010-12-12T08:24:24,114.3,50.2,10,2.95,Repeated seed birth,1.0,East-Limb CME Main Body,"Main East-Limb CME body re-seeded at inner boundary (PA 96.9 deg, r=29.8px, score=8.95) following radial propagation of earlier CME components."
+spt1,6,45,2010-12-12T11:24:24,29.1,33.5,7,2.66,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt1,7,47,2010-12-12T12:24:24,45.8,44.7,2,2.84,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt1,8,49,2010-12-12T13:24:24,31.5,29.1,5,5.07,Association failure,,Boundary Patch Cluster,Faint boundary activation failing association gates.
+spt1,9,49,2010-12-12T13:24:24,186.3,26.2,11,3.76,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt1,10,49,2010-12-12T13:24:24,138.6,36.5,15,3.27,Association failure,,Boundary Patch Cluster,Faint boundary activation failing association gates.
+spt1,11,49,2010-12-12T13:24:24,219.6,23.4,16,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt2,1,33,2010-12-12T05:24:24,109.3,37.6,1,21.65,Genuine CME,,East-Limb Major CME,Primary East-Limb CME eruption emerging from inner corona at 05:24 UTC.
+spt2,2,33,2010-12-12T05:24:24,39.1,39.0,16,4.96,Genuine CME,,North-East Streamer Outflow,Persistent North-East streamer outflow emerging concurrently.
+spt2,3,36,2010-12-12T06:54:24,94.0,72.0,16,3.81,Repeated seed birth,1.0,East-Limb CME Core & Merged NE Streamer,"East-Limb CME core re-seeded after Track 1 front detached and jumped to 93.7px. Strict outward monotonicity prevented Track 1 from absorbing the 72px component; new seed candidate at (PA 43.6 deg, r=24.8px) spawned Track 3 which absorbed all 161 patches."
+spt2,4,37,2010-12-12T07:24:24,106.6,56.1,9,4.83,Repeated seed birth,3.0,North-East Streamer Core,"Streamer core re-seeded at inner boundary (PA 42.6 deg, r=26.4px, score=8.11) after Track 3 center of mass shifted outward to 59.8px."
+spt2,5,39,2010-12-12T08:24:24,114.3,50.2,10,2.95,Repeated seed birth,1.0,East-Limb CME Main Body,"Main East-Limb CME body re-seeded at inner boundary (PA 96.9 deg, r=29.8px, score=8.95) following radial propagation of earlier CME components."
+spt2,6,45,2010-12-12T11:24:24,29.1,33.5,7,2.66,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt2,7,47,2010-12-12T12:24:24,45.8,44.7,2,2.84,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt2,8,49,2010-12-12T13:24:24,31.5,29.1,5,5.07,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt2,9,49,2010-12-12T13:24:24,186.3,26.2,11,3.76,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt2,10,49,2010-12-12T13:24:24,138.6,36.5,15,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.
+spt2,11,49,2010-12-12T13:24:24,219.6,23.4,16,3.27,Repeated seed birth,5.0,Trailing Eruption Core,Late trailing emission from continuing eruption.

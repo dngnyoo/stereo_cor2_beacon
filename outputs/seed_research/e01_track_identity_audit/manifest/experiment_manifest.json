@@ -1,0 +1,93 @@
+{
+  "experiment_id": "E01_TRACK_IDENTITY_AUDIT",
+  "title": "Seed Experiment E01 \u2014 Track Identity and Consecutive Frame Audit",
+  "timestamp_utc": "2026-11-26T19:09:54.505734Z",
+  "git_context": {
+    "repository": "dngnyoo/stereo_cor2_beacon",
+    "worktree": "/home/aababc/stereo_cor2_seed",
+    "branch": "experiment/seed",
+    "commit_head": "d40f35c",
+    "remote": "github"
+  },
+  "dataset": {
+    "date": "2010-12-12",
+    "run_path": "runs/test_d4_20101212",
+    "evaluated_pairs": "30 to 50 (21 pairs, 04:39:24 to 12:24:24 UTC)",
+    "warmup_pairs": "1 to 32 (warmup/unusable observations)",
+    "usable_pairs_in_window": "33 to 50 (18 usable observations)"
+  },
+  "tracking_methods_evaluated": [
+    "a5b",
+    "s1",
+    "s2",
+    "spt0",
+    "spt1",
+    "spt2"
+  ],
+  "tables": [
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/tables/track_identity_audit_table.csv",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/tables/track_identity_audit_table.csv",
+      "size_bytes": 6469,
+      "description": "Full track identity audit across all 6 methods in observation window"
+    },
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/tables/birth_failure_classification.csv",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/tables/birth_failure_classification.csv",
+      "size_bytes": 8726,
+      "description": "Formal birth failure classification for all tracks born in Pairs 30-50"
+    },
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/tables/pair36_forensic_comparison.csv",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/tables/pair36_forensic_comparison.csv",
+      "size_bytes": 2870,
+      "description": "Forensic side-by-side comparison of Pair 36 across all methods"
+    }
+  ],
+  "animations": [
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/animations/a5b_consecutive_30_50.gif",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/animations/a5b_consecutive_30_50.gif",
+      "size_bytes": 3739783,
+      "description": "A5b consecutive frame animation (Pairs 30-50)"
+    },
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/animations/s1_consecutive_30_50.gif",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/animations/s1_consecutive_30_50.gif",
+      "size_bytes": 3741208,
+      "description": "S1 consecutive frame animation (Pairs 30-50)"
+    },
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/animations/s2_consecutive_30_50.gif",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/animations/s2_consecutive_30_50.gif",
+      "size_bytes": 3744069,
+      "description": "S2 consecutive frame animation (Pairs 30-50)"
+    },
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/animations/spt0_consecutive_30_50.gif",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/animations/spt0_consecutive_30_50.gif",
+      "size_bytes": 3742054,
+      "description": "SPT-0 consecutive frame animation (Pairs 30-50)"
+    },
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/animations/spt1_consecutive_30_50.gif",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/animations/spt1_consecutive_30_50.gif",
+      "size_bytes": 3747327,
+      "description": "SPT-1 consecutive frame animation (Pairs 30-50)"
+    },
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/animations/spt2_consecutive_30_50.gif",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/animations/spt2_consecutive_30_50.gif",
+      "size_bytes": 3744517,
+      "description": "SPT-2 consecutive frame animation (Pairs 30-50)"
+    },
+    {
+      "path": "outputs/seed_research/e01_track_identity_audit/animations/synchronized_comparison_30_50.gif",
+      "windows_unc_path": "\\\\wsl.localhost\\Ubuntu/home/aababc/stereo_cor2_seed/outputs/seed_research/e01_track_identity_audit/animations/synchronized_comparison_30_50.gif",
+      "size_bytes": 13122267,
+      "description": "Synchronized 2x3 comparison animation of all 6 methods"
+    }
+  ],
+  "diagnostic_panels_count": 21,
+  "diagnostic_panels_directory": "outputs/seed_research/e01_track_identity_audit/figures"
+}

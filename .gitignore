@@ -47,3 +47,5 @@ Thumbs.db
 /outputs/**/consecutive_diagnostics/*.png
 /outputs/**/consecutive_diagnostics/*.gif
 /outputs/**/animations/*.gif
+/outputs/**/*.png
+/outputs/**/*.gif
