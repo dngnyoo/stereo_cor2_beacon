@@ -1,0 +1,1296 @@
+{
+  "20101212": {
+    "a5b": {
+      "total_tracks": 21,
+      "admitted_tracks": 7,
+      "admitted_families": 7,
+      "catalog_events": 7,
+      "avg_track_duration_h": 5.64,
+      "mean_cme_speed_km_s": 54.5,
+      "mean_angular_width_deg": 95.8,
+      "total_recovered_patches": 6323,
+      "total_segmented_pixels": 57604,
+      "peak_frame_segmented_pixels": 4131,
+      "catalog_summary": [
+        {
+          "event_id": "20101212_FAM_T03",
+          "cpa_deg": 109.81196552781174,
+          "angular_width_deg": 157.85787175774976,
+          "plane_of_sky_speed_km_s": 41.98372634945912,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20101212_FAM_T04",
+          "cpa_deg": 55.42712188631567,
+          "angular_width_deg": 90.98233353700448,
+          "plane_of_sky_speed_km_s": 198.98720411985167,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T10",
+          "cpa_deg": 112.15878395178828,
+          "angular_width_deg": 48.835591591571585,
+          "plane_of_sky_speed_km_s": 48.54250228885238,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20101212_FAM_T12",
+          "cpa_deg": 38.45331119896072,
+          "angular_width_deg": 61.91379773851247,
+          "plane_of_sky_speed_km_s": 90.81462866476622,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20101212_FAM_T13",
+          "cpa_deg": 12.929763567780299,
+          "angular_width_deg": 58.64300885140278,
+          "plane_of_sky_speed_km_s": 190.4479005945093,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20101212_FAM_T16",
+          "cpa_deg": 95.14630232839227,
+          "angular_width_deg": 89.36959588332547,
+          "plane_of_sky_speed_km_s": 472.9165632006985,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T18",
+          "cpa_deg": 238.88677039698229,
+          "angular_width_deg": 162.98533730765752,
+          "plane_of_sky_speed_km_s": -661.8667988014636,
+          "speed_quality": "LOW_CONFIDENCE"
+        }
+      ]
+    },
+    "spt0": {
+      "total_tracks": 36,
+      "admitted_tracks": 4,
+      "admitted_families": 4,
+      "catalog_events": 4,
+      "avg_track_duration_h": 2.0,
+      "mean_cme_speed_km_s": 805.5,
+      "mean_angular_width_deg": 118.7,
+      "total_recovered_patches": 1660,
+      "total_segmented_pixels": 14361,
+      "peak_frame_segmented_pixels": 3404,
+      "catalog_summary": [
+        {
+          "event_id": "20101212_FAM_T03",
+          "cpa_deg": 81.2527290950826,
+          "angular_width_deg": 179.9905680030053,
+          "plane_of_sky_speed_km_s": 551.4897665332463,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T11",
+          "cpa_deg": 42.01167257776062,
+          "angular_width_deg": 49.67057932441804,
+          "plane_of_sky_speed_km_s": 229.09043934558585,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T13",
+          "cpa_deg": 79.96988406013413,
+          "angular_width_deg": 98.01650415777249,
+          "plane_of_sky_speed_km_s": 1039.045799526968,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T16",
+          "cpa_deg": 106.94235592871439,
+          "angular_width_deg": 147.09901531757836,
+          "plane_of_sky_speed_km_s": 1402.529090479779,
+          "speed_quality": "EXPLORATORY"
+        }
+      ]
+    },
+    "spt1": {
+      "total_tracks": 35,
+      "admitted_tracks": 6,
+      "admitted_families": 6,
+      "catalog_events": 6,
+      "avg_track_duration_h": 1.92,
+      "mean_cme_speed_km_s": 635.5,
+      "mean_angular_width_deg": 95.7,
+      "total_recovered_patches": 2719,
+      "total_segmented_pixels": 24244,
+      "peak_frame_segmented_pixels": 3404,
+      "catalog_summary": [
+        {
+          "event_id": "20101212_FAM_T03",
+          "cpa_deg": 81.2527290950826,
+          "angular_width_deg": 179.9905680030053,
+          "plane_of_sky_speed_km_s": 551.4897665332463,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T09",
+          "cpa_deg": 41.28490060848246,
+          "angular_width_deg": 51.12412326297431,
+          "plane_of_sky_speed_km_s": 261.90612498753217,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T12",
+          "cpa_deg": 118.0743764212794,
+          "angular_width_deg": 41.328119600291245,
+          "plane_of_sky_speed_km_s": 614.8838573070226,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T16",
+          "cpa_deg": 30.419870127416402,
+          "angular_width_deg": 116.64141770231555,
+          "plane_of_sky_speed_km_s": 593.7095505591093,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T18",
+          "cpa_deg": 147.16473152878856,
+          "angular_width_deg": 113.19153533549047,
+          "plane_of_sky_speed_km_s": 653.336061032632,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T30",
+          "cpa_deg": 295.90316620827264,
+          "angular_width_deg": 72.01185185285743,
+          "plane_of_sky_speed_km_s": 1137.639845331561,
+          "speed_quality": "EXPLORATORY"
+        }
+      ]
+    },
+    "spt2": {
+      "total_tracks": 35,
+      "admitted_tracks": 8,
+      "admitted_families": 8,
+      "catalog_events": 8,
+      "avg_track_duration_h": 3.19,
+      "mean_cme_speed_km_s": 389.5,
+      "mean_angular_width_deg": 95.3,
+      "total_recovered_patches": 3003,
+      "total_segmented_pixels": 28465,
+      "peak_frame_segmented_pixels": 3404,
+      "catalog_summary": [
+        {
+          "event_id": "20101212_FAM_T03",
+          "cpa_deg": 81.2527290950826,
+          "angular_width_deg": 179.9905680030053,
+          "plane_of_sky_speed_km_s": 551.4897665332463,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T07",
+          "cpa_deg": 80.2730545396443,
+          "angular_width_deg": 124.29533848368294,
+          "plane_of_sky_speed_km_s": 159.43186125418882,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T09",
+          "cpa_deg": 41.28490060848246,
+          "angular_width_deg": 51.12412326297431,
+          "plane_of_sky_speed_km_s": 261.6796663568976,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T11",
+          "cpa_deg": 53.97583879079592,
+          "angular_width_deg": 17.807076107213106,
+          "plane_of_sky_speed_km_s": 72.7338024784266,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20101212_FAM_T12",
+          "cpa_deg": 122.2959581679483,
+          "angular_width_deg": 62.57916204310294,
+          "plane_of_sky_speed_km_s": 81.59536214214937,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T17",
+          "cpa_deg": 147.16473152878856,
+          "angular_width_deg": 113.19153533549047,
+          "plane_of_sky_speed_km_s": 653.336061032632,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T29",
+          "cpa_deg": 295.332337025391,
+          "angular_width_deg": 70.87019348709401,
+          "plane_of_sky_speed_km_s": 1137.639845331561,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20101212_FAM_T33",
+          "cpa_deg": 55.07387416763254,
+          "angular_width_deg": 142.93123005110726,
+          "plane_of_sky_speed_km_s": 198.26944315309714,
+          "speed_quality": "LOW_CONFIDENCE"
+        }
+      ]
+    }
+  },
+  "20240503": {
+    "a5b": {
+      "total_tracks": 25,
+      "admitted_tracks": 9,
+      "admitted_families": 9,
+      "catalog_events": 9,
+      "avg_track_duration_h": 10.28,
+      "mean_cme_speed_km_s": 143.0,
+      "mean_angular_width_deg": 155.2,
+      "total_recovered_patches": 61118,
+      "total_segmented_pixels": 726588,
+      "peak_frame_segmented_pixels": 18520,
+      "catalog_summary": [
+        {
+          "event_id": "20240502_FAM_T01",
+          "cpa_deg": 24.322832251685384,
+          "angular_width_deg": 160.52177919980647,
+          "plane_of_sky_speed_km_s": 17.83963991896076,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240502_FAM_T03",
+          "cpa_deg": 271.0577967594494,
+          "angular_width_deg": 64.98206943898668,
+          "plane_of_sky_speed_km_s": 464.8624699189104,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T05",
+          "cpa_deg": 243.59470286139899,
+          "angular_width_deg": 180.88491263071813,
+          "plane_of_sky_speed_km_s": 160.07842331114873,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T07",
+          "cpa_deg": 224.0376727622878,
+          "angular_width_deg": 159.02231743330998,
+          "plane_of_sky_speed_km_s": 52.86350340220888,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240503_FAM_T09",
+          "cpa_deg": 211.51724277892035,
+          "angular_width_deg": 213.49222839358072,
+          "plane_of_sky_speed_km_s": 127.32618471091894,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T15",
+          "cpa_deg": 239.4610908337737,
+          "angular_width_deg": 145.75925427439893,
+          "plane_of_sky_speed_km_s": 361.7151455397189,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T16",
+          "cpa_deg": 114.59170182754526,
+          "angular_width_deg": 113.32267878294462,
+          "plane_of_sky_speed_km_s": 0.5293967716326036,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240503_FAM_T17",
+          "cpa_deg": 31.746794278737752,
+          "angular_width_deg": 131.010458822854,
+          "plane_of_sky_speed_km_s": 65.69028886568934,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240503_FAM_T18",
+          "cpa_deg": 240.47040776522218,
+          "angular_width_deg": 227.8245516010461,
+          "plane_of_sky_speed_km_s": 36.372068581881145,
+          "speed_quality": "LOW_CONFIDENCE"
+        }
+      ]
+    },
+    "spt0": {
+      "total_tracks": 53,
+      "admitted_tracks": 19,
+      "admitted_families": 19,
+      "catalog_events": 19,
+      "avg_track_duration_h": 2.84,
+      "mean_cme_speed_km_s": 500.7,
+      "mean_angular_width_deg": 140.8,
+      "total_recovered_patches": 19511,
+      "total_segmented_pixels": 226486,
+      "peak_frame_segmented_pixels": 11668,
+      "catalog_summary": [
+        {
+          "event_id": "20240502_FAM_T01",
+          "cpa_deg": 21.196504592759084,
+          "angular_width_deg": 122.59122103788343,
+          "plane_of_sky_speed_km_s": 186.8910976902883,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T03",
+          "cpa_deg": 22.644765197894458,
+          "angular_width_deg": 71.17074646989141,
+          "plane_of_sky_speed_km_s": 861.9043034387528,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T06",
+          "cpa_deg": 272.2262889458025,
+          "angular_width_deg": 38.24581294528895,
+          "plane_of_sky_speed_km_s": 412.90750575508355,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T08",
+          "cpa_deg": 28.632511229276133,
+          "angular_width_deg": 110.71986522456376,
+          "plane_of_sky_speed_km_s": 641.631571498608,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T09",
+          "cpa_deg": 44.13493569461093,
+          "angular_width_deg": 152.54966480657856,
+          "plane_of_sky_speed_km_s": 81.68523057875161,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240502_FAM_T10",
+          "cpa_deg": 251.3287404094171,
+          "angular_width_deg": 136.90506374557037,
+          "plane_of_sky_speed_km_s": 135.3777231292072,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T12",
+          "cpa_deg": 74.69439001565917,
+          "angular_width_deg": 211.69256547186842,
+          "plane_of_sky_speed_km_s": 198.87983172362084,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T13",
+          "cpa_deg": 258.089703293356,
+          "angular_width_deg": 151.15598653060368,
+          "plane_of_sky_speed_km_s": 618.2381460377354,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T14",
+          "cpa_deg": 250.20187191831357,
+          "angular_width_deg": 114.61746294860848,
+          "plane_of_sky_speed_km_s": 723.137883987336,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T16",
+          "cpa_deg": 52.200195608476065,
+          "angular_width_deg": 142.19870242292103,
+          "plane_of_sky_speed_km_s": -39.898025845717285,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240502_FAM_T23",
+          "cpa_deg": 56.66638777105635,
+          "angular_width_deg": 166.98750540703182,
+          "plane_of_sky_speed_km_s": 85.39484808797225,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T24",
+          "cpa_deg": 63.07167471514856,
+          "angular_width_deg": 174.51108618625435,
+          "plane_of_sky_speed_km_s": 667.3997874279986,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T27",
+          "cpa_deg": 54.39615124061743,
+          "angular_width_deg": 198.61983562582662,
+          "plane_of_sky_speed_km_s": 342.2818716627198,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T28",
+          "cpa_deg": 11.18363730115243,
+          "angular_width_deg": 89.94138380999749,
+          "plane_of_sky_speed_km_s": 381.8354633688423,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T37",
+          "cpa_deg": 114.78870420223541,
+          "angular_width_deg": 280.4037575705611,
+          "plane_of_sky_speed_km_s": 1593.1435697262382,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T43",
+          "cpa_deg": 259.9569449666237,
+          "angular_width_deg": 24.98907727471618,
+          "plane_of_sky_speed_km_s": 825.9916282609798,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T45",
+          "cpa_deg": 74.67257003544637,
+          "angular_width_deg": 158.0669980361688,
+          "plane_of_sky_speed_km_s": 904.5733513666265,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T51",
+          "cpa_deg": 47.368621225580966,
+          "angular_width_deg": 162.2541127165405,
+          "plane_of_sky_speed_km_s": 108.44159218228053,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240503_FAM_T52",
+          "cpa_deg": 59.43938995380671,
+          "angular_width_deg": 168.12149963338655,
+          "plane_of_sky_speed_km_s": 782.7928395823053,
+          "speed_quality": "EXPLORATORY"
+        }
+      ]
+    },
+    "spt1": {
+      "total_tracks": 50,
+      "admitted_tracks": 21,
+      "admitted_families": 21,
+      "catalog_events": 21,
+      "avg_track_duration_h": 2.88,
+      "mean_cme_speed_km_s": 377.3,
+      "mean_angular_width_deg": 154.0,
+      "total_recovered_patches": 29697,
+      "total_segmented_pixels": 346849,
+      "peak_frame_segmented_pixels": 18074,
+      "catalog_summary": [
+        {
+          "event_id": "20240502_FAM_T01",
+          "cpa_deg": 21.196504592759084,
+          "angular_width_deg": 122.59122103788343,
+          "plane_of_sky_speed_km_s": 227.82352892434466,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T03",
+          "cpa_deg": 22.644765197894458,
+          "angular_width_deg": 71.17074646989141,
+          "plane_of_sky_speed_km_s": 861.9043034387528,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T05",
+          "cpa_deg": 271.0577967594494,
+          "angular_width_deg": 64.98206943898668,
+          "plane_of_sky_speed_km_s": 464.8624699189104,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T08",
+          "cpa_deg": 260.98705272298696,
+          "angular_width_deg": 156.95068538986555,
+          "plane_of_sky_speed_km_s": 219.3889717102414,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T09",
+          "cpa_deg": 38.72166747423273,
+          "angular_width_deg": 115.24164615443436,
+          "plane_of_sky_speed_km_s": 177.0017757112076,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240502_FAM_T10",
+          "cpa_deg": 251.3287404094171,
+          "angular_width_deg": 136.90506374557037,
+          "plane_of_sky_speed_km_s": 407.29864809906894,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T12",
+          "cpa_deg": 49.21549871686159,
+          "angular_width_deg": 158.2433448524691,
+          "plane_of_sky_speed_km_s": 343.2324031958736,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T13",
+          "cpa_deg": 257.5499510027447,
+          "angular_width_deg": 62.86985884705115,
+          "plane_of_sky_speed_km_s": 644.5477870944966,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T16",
+          "cpa_deg": 52.200195608476065,
+          "angular_width_deg": 142.19870242292103,
+          "plane_of_sky_speed_km_s": 561.2009352147595,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T19",
+          "cpa_deg": 60.95327175281102,
+          "angular_width_deg": 147.78775957972465,
+          "plane_of_sky_speed_km_s": -3.837652692383486,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240502_FAM_T21",
+          "cpa_deg": 186.03319178776727,
+          "angular_width_deg": 70.17860789463191,
+          "plane_of_sky_speed_km_s": 286.25336944248295,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T23",
+          "cpa_deg": 51.22851201463175,
+          "angular_width_deg": 204.95511407779804,
+          "plane_of_sky_speed_km_s": 422.69788695096446,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T26",
+          "cpa_deg": 150.51155900243288,
+          "angular_width_deg": 301.74759856853825,
+          "plane_of_sky_speed_km_s": 663.0042824528346,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T28",
+          "cpa_deg": 70.22636066283098,
+          "angular_width_deg": 202.75650676621203,
+          "plane_of_sky_speed_km_s": 54.4601707234765,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T32",
+          "cpa_deg": 65.68045880239868,
+          "angular_width_deg": 213.65677314456002,
+          "plane_of_sky_speed_km_s": 341.2994167764115,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T34",
+          "cpa_deg": 225.97514331763804,
+          "angular_width_deg": 76.43467566130153,
+          "plane_of_sky_speed_km_s": -53.82387374488629,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240503_FAM_T38",
+          "cpa_deg": 315.3357736728033,
+          "angular_width_deg": 266.21317811322945,
+          "plane_of_sky_speed_km_s": 687.1850028553847,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T40",
+          "cpa_deg": 29.35772377414162,
+          "angular_width_deg": 283.790634889752,
+          "plane_of_sky_speed_km_s": 296.92450773386525,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240503_FAM_T41",
+          "cpa_deg": 241.02496651825538,
+          "angular_width_deg": 144.59061252645375,
+          "plane_of_sky_speed_km_s": 926.3489582389457,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T43",
+          "cpa_deg": 47.368621225580966,
+          "angular_width_deg": 162.2541127165405,
+          "plane_of_sky_speed_km_s": 239.5824533267706,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T48",
+          "cpa_deg": 225.55519195050923,
+          "angular_width_deg": 127.47647248024384,
+          "plane_of_sky_speed_km_s": 155.59002252720404,
+          "speed_quality": "LOW_CONFIDENCE"
+        }
+      ]
+    },
+    "spt2": {
+      "total_tracks": 43,
+      "admitted_tracks": 18,
+      "admitted_families": 18,
+      "catalog_events": 18,
+      "avg_track_duration_h": 5.47,
+      "mean_cme_speed_km_s": 451.1,
+      "mean_angular_width_deg": 159.5,
+      "total_recovered_patches": 33438,
+      "total_segmented_pixels": 389906,
+      "peak_frame_segmented_pixels": 17172,
+      "catalog_summary": [
+        {
+          "event_id": "20240502_FAM_T01",
+          "cpa_deg": 21.196504592759084,
+          "angular_width_deg": 122.59122103788343,
+          "plane_of_sky_speed_km_s": 70.9163181835246,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240502_FAM_T05",
+          "cpa_deg": 271.0577967594494,
+          "angular_width_deg": 64.98206943898668,
+          "plane_of_sky_speed_km_s": 464.8624699189104,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T06",
+          "cpa_deg": 268.0215253313594,
+          "angular_width_deg": 142.8817401731206,
+          "plane_of_sky_speed_km_s": 175.93395244938108,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T08",
+          "cpa_deg": 48.99141437646159,
+          "angular_width_deg": 200.48091880145773,
+          "plane_of_sky_speed_km_s": 52.75118146967614,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240502_FAM_T09",
+          "cpa_deg": 268.0215253313594,
+          "angular_width_deg": 142.8817401731206,
+          "plane_of_sky_speed_km_s": 174.61216302331755,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T11",
+          "cpa_deg": 49.21549871686159,
+          "angular_width_deg": 158.2433448524691,
+          "plane_of_sky_speed_km_s": 143.25443436852802,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T13",
+          "cpa_deg": 321.13492867889806,
+          "angular_width_deg": 256.4835764697774,
+          "plane_of_sky_speed_km_s": 1664.3955316566253,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240502_FAM_T18",
+          "cpa_deg": 214.40922761256266,
+          "angular_width_deg": 139.7654271338597,
+          "plane_of_sky_speed_km_s": -72.56776954030194,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240502_FAM_T19",
+          "cpa_deg": 99.90404041013085,
+          "angular_width_deg": 264.02572660219954,
+          "plane_of_sky_speed_km_s": 198.68717636397147,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T20",
+          "cpa_deg": 77.4360100537117,
+          "angular_width_deg": 217.17580554797345,
+          "plane_of_sky_speed_km_s": 274.85392192422535,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240503_FAM_T22",
+          "cpa_deg": 54.29289134145972,
+          "angular_width_deg": 109.22570771444737,
+          "plane_of_sky_speed_km_s": 807.746119470093,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T25",
+          "cpa_deg": 50.880374446200506,
+          "angular_width_deg": 205.65138921466053,
+          "plane_of_sky_speed_km_s": 253.8175963355695,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T29",
+          "cpa_deg": 108.0997983066674,
+          "angular_width_deg": 100.33887174118888,
+          "plane_of_sky_speed_km_s": -40.896684684935266,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240503_FAM_T31",
+          "cpa_deg": 313.7675574627258,
+          "angular_width_deg": 263.0767456930744,
+          "plane_of_sky_speed_km_s": 687.1850028553847,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T33",
+          "cpa_deg": 296.95837961444823,
+          "angular_width_deg": 98.99194657036526,
+          "plane_of_sky_speed_km_s": 1833.5341022330538,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T34",
+          "cpa_deg": 238.12013182382313,
+          "angular_width_deg": 138.78094313758925,
+          "plane_of_sky_speed_km_s": 924.7234694176522,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T36",
+          "cpa_deg": 32.98198219219654,
+          "angular_width_deg": 111.57703325875468,
+          "plane_of_sky_speed_km_s": 209.40792703719313,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240503_FAM_T39",
+          "cpa_deg": 253.92787227387961,
+          "angular_width_deg": 134.38763815455275,
+          "plane_of_sky_speed_km_s": 296.0453262339624,
+          "speed_quality": "EXPLORATORY"
+        }
+      ]
+    }
+  },
+  "20240510": {
+    "a5b": {
+      "total_tracks": 22,
+      "admitted_tracks": 10,
+      "admitted_families": 10,
+      "catalog_events": 10,
+      "avg_track_duration_h": 5.75,
+      "mean_cme_speed_km_s": 201.2,
+      "mean_angular_width_deg": 179.4,
+      "total_recovered_patches": 31970,
+      "total_segmented_pixels": 374411,
+      "peak_frame_segmented_pixels": 17513,
+      "catalog_summary": [
+        {
+          "event_id": "20240509_FAM_T01",
+          "cpa_deg": 228.4670800072503,
+          "angular_width_deg": 137.53938536435135,
+          "plane_of_sky_speed_km_s": 190.845780099778,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T02",
+          "cpa_deg": 112.60032776353648,
+          "angular_width_deg": 172.5525977056447,
+          "plane_of_sky_speed_km_s": -21.27510015340292,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T05",
+          "cpa_deg": 49.598872701855555,
+          "angular_width_deg": 166.69073913900695,
+          "plane_of_sky_speed_km_s": 44.71306794400883,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T06",
+          "cpa_deg": 215.95607527268106,
+          "angular_width_deg": 241.18000364647526,
+          "plane_of_sky_speed_km_s": 310.55257879800155,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T07",
+          "cpa_deg": 290.6162413337245,
+          "angular_width_deg": 79.41344385415044,
+          "plane_of_sky_speed_km_s": 581.6302556731794,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T08",
+          "cpa_deg": 135.69022479668638,
+          "angular_width_deg": 90.4801741076451,
+          "plane_of_sky_speed_km_s": 178.40508103047821,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T11",
+          "cpa_deg": 267.0147009612471,
+          "angular_width_deg": 172.49803137482905,
+          "plane_of_sky_speed_km_s": 386.50370524929565,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T14",
+          "cpa_deg": 354.6077063528403,
+          "angular_width_deg": 346.4618521565584,
+          "plane_of_sky_speed_km_s": 204.69862319200746,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T17",
+          "cpa_deg": 85.16163088542794,
+          "angular_width_deg": 190.61758877395542,
+          "plane_of_sky_speed_km_s": -14.26064641165333,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240510_FAM_T20",
+          "cpa_deg": 97.19370421306036,
+          "angular_width_deg": 196.33334856973667,
+          "plane_of_sky_speed_km_s": 150.56108933762948,
+          "speed_quality": "LOW_CONFIDENCE"
+        }
+      ]
+    },
+    "spt0": {
+      "total_tracks": 45,
+      "admitted_tracks": 17,
+      "admitted_families": 17,
+      "catalog_events": 17,
+      "avg_track_duration_h": 2.38,
+      "mean_cme_speed_km_s": 396.0,
+      "mean_angular_width_deg": 142.9,
+      "total_recovered_patches": 15453,
+      "total_segmented_pixels": 181055,
+      "peak_frame_segmented_pixels": 15066,
+      "catalog_summary": [
+        {
+          "event_id": "20240509_FAM_T05",
+          "cpa_deg": 99.85632852917728,
+          "angular_width_deg": 98.7520617408228,
+          "plane_of_sky_speed_km_s": 75.46902032660199,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T06",
+          "cpa_deg": 100.08987071656769,
+          "angular_width_deg": 69.66779252602771,
+          "plane_of_sky_speed_km_s": -1.819378018327258,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T07",
+          "cpa_deg": 123.25752993265563,
+          "angular_width_deg": 51.94965893386615,
+          "plane_of_sky_speed_km_s": 580.1067474445335,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T09",
+          "cpa_deg": 119.9079680836839,
+          "angular_width_deg": 58.64878263180958,
+          "plane_of_sky_speed_km_s": 139.42791188361247,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T12",
+          "cpa_deg": 164.85780886298915,
+          "angular_width_deg": 331.6615578695942,
+          "plane_of_sky_speed_km_s": 1182.1745569239908,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T16",
+          "cpa_deg": 34.27254572229373,
+          "angular_width_deg": 86.03748226496748,
+          "plane_of_sky_speed_km_s": 204.69295993678767,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T17",
+          "cpa_deg": 143.3121133866727,
+          "angular_width_deg": 106.1387575967141,
+          "plane_of_sky_speed_km_s": 218.90220230932903,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T21",
+          "cpa_deg": 190.32086726024508,
+          "angular_width_deg": 277.20621605200097,
+          "plane_of_sky_speed_km_s": 1577.9550364189793,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T23",
+          "cpa_deg": 271.0769019529727,
+          "angular_width_deg": 125.92015825046303,
+          "plane_of_sky_speed_km_s": 27.396615726342937,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240510_FAM_T27",
+          "cpa_deg": 355.41103411137726,
+          "angular_width_deg": 344.8551966394845,
+          "plane_of_sky_speed_km_s": 252.9387372746486,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T30",
+          "cpa_deg": 46.74899806726978,
+          "angular_width_deg": 107.98308573633352,
+          "plane_of_sky_speed_km_s": 760.2495618202084,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T37",
+          "cpa_deg": 187.3445324385557,
+          "angular_width_deg": 144.32642480923192,
+          "plane_of_sky_speed_km_s": 90.38110360879334,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240510_FAM_T38",
+          "cpa_deg": 40.30035401378393,
+          "angular_width_deg": 109.54052613660585,
+          "plane_of_sky_speed_km_s": 171.97432758150214,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240510_FAM_T39",
+          "cpa_deg": 39.18429216597326,
+          "angular_width_deg": 89.62229012708036,
+          "plane_of_sky_speed_km_s": 257.14119442284004,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240510_FAM_T41",
+          "cpa_deg": 41.92866702112963,
+          "angular_width_deg": 75.81509485407179,
+          "plane_of_sky_speed_km_s": 289.41308931579437,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T42",
+          "cpa_deg": 104.17630204800192,
+          "angular_width_deg": 182.36815289985347,
+          "plane_of_sky_speed_km_s": 334.28627650098844,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T43",
+          "cpa_deg": 96.3343357471488,
+          "angular_width_deg": 169.27456391195975,
+          "plane_of_sky_speed_km_s": 571.1054179248033,
+          "speed_quality": "EXPLORATORY"
+        }
+      ]
+    },
+    "spt1": {
+      "total_tracks": 44,
+      "admitted_tracks": 18,
+      "admitted_families": 18,
+      "catalog_events": 18,
+      "avg_track_duration_h": 2.69,
+      "mean_cme_speed_km_s": 366.3,
+      "mean_angular_width_deg": 150.7,
+      "total_recovered_patches": 20514,
+      "total_segmented_pixels": 236204,
+      "peak_frame_segmented_pixels": 15864,
+      "catalog_summary": [
+        {
+          "event_id": "20240509_FAM_T01",
+          "cpa_deg": 118.20331461021652,
+          "angular_width_deg": 157.73433907783706,
+          "plane_of_sky_speed_km_s": 334.5147952710185,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T03",
+          "cpa_deg": 232.92592807383778,
+          "angular_width_deg": 109.36189722069878,
+          "plane_of_sky_speed_km_s": 361.43716765316185,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T05",
+          "cpa_deg": 99.85632852917728,
+          "angular_width_deg": 98.7520617408228,
+          "plane_of_sky_speed_km_s": 75.46902032660199,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T06",
+          "cpa_deg": 117.92559385451112,
+          "angular_width_deg": 64.98475299673288,
+          "plane_of_sky_speed_km_s": 83.44555571684747,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T09",
+          "cpa_deg": 119.9079680836839,
+          "angular_width_deg": 58.64878263180958,
+          "plane_of_sky_speed_km_s": 317.63735046336245,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T11",
+          "cpa_deg": 166.1199695052395,
+          "angular_width_deg": 316.5987476879369,
+          "plane_of_sky_speed_km_s": 852.4304464538222,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T15",
+          "cpa_deg": 34.27254572229373,
+          "angular_width_deg": 86.03748226496748,
+          "plane_of_sky_speed_km_s": 402.78837437801036,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T16",
+          "cpa_deg": 286.37917026484274,
+          "angular_width_deg": 87.88758599191368,
+          "plane_of_sky_speed_km_s": 581.6302556731794,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T20",
+          "cpa_deg": 130.85128294125275,
+          "angular_width_deg": 80.80229039677783,
+          "plane_of_sky_speed_km_s": 337.6047896584633,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T21",
+          "cpa_deg": 105.31105513524453,
+          "angular_width_deg": 191.07585030420455,
+          "plane_of_sky_speed_km_s": 201.22219081476268,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T22",
+          "cpa_deg": 267.0147009612471,
+          "angular_width_deg": 172.49803137482905,
+          "plane_of_sky_speed_km_s": 386.50370524929565,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T28",
+          "cpa_deg": 180.12732177082768,
+          "angular_width_deg": 358.8784293453455,
+          "plane_of_sky_speed_km_s": 576.294906537538,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T29",
+          "cpa_deg": 72.08323962590794,
+          "angular_width_deg": 170.04717368136593,
+          "plane_of_sky_speed_km_s": 304.25929853500696,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T30",
+          "cpa_deg": 279.854855072688,
+          "angular_width_deg": 89.12359955615142,
+          "plane_of_sky_speed_km_s": 686.4445381113846,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T31",
+          "cpa_deg": 30.315805315995874,
+          "angular_width_deg": 222.0255240969814,
+          "plane_of_sky_speed_km_s": 573.3085467548435,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T37",
+          "cpa_deg": 85.16163088542794,
+          "angular_width_deg": 190.61758877395542,
+          "plane_of_sky_speed_km_s": 36.49474549672329,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T39",
+          "cpa_deg": 181.4070956022482,
+          "angular_width_deg": 114.99588852346113,
+          "plane_of_sky_speed_km_s": 98.73844096196026,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T42",
+          "cpa_deg": 124.22749516429636,
+          "angular_width_deg": 142.26576666726461,
+          "plane_of_sky_speed_km_s": 383.48508286779145,
+          "speed_quality": "EXPLORATORY"
+        }
+      ]
+    },
+    "spt2": {
+      "total_tracks": 48,
+      "admitted_tracks": 23,
+      "admitted_families": 23,
+      "catalog_events": 23,
+      "avg_track_duration_h": 2.61,
+      "mean_cme_speed_km_s": 347.6,
+      "mean_angular_width_deg": 133.7,
+      "total_recovered_patches": 22639,
+      "total_segmented_pixels": 263865,
+      "peak_frame_segmented_pixels": 22695,
+      "catalog_summary": [
+        {
+          "event_id": "20240509_FAM_T01",
+          "cpa_deg": 118.20331461021652,
+          "angular_width_deg": 157.73433907783706,
+          "plane_of_sky_speed_km_s": 334.5147952710185,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T03",
+          "cpa_deg": 232.92592807383778,
+          "angular_width_deg": 109.36189722069878,
+          "plane_of_sky_speed_km_s": 361.43716765316185,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T05",
+          "cpa_deg": 99.85632852917728,
+          "angular_width_deg": 98.7520617408228,
+          "plane_of_sky_speed_km_s": 75.46902032660199,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T06",
+          "cpa_deg": 127.19476346615672,
+          "angular_width_deg": 59.82412600086832,
+          "plane_of_sky_speed_km_s": 47.222425902444755,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T09",
+          "cpa_deg": 119.9079680836839,
+          "angular_width_deg": 58.64878263180958,
+          "plane_of_sky_speed_km_s": 92.61863623735071,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240509_FAM_T11",
+          "cpa_deg": 164.52586310706897,
+          "angular_width_deg": 343.8702271974576,
+          "plane_of_sky_speed_km_s": 622.3676532363611,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T14",
+          "cpa_deg": 43.55348835614427,
+          "angular_width_deg": 107.401303715388,
+          "plane_of_sky_speed_km_s": 605.5799635694685,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T15",
+          "cpa_deg": 286.37917026484274,
+          "angular_width_deg": 87.88758599191368,
+          "plane_of_sky_speed_km_s": 581.6302556731794,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T17",
+          "cpa_deg": 132.3894767261516,
+          "angular_width_deg": 83.87867796657548,
+          "plane_of_sky_speed_km_s": 187.46624860752166,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T20",
+          "cpa_deg": 95.00345424353388,
+          "angular_width_deg": 176.46808889438867,
+          "plane_of_sky_speed_km_s": 207.28847492039162,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240509_FAM_T22",
+          "cpa_deg": 285.27291845016816,
+          "angular_width_deg": 158.67111720826423,
+          "plane_of_sky_speed_km_s": 732.547214332357,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T28",
+          "cpa_deg": 180.12732177082768,
+          "angular_width_deg": 358.8784293453455,
+          "plane_of_sky_speed_km_s": 576.294906537538,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T29",
+          "cpa_deg": 72.08323962590794,
+          "angular_width_deg": 170.04717368136593,
+          "plane_of_sky_speed_km_s": 206.9129355616162,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T30",
+          "cpa_deg": 279.854855072688,
+          "angular_width_deg": 89.12359955615142,
+          "plane_of_sky_speed_km_s": 686.4445381113846,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T31",
+          "cpa_deg": 27.075587463631905,
+          "angular_width_deg": 215.54508839225343,
+          "plane_of_sky_speed_km_s": 573.3085467548435,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T33",
+          "cpa_deg": 270.46829950322183,
+          "angular_width_deg": 96.37380411322823,
+          "plane_of_sky_speed_km_s": 190.79711001887267,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T38",
+          "cpa_deg": 85.16163088542794,
+          "angular_width_deg": 190.61758877395542,
+          "plane_of_sky_speed_km_s": 2.6483408125003507,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240510_FAM_T40",
+          "cpa_deg": 191.0330235909831,
+          "angular_width_deg": 83.68337448279703,
+          "plane_of_sky_speed_km_s": 75.03110278921596,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240510_FAM_T41",
+          "cpa_deg": 150.19318423683916,
+          "angular_width_deg": 90.3343885221791,
+          "plane_of_sky_speed_km_s": 130.58143300139207,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T42",
+          "cpa_deg": 29.100480919050185,
+          "angular_width_deg": 44.509376810854064,
+          "plane_of_sky_speed_km_s": 315.1696748021298,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T43",
+          "cpa_deg": 39.794379617161326,
+          "angular_width_deg": 80.08366966200828,
+          "plane_of_sky_speed_km_s": 385.40878136239576,
+          "speed_quality": "LOW_CONFIDENCE"
+        },
+        {
+          "event_id": "20240510_FAM_T44",
+          "cpa_deg": 124.22749516429636,
+          "angular_width_deg": 142.26576666726461,
+          "plane_of_sky_speed_km_s": 417.7462663849112,
+          "speed_quality": "EXPLORATORY"
+        },
+        {
+          "event_id": "20240510_FAM_T45",
+          "cpa_deg": 47.56300224625981,
+          "angular_width_deg": 70.11328137477409,
+          "plane_of_sky_speed_km_s": 585.9408481462532,
+          "speed_quality": "EXPLORATORY"
+        }
+      ]
+    }
+  }
+}

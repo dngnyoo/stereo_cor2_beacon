@@ -40,3 +40,10 @@ dist/
 .DS_Store
 Thumbs.db
 /Calibration/cor2_mask.fts
+
+# Large research visualization outputs and animations (PNGs, GIFs)
+/outputs/**/figures/*.png
+/outputs/**/figures/*.gif
+/outputs/**/consecutive_diagnostics/*.png
+/outputs/**/consecutive_diagnostics/*.gif
+/outputs/**/animations/*.gif
