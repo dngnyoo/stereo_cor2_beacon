@@ -40,3 +40,6 @@ dist/
 .DS_Store
 Thumbs.db
 /Calibration/cor2_mask.fts
+
+# Local external-catalog research caches, configs and generated diagnostics
+/experiments/external_catalog_research/
