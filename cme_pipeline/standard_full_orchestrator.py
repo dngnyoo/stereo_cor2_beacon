@@ -173,7 +173,7 @@ def run_full_standard(config, *, until: str, run_dir, visualize=None):
             save()
             return target
         _apply_verified_geometry(config, first)
-        if until == "validation":
+        if until == "validation" and (config.data.get("validation") or {}).get("method", "seeds") == "seeds":
             _ensure_seeds(config)
         runners = {
             "tracking": execute_from_detection,

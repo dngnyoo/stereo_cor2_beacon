@@ -68,6 +68,27 @@ def _plot(stage: str, run: Path, destination: Path) -> list[Path]:
                title="CME Catalog — height–time tracks (no fitted-line claim)")
     elif stage == "validation":
         df = pd.read_csv(_artifact(run, meta, "catalog_matches"))
+        if meta["implementation"] == "external_catalogs:independent_angular_iou":
+            report = json.loads(_artifact(run, meta, "evaluation_metrics").read_text())
+            labels, values = [], []
+            for name, item in report["catalogs"].items():
+                value = item.get("mean_matched_angular_iou")
+                if value is not None:
+                    labels.append(name)
+                    values.append(value)
+            if values:
+                ax.bar(labels, values)
+            else:
+                ax.text(.5, .5, "No matched catalog events", ha="center", va="center", transform=ax.transAxes)
+            ax.set(title="External catalog comparison (distinct metrics; not pooled)", ylabel="Matched mean angular IoU", ylim=(0, 1))
+            ax.text(.01, .01, "; ".join(f"{k}: {v['status']}" for k,v in report["catalogs"].items()), transform=ax.transAxes, fontsize=8)
+            fig.tight_layout()
+            destination.mkdir(parents=True, exist_ok=True)
+            if output.exists():
+                raise FileExistsError(output)
+            fig.savefig(output, dpi=145)
+            plt.close(fig)
+            return [output]
         selected = df[df["assigned_match"].astype(bool)]
         if selected.empty:
             ax.text(.5, .5, "No SEEDS matches under configured criteria",

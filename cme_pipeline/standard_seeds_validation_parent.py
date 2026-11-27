@@ -54,7 +54,7 @@ def validation_parameters(config):
     return reference, tolerance, min_iou, common
 
 
-def resolve_catalog_parent(config, input_run):
+def resolve_catalog_parent(config, input_run, *, include_observations=False):
     parent = Path(input_run).expanduser().resolve()
     if not parent.is_dir():
         raise FileNotFoundError(parent)
@@ -97,10 +97,18 @@ def resolve_catalog_parent(config, input_run):
         raise ValueError("Catalog event/frame counts differ from saved metadata")
     if not set(frames["event_id"]).issubset(set(events["event_id"])):
         raise ValueError("Catalog frame IDs absent from event table")
-    return parent, meta, seg_root, frames_file, events, frames
+    result = (parent, meta, seg_root, frames_file, events, frames)
+    if include_observations:
+        obs = seg_output.size_gate_output.birth_gate_output.association_output.tracking_output.manifest_df
+        return (*result, obs.copy())
+    return result
 
 
 def execute_from_catalog(config, *, input_run, until, run_dir, visualize=None):
+    if config.method("validation") == "external_catalogs":
+        from cme_pipeline.standard_external_validation_parent import execute_external
+        return execute_external(config, input_run=input_run, until=until,
+                                run_dir=run_dir, visualize=visualize)
     if until != "validation":
         raise ValueError("Catalog input supports --until validation only")
     if config.vis_mode("validation", visualize) != "off":
