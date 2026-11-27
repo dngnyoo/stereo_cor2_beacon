@@ -250,3 +250,26 @@ legacy test failures/errors remain disclosed; a fresh integration test
 and a baseline control test in comparable fixture environments are required
 before declaring regression equivalence. No legacy test is to be weakened
 or skipped merely to obtain a green result.
+
+### Final integration control (2026-11-26)
+
+Tested candidate: 80cbc7630d379e6f294db71aa8e1ae97ac3731c7.
+Control: e1bce5f34d3493912b2385f4c17f1d0fc78c68f0.
+Operator ran `python -m pytest -q --tb=line` in separate fresh worktrees
+using the same Python virtual environment.
+
+| Result | Main control | Integration candidate |
+| --- | ---: | ---: |
+| Passed | 219 | 259 |
+| Failed | 7 | 7 |
+| Errors | 4 | 4 |
+| Subtests passed | 8 | 12 |
+| Warnings | 122 | 122 |
+
+All eleven failing/error test IDs matched across both runs. The candidate
+adds forty passing tests and four passing subtests, with no newly observed
+failure. The missing historical fixtures/cache and existing recovery_apply
+registry expectation remain unresolved; this is not an all-green suite or
+proof of exact historical array reproducibility. The user approved
+fast-forward integration after reviewing these results. This final
+documentation-only change does not modify executable code or tests.
