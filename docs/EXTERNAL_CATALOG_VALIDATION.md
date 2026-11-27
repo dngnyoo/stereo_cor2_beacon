@@ -201,9 +201,7 @@ Keep the external evaluator isolated from Stage 01–08 scientific decisions.
 For algorithm comparison, predeclare the date set, reference snapshots,
 matching thresholds, observation coverage, and upstream configuration.
 Evaluate completed Stage 08 products under the same protocol and retain
-per-catalog results, unmatched events and unavailable states. A batch
-evaluation driver and expanded date sampling are future work, not part of
-this validated revision.
+per-catalog results, unmatched events and unavailable states. The batch evaluation driver is documented below. Expanded date sampling and controlled multi-algorithm comparisons remain future work.
 
 ## Batch Stage 09 driver (experimental)
 
@@ -233,3 +231,22 @@ hashes help flag unequal observation inputs but are not sufficient to certify
 identical data or a controlled algorithm comparison. Use existing Stage 09
 standalone execution for detailed overlays. No upstream stage is recomputed.
 This driver is not yet validated against real multi-algorithm Stage 08 products.
+
+### Batch replay validation (2026-11-26)
+
+Tested revision: b8f1fd589df2558ccbc517c9e2dac5eeffad1a2b.
+Operator-reported result: 5 batch-driver tests passed in 1.88 seconds.
+Actual local Run: runs/batch_validation_001, using the three Stage 08 inputs
+listed in the integration evidence above. All seven available catalog means
+reproduced the earlier individual Stage 09 results to six displayed decimal
+places, and matched-event counts agreed. Both 2024 MVCC entries remained
+REFERENCE_UNAVAILABLE, with null scores and counts. Exact byte-for-byte
+comparison and independent multi-algorithm scientific comparison have not
+been established by this replay.
+
+The integration candidate must preserve the legacy SEEDS path and the
+scientific Stage 01–08 implementations. The previously recorded eleven
+legacy test failures/errors remain disclosed; a fresh integration test
+and a baseline control test in comparable fixture environments are required
+before declaring regression equivalence. No legacy test is to be weakened
+or skipped merely to obtain a green result.
