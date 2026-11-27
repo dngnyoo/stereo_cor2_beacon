@@ -204,3 +204,32 @@ Evaluate completed Stage 08 products under the same protocol and retain
 per-catalog results, unmatched events and unavailable states. A batch
 evaluation driver and expanded date sampling are future work, not part of
 this validated revision.
+
+## Batch Stage 09 driver (experimental)
+
+```yaml
+catalogs: [SEEDS, CACTus, MVCC]
+reference_cache: data/catalogs
+runs:
+  - algorithm: baseline
+    date: "20101212"
+    input_run: /absolute/path/to/completed/stage08
+```
+
+Save as a local YAML plan and execute
+`python -m scripts.batch_external_validation --plan PLAN.yaml --output-dir runs/batch_001`.
+Relative paths resolve from the working directory. Optional thresholds mapping
+accepts the six existing scoring parameters; defaults match Stage 09.
+Each algorithm/date label must be unique. The driver validates parent ancestry,
+prepares references once per date, copies and hashes normalized scoring inputs,
+and runs unchanged Stage 09 with explicit pinned references and visualization off.
+Unavailable/acquisition-error catalogs are recorded in the batch table without
+rerunning acquisition per algorithm. Output directory must not exist.
+The batch writes reference and batch manifests, independent Stage 09 child Runs,
+comparison_summary.csv, matched_events.csv, and comparison.png (separate panels).
+Nonzero exit means at least one input, acquisition, reference or evaluation error.
+A missing reference or no match is not a measured zero. Observation-manifest
+hashes help flag unequal observation inputs but are not sufficient to certify
+identical data or a controlled algorithm comparison. Use existing Stage 09
+standalone execution for detailed overlays. No upstream stage is recomputed.
+This driver is not yet validated against real multi-algorithm Stage 08 products.
