@@ -13,6 +13,7 @@ from cme_pipeline.standard_seeds_validation_parent import resolve_catalog_parent
 from scripts.validate_seeds import _read_seeds, validate_seeds
 from scripts.validate_cactus import validate_cactus
 from scripts.validate_mvcc import validate_mvcc
+from cme_pipeline.external_reference_acquisition import acquisition_settings, prepare
 
 NAMES = ("SEEDS", "CACTus", "MVCC")
 KEYS = {"SEEDS": ("seeds_frames_csv",), "CACTus": ("cactus_events_csv",),
@@ -20,7 +21,7 @@ KEYS = {"SEEDS": ("seeds_frames_csv",), "CACTus": ("cactus_events_csv",),
 OPTIONS = {"method", "catalogs", "visualization", "seeds_frames_csv",
            "cactus_events_csv", "mvcc_frames_csv", "mvcc_events_csv",
            "max_time_delta_sec", "min_mean_iou", "min_common_frames",
-           "cactus_min_iou", "mvcc_max_time_delta_sec", "mvcc_min_mean_iou"}
+           "cactus_min_iou", "mvcc_max_time_delta_sec", "mvcc_min_mean_iou", "acquisition"}
 MATCH_COLUMNS = ["catalog", "catalog_event_id", "event_id", "angular_iou", "metric"]
 
 
@@ -28,6 +29,7 @@ def parameters(config):
     settings = _params(config, "validation")
     if set(settings) - OPTIONS:
         raise ValueError(f"Unknown validation settings: {sorted(set(settings)-OPTIONS)}")
+    acquisition_settings(settings)
     catalogs = settings.get("catalogs")
     if not isinstance(catalogs, (list,tuple)) or not catalogs or any(x not in NAMES for x in catalogs) or len(set(catalogs)) != len(catalogs):
         raise ValueError("Specify unique validation.catalogs from SEEDS, CACTus, MVCC")
@@ -126,13 +128,24 @@ def execute_external(config, *, input_run, until, run_dir, visualize=None):
     combined=[]
     sources={}
     for name in catalogs:
-        paths,reason=references(settings,name,date)
+        effective,acquisition=prepare(name,date,settings)
+        paths,reason=references(effective,name,date)
+        if acquisition["status"] in ("SOURCE_UNAVAILABLE","ACQUISITION_FAILED"):
+            paths=None
+            reason=acquisition["reason"]
         if paths is None:
-            reports[name]={"status":"REFERENCE_UNAVAILABLE","reason":reason,
+            reports[name]={"status":("ACQUISITION_FAILED" if acquisition["status"]=="ACQUISITION_FAILED" else "REFERENCE_UNAVAILABLE"),"reason":reason,
+                           "acquisition":acquisition,
                            "matched_events":None,"mean_matched_angular_iou":None}
             continue
         sources[name]={key:{"path":str(p),"sha256":_hash_file(p)} for key,p in paths.items()}
+        if name=="SEEDS" and pd.read_csv(paths["seeds_frames_csv"]).empty:
+            reports[name]={"status":"NO_EVALUABLE_REFERENCE","matched_events":0,
+                           "mean_matched_angular_iou":None,"references":sources[name],
+                           "acquisition":acquisition}
+            continue
         tables,unified,report=evaluate(name,paths,settings,date,frames_file,frames,observations)
+        report["acquisition"]=acquisition
         report["references"]=sources[name]
         results[name]=tables
         reports[name]=report

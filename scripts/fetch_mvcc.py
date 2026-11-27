@@ -39,6 +39,20 @@ def main(argv=None):
     raw = args.raw_dir or Path("data/catalogs/mvcc/raw")/args.date[:6]
     raw.mkdir(parents=True, exist_ok=True)
     month = args.date[:4]+"-"+args.date[4:6]
+    target = raw/("fetch_"+args.date+".json")
+    if args.reuse_existing and target.is_file():
+        report = json.loads(target.read_text())
+        if report.get("date") != args.date:
+            raise ValueError("MVCC fetch provenance date mismatch")
+        for item in report["files"]:
+            path=raw/safe_name(item["path"])
+            if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=item["sha256"]:
+                raise ValueError(f"MVCC cached source missing or changed: {path}")
+        # Parser revalidates source schemas and the required date-specific files.
+        from scripts.parse_mvcc import normalize
+        normalize(raw,args.date)
+        print(json.dumps(report,indent=2))
+        return
     manifest = [fetch(MONTHLY, raw/"monthly.json",
                       body=urlencode({"yearMonth":month}).encode(), reuse=args.reuse_existing)]
     rows = daily_events(json.loads((raw/"monthly.json").read_text()), args.date)
