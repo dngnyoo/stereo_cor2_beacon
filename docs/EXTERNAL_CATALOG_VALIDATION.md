@@ -53,3 +53,16 @@ source clients; incomplete normalized directories fail closed. HTTP 404/410 is
 recorded as unavailable; network failures and other HTTP errors are recorded as
 ACQUISITION_FAILED. Schema errors fail closed. MVCC coverage is checked before any
 network request. Automatic acquisition does not render detailed overlays.
+
+## Integrated visualization
+
+For method external_catalogs, explicit Stage 09 and full runs now support
+`--visualize diagnostic` (up to six active frames per catalog) and `--visualize all`
+(all active frames plus GIF). Outputs are in the Stage 09 child Run under
+09_validation/visualizations and are hashed in stage metadata. The renderer reads
+verified preprocessing and segmentation ancestors and uses the same catalog.rsun_px
+as Stage 08, not a new per-frame FITS radius. SEEDS display uses nearest reference
+per RD frame (not necessarily the evaluator's reverse correspondence); CACTus
+radii are display guides; MVCC uses saved alignment. Optional validation key
+`mvcc_assume_ht_rsun_deg: true` enables HT curves under the documented unit assumption.
+Unavailable catalogs have no fabricated overlay. Existing standalone scripts remain.

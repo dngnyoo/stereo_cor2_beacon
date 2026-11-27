@@ -189,8 +189,10 @@ def run_full_standard(config, *, until: str, run_dir, visualize=None):
             stage = step.stage
             ordinal = next(x.ordinal for x in STAGES if x.name.value == stage)
             child = children / f"{ordinal:02d}_{stage}"
+            external = stage == "validation" and config.method("validation") == "external_catalogs"
+            child_mode = config.vis_mode(stage, visualize) if external else "off"
             runners[stage](config, input_run=parent, until=stage, run_dir=child,
-                           visualize="off")
+                           visualize=child_mode)
             verify_stage(child, stage)
             render_full_stage(config, stage, child, target, visualize)
             summary["steps"].append({

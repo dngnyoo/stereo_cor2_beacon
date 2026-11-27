@@ -21,7 +21,7 @@ KEYS = {"SEEDS": ("seeds_frames_csv",), "CACTus": ("cactus_events_csv",),
 OPTIONS = {"method", "catalogs", "visualization", "seeds_frames_csv",
            "cactus_events_csv", "mvcc_frames_csv", "mvcc_events_csv",
            "max_time_delta_sec", "min_mean_iou", "min_common_frames",
-           "cactus_min_iou", "mvcc_max_time_delta_sec", "mvcc_min_mean_iou", "acquisition"}
+           "cactus_min_iou", "mvcc_max_time_delta_sec", "mvcc_min_mean_iou", "acquisition", "mvcc_assume_ht_rsun_deg"}
 MATCH_COLUMNS = ["catalog", "catalog_event_id", "event_id", "angular_iou", "metric"]
 
 
@@ -30,6 +30,8 @@ def parameters(config):
     if set(settings) - OPTIONS:
         raise ValueError(f"Unknown validation settings: {sorted(set(settings)-OPTIONS)}")
     acquisition_settings(settings)
+    if not isinstance(settings.get("mvcc_assume_ht_rsun_deg",False),bool):
+        raise ValueError("mvcc_assume_ht_rsun_deg must be boolean")
     catalogs = settings.get("catalogs")
     if not isinstance(catalogs, (list,tuple)) or not catalogs or any(x not in NAMES for x in catalogs) or len(set(catalogs)) != len(catalogs):
         raise ValueError("Specify unique validation.catalogs from SEEDS, CACTus, MVCC")
@@ -115,8 +117,7 @@ def evaluate(name, paths, settings, date, frames_file, frames, observations):
 def execute_external(config, *, input_run, until, run_dir, visualize=None):
     if until!="validation":
         raise ValueError("Catalog input supports --until validation only")
-    if config.vis_mode("validation",visualize)!="off":
-        raise NotImplementedError("Use --visualize off for explicit Stage 09; standalone overlays remain available")
+    mode=config.vis_mode("validation",visualize)
     settings,catalogs,date=parameters(config)
     output=Path(run_dir).expanduser().resolve()
     if output.exists():
@@ -179,6 +180,10 @@ def execute_external(config, *, input_run, until, run_dir, visualize=None):
              "catalogs":reports,"note":"Independent catalog metrics; no pooled mean. Unavailable is not zero."}
     summary_path.write_text(json.dumps(summary,indent=2,allow_nan=False)+"\n")
     outputs.update(catalog_matches=match_path,evaluation_metrics=summary_path)
+    if mode!="off":
+        from cme_pipeline.external_validation_visualization import render
+        outputs.update(render(config,seg_root,observations,results,reports,sources,frames_file,
+                              output/"09_validation/visualizations",mode))
     complete_stage(output,"validation",{"parent_run":str(parent),
         "height_time":meta["outputs"]["height_time"]["path"]},
         _stage_outputs(output,outputs),"external_catalogs:independent_angular_iou",settings)
